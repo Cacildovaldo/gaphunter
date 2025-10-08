@@ -1,93 +1,338 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <title>Arb Bot Real</title>
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Leveraged Trading - BSC</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, button, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; border: none; cursor: pointer; font-size: 16px; }
-        button:hover { background: #45a049; }
-        button:disabled { background: #cccccc; cursor: not-allowed; }
-        .result { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .profit { background: #e8f5e8; border-left: 4px solid #4CAF50; }
-        .loss { background: #ffebee; border-left: 4px solid #f44336; }
-        .error { background: #ffebee; color: #c62828; padding: 15px; border-radius: 5px; }
-        .loading { background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 5px; }
-        .info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .balance { background: #fff3e0; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .warning-banner {
+            background: #ff4757;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #764ba2;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .leverage-slider {
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        .leverage-display {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .position-card {
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+        
+        .position-profitable {
+            border-left-color: #2ed573;
+        }
+        
+        .position-loss {
+            border-left-color: #ff4757;
+        }
+        
+        .status-connected {
+            color: #2ed573;
+            font-weight: bold;
+        }
+        
+        .status-disconnected {
+            color: #ff4757;
+            font-weight: bold;
+        }
+        
+        .token-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔄 Arb Bot Real</h1>
-        <p><em>Executa e mostra resultado REAL</em></p>
-        
-        <div id="accountInfo" class="info"></div>
-        <div id="balanceInfo" class="balance"></div>
-        
-        <div class="form-group">
-            <label>Par de Tokens:</label>
-            <select id="tokenPair">
-                <option value="busd_usdt">BUSD → USDT → BUSD</option>
-                <option value="busd_bnb">BUSD → BNB → BUSD</option>
-            </select>
+        <div class="header">
+            <h1>🚀 Safe Leveraged Trading</h1>
+            <p>Operações Alavancadas 1x-10x na BSC com Proteção contra Loss</p>
         </div>
         
-        <div class="form-group">
-            <label>Quantidade para Operar:</label>
-            <input type="number" id="amount" value="20" step="1" min="5">
-            <small>Recomendado: 20-50 BUSD para teste</small>
+        <div class="warning-banner">
+            ⚠️ AVISO: Trading alavancado é de ALTÍSSIMO RISCO. Só opere com valores que pode perder completamente!
         </div>
         
-        <button onclick="executeRealArbitrage()" id="executeBtn">🚀 EXECUTAR OPERAÇÃO REAL</button>
-        
-        <div id="operationResult"></div>
-        
-        <div class="info">
-            <h3>📋 Informações:</h3>
-            <p><strong>Contrato:</strong> 0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da</p>
-            <p><strong>Rede:</strong> BSC Mainnet</p>
-            <p><strong>DEX:</strong> PancakeSwap</p>
-            <p><strong>Slippage:</strong> 2% (configurada no contrato)</p>
+        <div class="grid">
+            <!-- Card de Conexão e Controle -->
+            <div class="card">
+                <h2>🔗 Conexão com Carteira</h2>
+                <div class="form-group">
+                    <label>Status:</label>
+                    <span id="connectionStatus" class="status-disconnected">Desconectado</span>
+                </div>
+                <button id="connectWallet">Conectar MetaMask</button>
+                
+                <div id="walletInfo" style="display: none; margin-top: 15px;">
+                    <div class="token-info">
+                        <span>Endereço:</span>
+                        <span id="walletAddress"></span>
+                    </div>
+                    <div class="token-info">
+                        <span>Saldo BNB:</span>
+                        <span id="bnbBalance"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card de Trading -->
+            <div class="card">
+                <h2>📈 Nova Operação</h2>
+                <div class="form-group">
+                    <label for="tokenIn">Token de Entrada:</label>
+                    <select id="tokenIn">
+                        <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">BNB</option>
+                        <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">USDC</option>
+                        <option value="0x55d398326f99059fF775485246999027B3197955">USDT</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tokenOut">Token de Saída:</label>
+                    <select id="tokenOut">
+                        <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">USDC</option>
+                        <option value="0x55d398326f99059fF775485246999027B3197955">USDT</option>
+                        <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">BNB</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Valor a Investir:</label>
+                    <input type="number" id="amount" placeholder="0.0" step="0.001" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label>Alavancagem: <span id="leverageValue">1</span>x</label>
+                    <input type="range" id="leverage" class="leverage-slider" min="1" max="10" value="1">
+                </div>
+                
+                <div class="leverage-display">
+                    Valor Total: <span id="totalValue">0</span>
+                </div>
+                
+                <button id="openPosition" disabled>Abrir Posição Alavancada</button>
+            </div>
+            
+            <!-- Card de Posições Abertas -->
+            <div class="card">
+                <h2>📊 Posições Abertas</h2>
+                <div id="openPositions">
+                    <p>Nenhuma posição aberta</p>
+                </div>
+            </div>
+            
+            <!-- Card de Histórico -->
+            <div class="card">
+                <h2>📋 Histórico de Operações</h2>
+                <div id="positionHistory">
+                    <p>Nenhuma operação realizada</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let web3;
-        let contract;
-        let userAccount;
-
-        // ABI do contrato
-        const contractABI = [
+        // Configurações
+        const CONTRACT_ADDRESS = "0xDf0C15ECF4193c58B009C05F2bBC9d9b11A02F54"; // Seu contrato implantado
+        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // Router PancakeSwap BSC Mainnet
+        
+        // ABI do Contrato
+        const CONTRACT_ABI = [
             {
-                "inputs": [],
+                "inputs": [{"internalType": "address", "name": "_router", "type": "address"}],
                 "stateMutability": "nonpayable",
                 "type": "constructor"
             },
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": false, "internalType": "address", "name": "tokenA", "type": "address"},
-                    {"indexed": false, "internalType": "address", "name": "tokenB", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"}
+                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "positionId", "type": "uint256"},
+                    {"indexed": false, "internalType": "bool", "name": "wasProfitable", "type": "bool"}
                 ],
-                "name": "ArbExecuted",
+                "name": "PositionClosed",
                 "type": "event"
             },
             {
+                "anonymous": false,
                 "inputs": [
+                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "positionId", "type": "uint256"}
+                ],
+                "name": "PositionOpened",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "MAX_LEVERAGE",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_positionId", "type": "uint256"}],
+                "name": "closePosition",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_token", "type": "address"}],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "uint256", "name": "_amount", "type": "uint256"},
+                    {"internalType": "address", "name": "_fromToken", "type": "address"},
+                    {"internalType": "address", "name": "_toToken", "type": "address"}
+                ],
+                "name": "getEquivalentValue",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "_user", "type": "address"},
+                    {"internalType": "uint256", "name": "_index", "type": "uint256"}
+                ],
+                "name": "getPosition",
+                "outputs": [
                     {"internalType": "address", "name": "tokenIn", "type": "address"},
                     {"internalType": "address", "name": "tokenOut", "type": "address"},
-                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"}
+                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
+                    {"internalType": "uint256", "name": "leverage", "type": "uint256"},
+                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+                    {"internalType": "bool", "name": "isOpen", "type": "bool"}
                 ],
-                "name": "checkPrice",
-                "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
                 "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
+                "name": "getUserPositionCount",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "_tokenIn", "type": "address"},
+                    {"internalType": "address", "name": "_tokenOut", "type": "address"},
+                    {"internalType": "uint256", "name": "_amountIn", "type": "uint256"},
+                    {"internalType": "uint256", "name": "_leverage", "type": "uint256"},
+                    {"internalType": "uint256", "name": "_deadline", "type": "uint256"}
+                ],
+                "name": "openLeveragedPosition",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -99,261 +344,289 @@
             },
             {
                 "inputs": [],
-                "name": "pancakeRouter",
-                "outputs": [{"internalType": "contract IUniswapV2Router", "name": "", "type": "address"}],
+                "name": "router",
+                "outputs": [{"internalType": "contract IPancakeRouter", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_slippage", "type": "uint256"}],
+                "name": "setSlippageTolerance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "slippageTolerance",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [
-                    {"internalType": "address", "name": "tokenA", "type": "address"},
-                    {"internalType": "address", "name": "tokenB", "type": "address"},
-                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"}
+                    {"internalType": "address", "name": "", "type": "address"},
+                    {"internalType": "uint256", "name": "", "type": "uint256"}
                 ],
-                "name": "testArbitrage",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "name": "userPositions",
+                "outputs": [
+                    {"internalType": "address", "name": "user", "type": "address"},
+                    {"internalType": "address", "name": "tokenIn", "type": "address"},
+                    {"internalType": "address", "name": "tokenOut", "type": "address"},
+                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
+                    {"internalType": "uint256", "name": "leverage", "type": "uint256"},
+                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+                    {"internalType": "bool", "name": "isOpen", "type": "bool"}
+                ],
+                "stateMutability": "view",
                 "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
-                "name": "withdrawToken",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "stateMutability": "payable",
-                "type": "receive"
             }
         ];
-
-        // Endereços dos tokens BSC
+        
+        // Tokens BSC Mainnet
         const TOKENS = {
-            BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
-            USDT: "0x55d398326f99059fF775485246999027B3197955",
-            WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+            BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+            USDT: "0x55d398326f99059fF775485246999027B3197955"
         };
 
-        const CONTRACT_ADDRESS = "0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da";
+        let provider, signer, contract, userAddress;
 
-        async function initWeb3() {
-            if (window.ethereum) {
-                web3 = new Web3(window.ethereum);
-                try {
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const accounts = await web3.eth.getAccounts();
-                    userAccount = accounts[0];
-                    
-                    document.getElementById('accountInfo').innerHTML = 
-                        `<strong>💰 Carteira Conectada:</strong> ${userAccount.substring(0, 10)}...`;
-                    
-                    contract = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
-                    
-                    // Atualizar saldos
-                    await updateBalances();
-                    
-                    return true;
-                } catch (error) {
-                    document.getElementById('accountInfo').innerHTML = 
-                        `<div class="error">❌ Conecte sua MetaMask</div>`;
-                    return false;
-                }
-            } else {
-                alert("Por favor, instale o MetaMask!");
-                return false;
-            }
-        }
+        // Elementos DOM
+        const elements = {
+            connectWallet: document.getElementById('connectWallet'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            walletInfo: document.getElementById('walletInfo'),
+            walletAddress: document.getElementById('walletAddress'),
+            bnbBalance: document.getElementById('bnbBalance'),
+            tokenIn: document.getElementById('tokenIn'),
+            tokenOut: document.getElementById('tokenOut'),
+            amount: document.getElementById('amount'),
+            leverage: document.getElementById('leverage'),
+            leverageValue: document.getElementById('leverageValue'),
+            totalValue: document.getElementById('totalValue'),
+            openPosition: document.getElementById('openPosition'),
+            openPositions: document.getElementById('openPositions'),
+            positionHistory: document.getElementById('positionHistory')
+        };
 
-        async function updateBalances() {
-            if (!web3 || !userAccount) return;
+        // Event Listeners
+        elements.connectWallet.addEventListener('click', connectWallet);
+        elements.leverage.addEventListener('input', updateLeverageDisplay);
+        elements.amount.addEventListener('input', updateLeverageDisplay);
+        elements.openPosition.addEventListener('click', openPosition);
 
+        // Conectar Carteira
+        async function connectWallet() {
             try {
-                // Contrato BUSD
-                const busdContract = new web3.eth.Contract([
-                    {
-                        "constant": true,
-                        "inputs": [{"name": "account", "type": "address"}],
-                        "name": "balanceOf",
-                        "outputs": [{"name": "", "type": "uint256"}],
-                        "type": "function"
-                    }
-                ], TOKENS.BUSD);
+                if (typeof window.ethereum === 'undefined') {
+                    alert('MetaMask não instalado!');
+                    return;
+                }
 
-                const busdBalance = await busdContract.methods.balanceOf(userAccount).call();
-                const busdBalanceFormatted = web3.utils.fromWei(busdBalance, 'ether');
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
 
-                // Saldo de BNB
-                const bnbBalance = await web3.eth.getBalance(userAccount);
-                const bnbBalanceFormatted = web3.utils.fromWei(bnbBalance, 'ether');
+                // Inicializar contrato
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-                document.getElementById('balanceInfo').innerHTML = `
-                    <strong>💳 Seus Saldos:</strong><br>
-                    • BUSD: ${parseFloat(busdBalanceFormatted).toFixed(2)}<br>
-                    • BNB: ${parseFloat(bnbBalanceFormatted).toFixed(4)} (para taxas)
-                `;
+                // Atualizar UI
+                elements.connectionStatus.textContent = 'Conectado';
+                elements.connectionStatus.className = 'status-connected';
+                elements.walletInfo.style.display = 'block';
+                elements.walletAddress.textContent = `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+                elements.openPosition.disabled = false;
+
+                // Carregar dados
+                await updateBalances();
+                await loadUserPositions();
+
             } catch (error) {
-                console.log("Erro ao buscar saldos:", error);
+                console.error('Erro ao conectar carteira:', error);
+                alert('Erro ao conectar carteira: ' + error.message);
             }
         }
 
-        function getTokenAddresses() {
-            const pair = document.getElementById('tokenPair').value;
-            if (pair === 'busd_usdt') {
-                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT, symbol: 'BUSD' };
-            } else {
-                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB, symbol: 'BUSD' };
-            }
+        // Atualizar display da alavancagem
+        function updateLeverageDisplay() {
+            const leverage = parseInt(elements.leverage.value);
+            const amount = parseFloat(elements.amount.value) || 0;
+            
+            elements.leverageValue.textContent = leverage;
+            elements.totalValue.textContent = (amount * leverage).toFixed(4);
         }
 
-        async function executeRealArbitrage() {
-            const executeBtn = document.getElementById('executeBtn');
-            executeBtn.disabled = true;
-            executeBtn.textContent = '⏳ EXECUTANDO...';
-
-            if (!contract) await initWeb3();
-            if (!contract) {
-                executeBtn.disabled = false;
-                executeBtn.textContent = '🚀 EXECUTAR OPERAÇÃO REAL';
-                return;
-            }
-
-            const tokens = getTokenAddresses();
-            const amount = document.getElementById('amount').value;
-            const amountIn = web3.utils.toWei(amount, 'ether');
-
+        // Abrir nova posição
+        async function openPosition() {
             try {
-                document.getElementById('operationResult').innerHTML = 
-                    '<div class="loading">🎯 INICIANDO OPERAÇÃO REAL...</div>';
+                const tokenIn = elements.tokenIn.value;
+                const tokenOut = elements.tokenOut.value;
+                const amount = elements.amount.value;
+                const leverage = parseInt(elements.leverage.value);
 
-                // 1. VERIFICAR SALDO ANTES
-                document.getElementById('operationResult').innerHTML = 
-                    '<div class="loading">📊 Verificando saldo antes da operação...</div>';
-
-                const tokenContract = new web3.eth.Contract([
-                    {
-                        "constant": true,
-                        "inputs": [{"name": "account", "type": "address"}],
-                        "name": "balanceOf",
-                        "outputs": [{"name": "", "type": "uint256"}],
-                        "type": "function"
-                    },
-                    {
-                        "constant": false,
-                        "inputs": [
-                            {"name": "spender", "type": "address"},
-                            {"name": "amount", "type": "uint256"}
-                        ],
-                        "name": "approve",
-                        "outputs": [{"name": "", "type": "bool"}],
-                        "type": "function"
-                    }
-                ], tokens.tokenA);
-
-                const balanceBefore = await tokenContract.methods.balanceOf(userAccount).call();
-                const balanceBeforeFormatted = web3.utils.fromWei(balanceBefore, 'ether');
-
-                if (BigInt(balanceBefore) < BigInt(amountIn)) {
-                    throw new Error(`Saldo insuficiente! Você tem ${balanceBeforeFormatted} ${tokens.symbol}, mas precisa de ${amount}`);
+                if (!amount || amount <= 0) {
+                    alert('Insira um valor válido');
+                    return;
                 }
 
-                // 2. APROVAR TOKENS
-                document.getElementById('operationResult').innerHTML = 
-                    '<div class="loading">✅ Aprovando tokens para o contrato... (1/3)</div>';
+                if (tokenIn === tokenOut) {
+                    alert('Selecione tokens diferentes');
+                    return;
+                }
 
-                const approveAmount = web3.utils.toWei('1000', 'ether');
-                const approveResult = await tokenContract.methods.approve(CONTRACT_ADDRESS, approveAmount)
-                    .send({ 
-                        from: userAccount,
-                        gas: 80000 
-                    });
+                elements.openPosition.disabled = true;
+                elements.openPosition.textContent = 'Abrindo Posição...';
 
-                // 3. EXECUTAR ARBITRAGEM
-                document.getElementById('operationResult').innerHTML = 
-                    '<div class="loading">🔄 Executando arbitragem no PancakeSwap... (2/3)</div>';
+                // Calcular deadline (10 minutos)
+                const deadline = Math.floor(Date.now() / 1000) + 600;
 
-                const arbitrageResult = await contract.methods.testArbitrage(
-                    tokens.tokenA, 
-                    tokens.tokenB, 
-                    amountIn
-                ).send({ 
-                    from: userAccount, 
-                    gas: 500000,
-                    gasPrice: web3.utils.toWei('5', 'gwei')
-                });
+                // Executar transação
+                const tx = await contract.openLeveragedPosition(
+                    tokenIn,
+                    tokenOut,
+                    ethers.utils.parseEther(amount),
+                    leverage,
+                    deadline
+                );
 
-                // 4. VERIFICAR SALDO DEPOIS
-                document.getElementById('operationResult').innerHTML = 
-                    '<div class="loading">📈 Calculando resultado real... (3/3)</div>';
-
-                const balanceAfter = await tokenContract.methods.balanceOf(userAccount).call();
-                const balanceAfterFormatted = web3.utils.fromWei(balanceAfter, 'ether');
-
-                // 5. CALCULAR RESULTADO REAL
-                const initialBalance = parseFloat(balanceBeforeFormatted);
-                const finalBalance = parseFloat(balanceAfterFormatted);
-                const profit = finalBalance - initialBalance;
-                const profitPercentage = (profit / parseFloat(amount)) * 100;
-
-                // Atualizar saldos na interface
+                await tx.wait();
+                alert('Posição aberta com sucesso!');
+                
+                // Recarregar dados
+                await loadUserPositions();
                 await updateBalances();
 
-                // 6. MOSTRAR RESULTADO REAL
-                if (profit > 0) {
-                    document.getElementById('operationResult').innerHTML = `
-                        <div class="profit">
-                            <h3>🎉 OPERAÇÃO LUCRATIVA!</h3>
-                            <p><strong>Valor Operado:</strong> ${amount} ${tokens.symbol}</p>
-                            <p><strong>Saldo Antes:</strong> ${initialBalance.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>Saldo Depois:</strong> ${finalBalance.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>💰 Lucro Real:</strong> +${profit.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>📊 Porcentagem:</strong> +${profitPercentage.toFixed(4)}%</p>
-                            <p><strong>🔗 Transação:</strong> 
-                            <a href="https://bscscan.com/tx/${arbitrageResult.transactionHash}" target="_blank">
-                                Ver no BscScan
-                            </a></p>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('operationResult').innerHTML = `
-                        <div class="loss">
-                            <h3>⚠️ OPERAÇÃO COM PREJUÍZO</h3>
-                            <p><strong>Valor Operado:</strong> ${amount} ${tokens.symbol}</p>
-                            <p><strong>Saldo Antes:</strong> ${initialBalance.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>Saldo Depois:</strong> ${finalBalance.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>📉 Prejuízo Real:</strong> ${profit.toFixed(6)} ${tokens.symbol}</p>
-                            <p><strong>📊 Porcentagem:</strong> ${profitPercentage.toFixed(4)}%</p>
-                            <p><strong>🔗 Transação:</strong> 
-                            <a href="https://bscscan.com/tx/${arbitrageResult.transactionHash}" target="_blank">
-                                Ver no BscScan
-                            </a></p>
-                            <p><small>💡 Dica: Tente com valores maiores ou em horários de maior volatilidade</small></p>
-                        </div>
-                    `;
-                }
-
             } catch (error) {
-                console.error("Erro detalhado:", error);
-                document.getElementById('operationResult').innerHTML = `
-                    <div class="error">
-                        <h3>❌ ERRO NA OPERAÇÃO</h3>
-                        <p><strong>Motivo:</strong> ${error.message}</p>
-                        <p><small>Verifique:<br>
-                        • Saldo suficiente de BUSD<br>
-                        • Saldo de BNB para taxas<br>
-                        • Conexão com BSC Mainnet</small></p>
-                    </div>
-                `;
+                console.error('Erro ao abrir posição:', error);
+                
+                if (error.message.includes("Trade would be unprofitable")) {
+                    alert('Operação cancelada: Prejuízo detectado!');
+                } else if (error.message.includes("user rejected transaction")) {
+                    alert('Transação rejeitada pelo usuário');
+                } else {
+                    alert('Erro ao abrir posição: ' + error.message);
+                }
             } finally {
-                executeBtn.disabled = false;
-                executeBtn.textContent = '🚀 EXECUTAR OPERAÇÃO REAL';
+                elements.openPosition.disabled = false;
+                elements.openPosition.textContent = 'Abrir Posição Alavancada';
             }
         }
 
-        // Inicializar quando a página carregar
-        window.addEventListener('load', function() {
-            initWeb3();
-        });
+        // Fechar posição
+        async function closePosition(positionId) {
+            try {
+                const tx = await contract.closePosition(positionId);
+                await tx.wait();
+                alert('Posição fechada com sucesso!');
+                await loadUserPositions();
+                await updateBalances();
+            } catch (error) {
+                console.error('Erro ao fechar posição:', error);
+                alert('Erro ao fechar posição: ' + error.message);
+            }
+        }
+
+        // Carregar posições do usuário
+        async function loadUserPositions() {
+            if (!contract || !userAddress) return;
+
+            try {
+                const positionCount = await contract.getUserPositionCount(userAddress);
+                
+                // Posições abertas
+                elements.openPositions.innerHTML = '';
+                elements.positionHistory.innerHTML = '';
+                
+                let hasOpenPositions = false;
+                let hasHistory = false;
+
+                for (let i = 0; i < positionCount; i++) {
+                    const position = await contract.getPosition(userAddress, i);
+                    const positionElement = createPositionElement(i, position);
+                    
+                    if (position.isOpen) {
+                        elements.openPositions.appendChild(positionElement);
+                        hasOpenPositions = true;
+                    } else {
+                        elements.positionHistory.appendChild(positionElement);
+                        hasHistory = true;
+                    }
+                }
+
+                if (!hasOpenPositions) {
+                    elements.openPositions.innerHTML = '<p>Nenhuma posição aberta</p>';
+                }
+                if (!hasHistory) {
+                    elements.positionHistory.innerHTML = '<p>Nenhuma operação realizada</p>';
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar posições:', error);
+            }
+        }
+
+        // Criar elemento de posição
+        function createPositionElement(id, position) {
+            const div = document.createElement('div');
+            div.className = `position-card ${position.isOpen ? '' : 'position-loss'}`;
+            
+            const tokenInName = getTokenName(position.tokenIn);
+            const tokenOutName = getTokenName(position.tokenOut);
+            const amount = ethers.utils.formatEther(position.amountIn);
+            const timestamp = new Date(position.timestamp * 1000).toLocaleString();
+            
+            div.innerHTML = `
+                <div class="token-info">
+                    <strong>Par:</strong>
+                    <span>${tokenInName} → ${tokenOutName}</span>
+                </div>
+                <div class="token-info">
+                    <strong>Investimento:</strong>
+                    <span>${amount} ${tokenInName}</span>
+                </div>
+                <div class="token-info">
+                    <strong>Alavancagem:</strong>
+                    <span>${position.leverage}x</span>
+                </div>
+                <div class="token-info">
+                    <strong>Data:</strong>
+                    <span>${timestamp}</span>
+                </div>
+                ${position.isOpen ? 
+                    `<button onclick="closePosition(${id})" style="margin-top: 10px;">Fechar Posição</button>` : 
+                    '<div style="color: #ff4757; margin-top: 10px; font-weight: bold;">FECHADA</div>'
+                }
+            `;
+            
+            return div;
+        }
+
+        // Atualizar saldos
+        async function updateBalances() {
+            if (!provider || !userAddress) return;
+
+            try {
+                const balance = await provider.getBalance(userAddress);
+                elements.bnbBalance.textContent = ethers.utils.formatEther(balance).substring(0, 6) + ' BNB';
+            } catch (error) {
+                console.error('Erro ao atualizar saldo:', error);
+            }
+        }
+
+        // Helper para nome do token
+        function getTokenName(address) {
+            for (const [name, addr] of Object.entries(TOKENS)) {
+                if (addr.toLowerCase() === address.toLowerCase()) {
+                    return name;
+                }
+            }
+            return 'Unknown';
+        }
+
+        // Inicialização
+        updateLeverageDisplay();
     </script>
 </body>
 </html>
