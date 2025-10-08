@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Liquidity Gap Hunter</title>
+    <title>Simple Arb Bot</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
         .form-group { margin: 15px 0; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, button, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
@@ -20,43 +20,32 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔄 Liquidity Gap Hunter</h1>
-        
-        <div class="info">
-            <strong>Contrato:</strong> 0x90791823d528E4B55D276ca5B618bB2dd721F656
-        </div>
+        <h1>🔄 Simple Arb Bot</h1>
         
         <div id="accountInfo" class="info"></div>
         
         <div class="form-group">
             <label>Par de Tokens:</label>
             <select id="tokenPair">
-                <option value="busd_usdt">BUSD / USDT</option>
-                <option value="busd_bnb">BUSD / BNB</option>
-                <option value="usdt_bnb">USDT / BNB</option>
+                <option value="busd_usdt">BUSD → USDT → BUSD</option>
+                <option value="busd_bnb">BUSD → BNB → BUSD</option>
             </select>
         </div>
         
         <div class="form-group">
-            <label>Quantidade para Negociar:</label>
-            <input type="number" id="amount" value="10" placeholder="10.0" step="1">
+            <label>Quantidade (BUSD):</label>
+            <input type="number" id="amount" value="5" step="1" min="1">
         </div>
         
-        <div class="form-group">
-            <label>Lucro Mínimo (em tokens):</label>
-            <input type="number" id="minProfit" value="0.1" placeholder="0.1" step="0.01">
-        </div>
-        
-        <button onclick="checkOpportunity()" id="checkBtn">🔍 Verificar Oportunidade</button>
-        <button onclick="executeArbitrage()" id="executeBtn" disabled>⚡ Executar Arbitragem</button>
+        <button onclick="testArbitrage()" id="executeBtn">🔄 Testar Arbitragem</button>
         
         <div id="results"></div>
         
         <div class="info">
-            <h3>📋 Tokens na BSC:</h3>
-            <p><strong>BUSD:</strong> 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56</p>
-            <p><strong>USDT:</strong> 0x55d398326f99059fF775485246999027B3197955</p>
-            <p><strong>WBNB:</strong> 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c</p>
+            <h3>📋 Informações:</h3>
+            <p><strong>Contrato:</strong> <span id="contractAddress">0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da</span></p>
+            <p><strong>Rede:</strong> BSC Mainnet</p>
+            <p><strong>Taxa de Slippage:</strong> 2%</p>
         </div>
     </div>
 
@@ -65,59 +54,33 @@
         let contract;
         let userAccount;
 
-        // ABI do novo contrato
+        // ABI do contrato simplificado
         const contractABI = [
             {
-                "inputs": [
-                    {"internalType": "address", "name": "_pancakeRouter", "type": "address"},
-                    {"internalType": "address", "name": "_apeswapRouter", "type": "address"}
-                ],
+                "inputs": [],
                 "stateMutability": "nonpayable",
                 "type": "constructor"
             },
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": false, "internalType": "address", "name": "tokenIn", "type": "address"},
-                    {"indexed": false, "internalType": "address", "name": "tokenOut", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+                    {"indexed": false, "internalType": "address", "name": "tokenA", "type": "address"},
+                    {"indexed": false, "internalType": "address", "name": "tokenB", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"}
                 ],
-                "name": "ArbitrageExecuted",
+                "name": "ArbExecuted",
                 "type": "event"
             },
             {
-                "inputs": [],
-                "name": "apeswapRouter",
-                "outputs": [{"internalType": "contract IUniswapV2Router", "name": "", "type": "address"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
                 "inputs": [
-                    {"internalType": "address", "name": "tokenA", "type": "address"},
-                    {"internalType": "address", "name": "tokenB", "type": "address"},
+                    {"internalType": "address", "name": "tokenIn", "type": "address"},
+                    {"internalType": "address", "name": "tokenOut", "type": "address"},
                     {"internalType": "uint256", "name": "amountIn", "type": "uint256"}
                 ],
-                "name": "checkSimpleArbitrage",
-                "outputs": [
-                    {"internalType": "uint256", "name": "profit", "type": "uint256"},
-                    {"internalType": "address", "name": "buyRouter", "type": "address"},
-                    {"internalType": "address", "name": "sellRouter", "type": "address"}
-                ],
+                "name": "checkPrice",
+                "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
                 "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "tokenA", "type": "address"},
-                    {"internalType": "address", "name": "tokenB", "type": "address"},
-                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
-                    {"internalType": "uint256", "name": "minProfit", "type": "uint256"}
-                ],
-                "name": "executeSimpleArbitrage",
-                "outputs": [],
-                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -135,6 +98,17 @@
                 "type": "function"
             },
             {
+                "inputs": [
+                    {"internalType": "address", "name": "tokenA", "type": "address"},
+                    {"internalType": "address", "name": "tokenB", "type": "address"},
+                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"}
+                ],
+                "name": "testArbitrage",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
                 "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
                 "name": "withdrawToken",
                 "outputs": [],
@@ -147,15 +121,12 @@
             }
         ];
 
-        // Endereços dos tokens
+        // Endereços dos tokens BSC
         const TOKENS = {
             BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
             USDT: "0x55d398326f99059fF775485246999027B3197955",
             WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
         };
-
-        // Endereço do contrato
-        const CONTRACT_ADDRESS = "0x90791823d528E4B55D276ca5B618bB2dd721F656";
 
         async function initWeb3() {
             if (window.ethereum) {
@@ -166,115 +137,59 @@
                     userAccount = accounts[0];
                     
                     document.getElementById('accountInfo').innerHTML = 
-                        `<strong>Conectado:</strong> ${userAccount.substring(0, 8)}...${userAccount.substring(36)}`;
+                        `<strong>Conectado:</strong> ${userAccount}`;
                     
-                    // Inicializar contrato
-                    contract = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
-                    
+                    return true;
                 } catch (error) {
                     document.getElementById('accountInfo').innerHTML = 
                         `<div class="error">❌ Conecte sua MetaMask</div>`;
+                    return false;
                 }
             } else {
                 alert("Por favor, instale o MetaMask!");
+                return false;
             }
         }
 
         function getTokenAddresses() {
             const pair = document.getElementById('tokenPair').value;
-            switch(pair) {
-                case 'busd_usdt':
-                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT };
-                case 'busd_bnb':
-                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB };
-                case 'usdt_bnb':
-                    return { tokenA: TOKENS.USDT, tokenB: TOKENS.WBNB };
-                default:
-                    return null;
+            if (pair === 'busd_usdt') {
+                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT };
+            } else {
+                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB };
             }
         }
 
-        async function checkOpportunity() {
-            const checkBtn = document.getElementById('checkBtn');
-            checkBtn.disabled = true;
-            checkBtn.textContent = '⏳ Verificando...';
-            
-            if (!contract) await initWeb3();
-            if (!contract) return;
-
-            const tokens = getTokenAddresses();
-            const amount = document.getElementById('amount').value;
-            const amountIn = web3.utils.toWei(amount, 'ether');
-
-            try {
-                document.getElementById('results').innerHTML = 
-                    '<div class="loading">⏳ Procurando oportunidades de arbitragem...</div>';
-
-                const result = await contract.methods.checkSimpleArbitrage(
-                    tokens.tokenA, 
-                    tokens.tokenB, 
-                    amountIn
-                ).call({
-                    from: userAccount,
-                    gas: 300000
-                });
-
-                const resultsDiv = document.getElementById('results');
-                
-                if (parseInt(result.profit) > 0) {
-                    const profit = web3.utils.fromWei(result.profit, 'ether');
-                    const profitPercent = ((parseFloat(profit) / parseFloat(amount)) * 100).toFixed(4);
-                    
-                    resultsDiv.innerHTML = `
-                        <div class="result">
-                            <h3>💰 Oportunidade Encontrada!</h3>
-                            <p><strong>Lucro Esperado:</strong> ${parseFloat(profit).toFixed(6)} tokens</p>
-                            <p><strong>Porcentagem:</strong> ${profitPercent}%</p>
-                            <p><strong>Estratégia:</strong> Comprar no ${getRouterName(result.buyRouter)} → Vender no ${getRouterName(result.sellRouter)}</p>
-                        </div>
-                    `;
-                    
-                    document.getElementById('executeBtn').disabled = false;
-                } else {
-                    resultsDiv.innerHTML = `
-                        <div class="error">
-                            ❌ Nenhuma oportunidade de arbitragem encontrada
-                        </div>
-                    `;
-                    document.getElementById('executeBtn').disabled = true;
-                }
-            } catch (error) {
-                document.getElementById('results').innerHTML = `
-                    <div class="error">
-                        ❌ Erro ao verificar oportunidade:<br>
-                        ${error.message}
-                    </div>
-                `;
-                document.getElementById('executeBtn').disabled = true;
-            } finally {
-                checkBtn.disabled = false;
-                checkBtn.textContent = '🔍 Verificar Oportunidade';
-            }
-        }
-
-        async function executeArbitrage() {
+        async function testArbitrage() {
             const executeBtn = document.getElementById('executeBtn');
             executeBtn.disabled = true;
             executeBtn.textContent = '⏳ Executando...';
 
-            if (!contract) await initWeb3();
-            if (!contract) return;
+            const connected = await initWeb3();
+            if (!connected) {
+                executeBtn.disabled = false;
+                executeBtn.textContent = '🔄 Testar Arbitragem';
+                return;
+            }
+
+            // Solicitar o endereço do contrato
+            const contractAddress = prompt("Por favor, insira o endereço do contrato implantado:");
+            if (!contractAddress) {
+                executeBtn.disabled = false;
+                executeBtn.textContent = '🔄 Testar Arbitragem';
+                return;
+            }
+
+            contract = new web3.eth.Contract(contractABI, contractAddress);
+            document.getElementById('contractAddress').textContent = contractAddress;
 
             const tokens = getTokenAddresses();
             const amount = document.getElementById('amount').value;
-            const minProfit = document.getElementById('minProfit').value;
-
             const amountIn = web3.utils.toWei(amount, 'ether');
-            const minProfitWei = web3.utils.toWei(minProfit, 'ether');
 
             try {
                 document.getElementById('results').innerHTML = 
-                    '<div class="loading">⏳ Preparando transação...</div>';
+                    '<div class="loading">⏳ Iniciando teste de arbitragem...</div>';
 
                 // Verificar saldo primeiro
                 const tokenContract = new web3.eth.Contract([
@@ -299,68 +214,67 @@
 
                 const balance = await tokenContract.methods.balanceOf(userAccount).call();
                 if (BigInt(balance) < BigInt(amountIn)) {
-                    throw new Error(`Saldo insuficiente. Você tem ${web3.utils.fromWei(balance, 'ether')} tokens, mas precisa de ${amount}`);
+                    throw new Error(`Saldo insuficiente de BUSD. Você tem ${web3.utils.fromWei(balance, 'ether')}, mas precisa de ${amount}`);
                 }
 
                 document.getElementById('results').innerHTML = 
-                    '<div class="loading">⏳ Aprovando tokens... (1/2)</div>';
+                    '<div class="loading">⏳ Aprovando tokens... (1/3)</div>';
 
-                // Aprovar tokens
-                await tokenContract.methods.approve(CONTRACT_ADDRESS, amountIn)
+                // Aprovar tokens - use amount maior para evitar problemas
+                const approveAmount = web3.utils.toWei((parseFloat(amount) + 10).toString(), 'ether');
+                await tokenContract.methods.approve(contractAddress, approveAmount)
                     .send({ 
                         from: userAccount,
-                        gas: 100000 
+                        gas: 80000 
                     });
 
                 document.getElementById('results').innerHTML = 
-                    '<div class="loading">⏳ Executando arbitragem... (2/2)</div>';
+                    '<div class="loading">⏳ Executando arbitragem... (2/3)</div>';
 
-                // Executar arbitragem
-                const result = await contract.methods.executeSimpleArbitrage(
+                // Executar arbitragem de teste
+                const result = await contract.methods.testArbitrage(
                     tokens.tokenA, 
                     tokens.tokenB, 
-                    amountIn, 
-                    minProfitWei
+                    amountIn
                 ).send({ 
                     from: userAccount, 
-                    gas: 600000,
-                    gasPrice: web3.utils.toWei('6', 'gwei')
+                    gas: 400000,
+                    gasPrice: web3.utils.toWei('5', 'gwei')
                 });
 
                 document.getElementById('results').innerHTML = `
                     <div class="result">
-                        ✅ Arbitragem executada com sucesso!
+                        ✅ Teste de arbitragem concluído!
                         <p><strong>Transação:</strong> 
                         <a href="https://bscscan.com/tx/${result.transactionHash}" target="_blank">
-                            ${result.transactionHash.substring(0, 20)}...
+                            Ver no BscScan
                         </a></p>
-                        <p>Verifique o saldo da sua carteira para ver o lucro!</p>
+                        <p>Seu saldo foi atualizado. Verifique sua carteira.</p>
                     </div>
                 `;
 
             } catch (error) {
+                console.error("Erro detalhado:", error);
                 document.getElementById('results').innerHTML = `
                     <div class="error">
-                        ❌ Erro na execução:<br>
-                        ${error.message}
+                        ❌ Erro no teste:<br>
+                        ${error.message}<br>
+                        <small>Verifique:<br>
+                        - Saldo de BUSD<br>
+                        - Saldo de BNB para gas<br>
+                        - Endereço do contrato</small>
                     </div>
                 `;
             } finally {
-                executeBtn.disabled = true;
-                executeBtn.textContent = '⚡ Executar Arbitragem';
+                executeBtn.disabled = false;
+                executeBtn.textContent = '🔄 Testar Arbitragem';
             }
         }
 
-        function getRouterName(routerAddress) {
-            const routers = {
-                '0x10ed43c718714eb63d5aa57b78b54704e256024e': 'PancakeSwap',
-                '0xcff0febd3f17cef5b47b0cd257acf6025c5bff3b7': 'ApeSwap'
-            };
-            return routers[routerAddress.toLowerCase()] || 'Unknown DEX';
-        }
-
         // Inicializar quando a página carregar
-        window.addEventListener('load', initWeb3);
+        window.addEventListener('load', function() {
+            initWeb3();
+        });
     </script>
 </body>
 </html>
