@@ -1,26 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Arb Bot</title>
+    <title>Smart Arb Bot</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
         .form-group { margin: 15px 0; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, button, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
         button { background: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background: #45a049; }
         button:disabled { background: #cccccc; cursor: not-allowed; }
+        .btn-profit { background: #4CAF50; }
+        .btn-loss { background: #f44336; }
         .result { background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0; }
         .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 5px; }
+        .warning { background: #fff3e0; color: #ff9800; padding: 10px; border-radius: 5px; }
         .loading { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 5px; }
-        .info { background: #fff3e0; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .profit-info { background: #e8f5e8; border-left: 4px solid #4CAF50; }
+        .loss-info { background: #ffebee; border-left: 4px solid #f44336; }
+        .calculation { background: #f3e5f5; padding: 10px; border-radius: 5px; margin: 5px 0; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔄 Simple Arb Bot</h1>
+        <h1>🎯 Smart Arb Bot</h1>
+        <p><em>Verifica lucro/prejuízo antes de executar</em></p>
         
         <div id="accountInfo" class="info"></div>
         
@@ -29,23 +36,32 @@
             <select id="tokenPair">
                 <option value="busd_usdt">BUSD → USDT → BUSD</option>
                 <option value="busd_bnb">BUSD → BNB → BUSD</option>
+                <option value="usdt_bnb">USDT → BNB → USDT</option>
             </select>
         </div>
         
         <div class="form-group">
-            <label>Quantidade (BUSD):</label>
-            <input type="number" id="amount" value="5" step="1" min="1">
+            <label>Quantidade:</label>
+            <input type="number" id="amount" value="10" step="1" min="1">
+            <small id="tokenSymbol">BUSD</small>
         </div>
         
-        <button onclick="testArbitrage()" id="executeBtn">🔄 Testar Arbitragem</button>
+        <div class="form-group">
+            <label>Taxa de Slippage (%):</label>
+            <input type="number" id="slippage" value="2" step="0.1" min="0.5" max="10">
+        </div>
         
+        <button onclick="checkProfitability()" id="checkBtn">📊 Verificar Rentabilidade</button>
+        <button onclick="executeArbitrage()" id="executeBtn" disabled>🔄 Executar Arbitragem</button>
+        
+        <div id="profitCalculation"></div>
         <div id="results"></div>
         
         <div class="info">
             <h3>📋 Informações:</h3>
-            <p><strong>Contrato:</strong> <span id="contractAddress">0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da</span></p>
+            <p><strong>Contrato:</strong> 0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da</p>
             <p><strong>Rede:</strong> BSC Mainnet</p>
-            <p><strong>Taxa de Slippage:</strong> 2%</p>
+            <p><strong>DEX:</strong> PancakeSwap</p>
         </div>
     </div>
 
@@ -53,8 +69,9 @@
         let web3;
         let contract;
         let userAccount;
+        let currentProfitability = { profitable: false, profit: 0, percentage: 0 };
 
-        // ABI do contrato simplificado
+        // ABI do contrato
         const contractABI = [
             {
                 "inputs": [],
@@ -128,6 +145,15 @@
             WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
         };
 
+        const CONTRACT_ADDRESS = "0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da";
+
+        // Atualizar símbolo do token quando o par mudar
+        document.getElementById('tokenPair').addEventListener('change', function() {
+            const pair = this.value;
+            const symbol = pair.startsWith('busd') ? 'BUSD' : 'USDT';
+            document.getElementById('tokenSymbol').textContent = symbol;
+        });
+
         async function initWeb3() {
             if (window.ethereum) {
                 web3 = new Web3(window.ethereum);
@@ -137,8 +163,9 @@
                     userAccount = accounts[0];
                     
                     document.getElementById('accountInfo').innerHTML = 
-                        `<strong>Conectado:</strong> ${userAccount}`;
+                        `<strong>Conectado:</strong> ${userAccount.substring(0, 10)}...`;
                     
+                    contract = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
                     return true;
                 } catch (error) {
                     document.getElementById('accountInfo').innerHTML = 
@@ -153,45 +180,171 @@
 
         function getTokenAddresses() {
             const pair = document.getElementById('tokenPair').value;
-            if (pair === 'busd_usdt') {
-                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT };
-            } else {
-                return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB };
+            switch(pair) {
+                case 'busd_usdt':
+                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT, symbol: 'BUSD' };
+                case 'busd_bnb':
+                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB, symbol: 'BUSD' };
+                case 'usdt_bnb':
+                    return { tokenA: TOKENS.USDT, tokenB: TOKENS.WBNB, symbol: 'USDT' };
+                default:
+                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT, symbol: 'BUSD' };
             }
         }
 
-        async function testArbitrage() {
+        async function checkProfitability() {
+            const checkBtn = document.getElementById('checkBtn');
+            checkBtn.disabled = true;
+            checkBtn.textContent = '⏳ Calculando...';
+
+            if (!contract) await initWeb3();
+            if (!contract) {
+                checkBtn.disabled = false;
+                checkBtn.textContent = '📊 Verificar Rentabilidade';
+                return;
+            }
+
+            const tokens = getTokenAddresses();
+            const amount = document.getElementById('amount').value;
+            const slippage = parseFloat(document.getElementById('slippage').value);
+            const amountIn = web3.utils.toWei(amount, 'ether');
+
+            try {
+                document.getElementById('profitCalculation').innerHTML = 
+                    '<div class="loading">⏳ Calculando rentabilidade da arbitragem...</div>';
+                document.getElementById('results').innerHTML = '';
+
+                // Calcular preços com slippage
+                const slippageMultiplier = (100 - slippage) / 100;
+
+                // Primeira swap: TokenA → TokenB
+                const firstSwapOut = await contract.methods.checkPrice(
+                    tokens.tokenA, 
+                    tokens.tokenB, 
+                    amountIn
+                ).call();
+                
+                const firstSwapOutWithSlippage = BigInt(firstSwapOut) * BigInt(Math.floor(slippageMultiplier * 100)) / 100n;
+
+                // Segunda swap: TokenB → TokenA
+                const secondSwapOut = await contract.methods.checkPrice(
+                    tokens.tokenB, 
+                    tokens.tokenA, 
+                    firstSwapOutWithSlippage.toString()
+                ).call();
+                
+                const secondSwapOutWithSlippage = BigInt(secondSwapOut) * BigInt(Math.floor(slippageMultiplier * 100)) / 100n;
+
+                // Calcular lucro/prejuízo
+                const initialAmount = BigInt(amountIn);
+                const finalAmount = secondSwapOutWithSlippage;
+                const profit = finalAmount - initialAmount;
+                const profitPercentage = (Number(profit) / Number(initialAmount)) * 100;
+
+                // Estimar taxas de gas (aproximadamente 0.001 BNB = ~$0.30)
+                const gasCostUSD = 0.30;
+                const tokenPrice = 1; // Assumindo tokens stable a $1
+                const gasCostInTokens = gasCostUSD / tokenPrice;
+                const netProfit = Number(web3.utils.fromWei(profit.toString(), 'ether')) - gasCostInTokens;
+
+                currentProfitability = {
+                    profitable: netProfit > 0,
+                    profit: netProfit,
+                    percentage: profitPercentage,
+                    tokens: tokens,
+                    amountIn: amountIn,
+                    details: {
+                        firstSwap: web3.utils.fromWei(firstSwapOut, 'ether'),
+                        secondSwap: web3.utils.fromWei(secondSwapOut, 'ether'),
+                        finalAmount: web3.utils.fromWei(finalAmount.toString(), 'ether'),
+                        gasCost: gasCostInTokens
+                    }
+                };
+
+                displayProfitabilityResult();
+
+            } catch (error) {
+                document.getElementById('profitCalculation').innerHTML = `
+                    <div class="error">
+                        ❌ Erro no cálculo:<br>
+                        ${error.message}
+                    </div>
+                `;
+                document.getElementById('executeBtn').disabled = true;
+            } finally {
+                checkBtn.disabled = false;
+                checkBtn.textContent = '📊 Verificar Rentabilidade';
+            }
+        }
+
+        function displayProfitabilityResult() {
+            const calcDiv = document.getElementById('profitCalculation');
+            const executeBtn = document.getElementById('executeBtn');
+            
+            if (currentProfitability.profitable) {
+                calcDiv.innerHTML = `
+                    <div class="profit-info">
+                        <h3>💰 OPERAÇÃO LUCRATIVA</h3>
+                        <p><strong>Lucro Estimado:</strong> ${currentProfitability.profit.toFixed(6)} ${currentProfitability.tokens.symbol}</p>
+                        <p><strong>Porcentagem:</strong> +${currentProfitability.percentage.toFixed(4)}%</p>
+                        <div class="calculation">
+                            <strong>Detalhes do Cálculo:</strong><br>
+                            • 1ª Swap: ${currentProfitability.details.firstSwap} tokens<br>
+                            • 2ª Swap: ${currentProfitability.details.finalAmount} tokens<br>
+                            • Taxas Gas: ~${currentProfitability.details.gasCost.toFixed(4)} tokens<br>
+                            • <strong>Lucro Líquido: ${currentProfitability.profit.toFixed(6)} tokens</strong>
+                        </div>
+                    </div>
+                `;
+                executeBtn.disabled = false;
+                executeBtn.className = 'btn-profit';
+                executeBtn.innerHTML = '🔄 Executar Arbitragem (+💰)';
+            } else {
+                calcDiv.innerHTML = `
+                    <div class="loss-info">
+                        <h3>⚠️ OPERAÇÃO COM PREJUÍZO</h3>
+                        <p><strong>Prejuízo Estimado:</strong> ${Math.abs(currentProfitability.profit).toFixed(6)} ${currentProfitability.tokens.symbol}</p>
+                        <p><strong>Porcentagem:</strong> ${currentProfitability.percentage.toFixed(4)}%</p>
+                        <div class="calculation">
+                            <strong>Detalhes do Cálculo:</strong><br>
+                            • 1ª Swap: ${currentProfitability.details.firstSwap} tokens<br>
+                            • 2ª Swap: ${currentProfitability.details.finalAmount} tokens<br>
+                            • Taxas Gas: ~${currentProfitability.details.gasCost.toFixed(4)} tokens<br>
+                            • <strong>Prejuízo Líquido: ${Math.abs(currentProfitability.profit).toFixed(6)} tokens</strong>
+                        </div>
+                    </div>
+                `;
+                executeBtn.disabled = true;
+                executeBtn.className = 'btn-loss';
+                executeBtn.innerHTML = '❌ Não Executar (Prejuízo)';
+            }
+        }
+
+        async function executeArbitrage() {
+            if (!currentProfitability.profitable) {
+                alert("Esta operação não é lucrativa! Não execute.");
+                return;
+            }
+
             const executeBtn = document.getElementById('executeBtn');
             executeBtn.disabled = true;
             executeBtn.textContent = '⏳ Executando...';
 
-            const connected = await initWeb3();
-            if (!connected) {
+            if (!contract) await initWeb3();
+            if (!contract) {
                 executeBtn.disabled = false;
-                executeBtn.textContent = '🔄 Testar Arbitragem';
+                executeBtn.textContent = '🔄 Executar Arbitragem';
                 return;
             }
 
-            // Solicitar o endereço do contrato
-            const contractAddress = prompt("Por favor, insira o endereço do contrato implantado:");
-            if (!contractAddress) {
-                executeBtn.disabled = false;
-                executeBtn.textContent = '🔄 Testar Arbitragem';
-                return;
-            }
-
-            contract = new web3.eth.Contract(contractABI, contractAddress);
-            document.getElementById('contractAddress').textContent = contractAddress;
-
-            const tokens = getTokenAddresses();
-            const amount = document.getElementById('amount').value;
-            const amountIn = web3.utils.toWei(amount, 'ether');
+            const tokens = currentProfitability.tokens;
+            const amountIn = currentProfitability.amountIn;
 
             try {
                 document.getElementById('results').innerHTML = 
-                    '<div class="loading">⏳ Iniciando teste de arbitragem...</div>';
+                    '<div class="loading">⏳ Verificando saldo...</div>';
 
-                // Verificar saldo primeiro
+                // Verificar saldo
                 const tokenContract = new web3.eth.Contract([
                     {
                         "constant": true,
@@ -214,15 +367,15 @@
 
                 const balance = await tokenContract.methods.balanceOf(userAccount).call();
                 if (BigInt(balance) < BigInt(amountIn)) {
-                    throw new Error(`Saldo insuficiente de BUSD. Você tem ${web3.utils.fromWei(balance, 'ether')}, mas precisa de ${amount}`);
+                    throw new Error(`Saldo insuficiente. Você tem ${web3.utils.fromWei(balance, 'ether')} ${tokens.symbol}, mas precisa de ${web3.utils.fromWei(amountIn, 'ether')}`);
                 }
 
                 document.getElementById('results').innerHTML = 
                     '<div class="loading">⏳ Aprovando tokens... (1/3)</div>';
 
-                // Aprovar tokens - use amount maior para evitar problemas
-                const approveAmount = web3.utils.toWei((parseFloat(amount) + 10).toString(), 'ether');
-                await tokenContract.methods.approve(contractAddress, approveAmount)
+                // Aprovar tokens
+                const approveAmount = web3.utils.toWei('1000', 'ether'); // Aprovação generosa
+                await tokenContract.methods.approve(CONTRACT_ADDRESS, approveAmount)
                     .send({ 
                         from: userAccount,
                         gas: 80000 
@@ -231,49 +384,50 @@
                 document.getElementById('results').innerHTML = 
                     '<div class="loading">⏳ Executando arbitragem... (2/3)</div>';
 
-                // Executar arbitragem de teste
+                // Executar arbitragem
                 const result = await contract.methods.testArbitrage(
                     tokens.tokenA, 
                     tokens.tokenB, 
                     amountIn
                 ).send({ 
                     from: userAccount, 
-                    gas: 400000,
+                    gas: 500000,
                     gasPrice: web3.utils.toWei('5', 'gwei')
                 });
 
                 document.getElementById('results').innerHTML = `
                     <div class="result">
-                        ✅ Teste de arbitragem concluído!
+                        ✅ Arbitragem executada com sucesso!
                         <p><strong>Transação:</strong> 
                         <a href="https://bscscan.com/tx/${result.transactionHash}" target="_blank">
                             Ver no BscScan
                         </a></p>
-                        <p>Seu saldo foi atualizado. Verifique sua carteira.</p>
+                        <p><strong>Lucro Estimado:</strong> ${currentProfitability.profit.toFixed(6)} ${tokens.symbol}</p>
+                        <p>Verifique seu saldo final na carteira.</p>
                     </div>
                 `;
 
             } catch (error) {
-                console.error("Erro detalhado:", error);
                 document.getElementById('results').innerHTML = `
                     <div class="error">
-                        ❌ Erro no teste:<br>
-                        ${error.message}<br>
-                        <small>Verifique:<br>
-                        - Saldo de BUSD<br>
-                        - Saldo de BNB para gas<br>
-                        - Endereço do contrato</small>
+                        ❌ Erro na execução:<br>
+                        ${error.message}
                     </div>
                 `;
             } finally {
-                executeBtn.disabled = false;
-                executeBtn.textContent = '🔄 Testar Arbitragem';
+                // Só reabilita se ainda for lucrativo
+                executeBtn.disabled = !currentProfitability.profitable;
+                if (currentProfitability.profitable) {
+                    executeBtn.className = 'btn-profit';
+                    executeBtn.innerHTML = '🔄 Executar Arbitragem (+💰)';
+                }
             }
         }
 
         // Inicializar quando a página carregar
         window.addEventListener('load', function() {
             initWeb3();
+            document.getElementById('tokenPair').dispatchEvent(new Event('change'));
         });
     </script>
 </body>
