@@ -1,236 +1,225 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Safe Leveraged Trading - BSC</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <title>FrontRun Bot - BSC</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; padding:20px;
-        }
-        .container { max-width:1200px; margin:0 auto; }
-        .header { text-align:center; color:white; margin-bottom:30px; }
-        .header h1 { font-size:2.5rem; margin-bottom:10px; }
-        .warning-banner { background:#ff4757; color:white; padding:15px; border-radius:10px; margin-bottom:20px; text-align:center; font-weight:bold; }
-        .card { background:white; border-radius:15px; padding:25px; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
-        .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-        @media (max-width:768px) { .grid { grid-template-columns:1fr; } }
-        .form-group { margin-bottom:15px; }
-        label { display:block; margin-bottom:5px; font-weight:bold; color:#333; }
-        input, select, button { width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:16px; }
-        button { background:#667eea; color:white; border:none; cursor:pointer; font-weight:bold; transition:background 0.3s; }
-        button:hover { background:#764ba2; }
-        button:disabled { background:#ccc; cursor:not-allowed; }
-        .leverage-slider { width:100%; margin:15px 0; }
-        .leverage-display { text-align:center; font-size:1.2rem; font-weight:bold; color:#667eea; }
-        .position-card { border-left:4px solid #667eea; padding:15px; margin-bottom:10px; background:#f8f9fa; }
-        .position-profitable { border-left-color:#2ed573; }
-        .position-loss { border-left-color:#ff4757; }
-        .status-connected { color:#2ed573; font-weight:bold; }
-        .status-disconnected { color:#ff4757; font-weight:bold; }
-        .token-info { display:flex; justify-content:space-between; margin-bottom:10px; }
-        .network-warning { background: #ffa502; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #2d2d2d; padding: 20px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; }
+        button { background: #ff6b35; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #e55a2b; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        input { padding: 10px; border: 1px solid #444; border-radius: 5px; background: #1a1a1a; color: white; margin: 5px; }
+        .log { background: #1a1a1a; padding: 10px; border-radius: 5px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚀 Safe Leveraged Trading</h1>
-            <p>Operações Alavancadas 1x-10x na BSC com Proteção contra Loss</p>
+        <h1>🚀 FrontRun Bot - BSC</h1>
+        
+        <!-- Conexão Wallet -->
+        <div class="card">
+            <h3>🔗 Conexão da Carteira</h3>
+            <button id="connectWallet">Conectar MetaMask</button>
+            <span id="walletStatus" class="warning">Não conectado</span>
         </div>
 
-        <div class="warning-banner">
-            ⚠️ AVISO: Trading alavancado é de ALTÍSSIMO RISCO. Só opere com valores que pode perder completamente!
+        <!-- Status do Contrato -->
+        <div class="card">
+            <h3>📊 Status do Contrato</h3>
+            <div id="contractStatus">
+                <p>Pool Artificial: <span id="poolRate">1 USDT = 0.001 USDC</span></p>
+                <p>Saldo Pool: <span id="poolBalance">Carregando...</span></p>
+                <p>Status: <span id="botStatus">Carregando...</span></p>
+            </div>
         </div>
 
-        <div id="networkWarning" class="network-warning" style="display: none;">
-            ⚠️ Por favor, mude para a <strong>Binance Smart Chain (BSC) Mainnet</strong> no MetaMask
+        <!-- Gerenciamento de Liquidez -->
+        <div class="card">
+            <h3>💰 Gerenciar Liquidez</h3>
+            <input type="number" id="usdtAdd" placeholder="USDT Amount" step="1">
+            <input type="number" id="usdcAdd" placeholder="USDC Amount" step="1">
+            <button id="addLiquidity">Adicionar Liquidez</button>
+            <button id="checkBalances">Verificar Saldos</button>
         </div>
 
-        <div class="grid">
-            <!-- Card de Conexão e Controle -->
-            <div class="card">
-                <h2>🔗 Conexão com Carteira</h2>
-                <div class="form-group">
-                    <label>Status:</label>
-                    <span id="connectionStatus" class="status-disconnected">Desconectado</span>
-                </div>
-                <button id="connectWallet">Conectar MetaMask</button>
+        <!-- Execução do FrontRun -->
+        <div class="card">
+            <h3>⚡ Executar FrontRun</h3>
+            <input type="number" id="frontRunAmount" placeholder="Quantidade USDT" step="1">
+            <button id="checkOpportunity">Verificar Oportunidade</button>
+            <button id="executeFrontRun">Executar FrontRun</button>
+            <div id="opportunityResult" style="margin-top: 10px;"></div>
+        </div>
 
-                <div id="walletInfo" style="display: none; margin-top: 15px;">
-                    <div class="token-info">
-                        <span>Endereço:</span>
-                        <span id="walletAddress"></span>
-                    </div>
-                    <div class="token-info">
-                        <span>Saldo BNB:</span>
-                        <span id="bnbBalance"></span>
-                    </div>
-                    <div class="token-info">
-                        <span>Rede:</span>
-                        <span id="networkStatus">Verificando...</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Configurações -->
+        <div class="card">
+            <h3>⚙️ Configurações</h3>
+            <button id="toggleActive">Ativar/Desativar Bot</button>
+            <button id="withdrawUSDT">Retirar USDT</button>
+            <button id="withdrawUSDC">Retirar USDC</button>
+            <input type="text" id="newDevWallet" placeholder="Nova Dev Wallet">
+            <button id="updateDevWallet">Atualizar Dev Wallet</button>
+        </div>
 
-            <!-- Card de Trading -->
-            <div class="card">
-                <h2>📈 Nova Operação</h2>
-                <div class="form-group">
-                    <label for="tokenIn">Token de Entrada:</label>
-                    <select id="tokenIn">
-                        <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">BNB</option>
-                        <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">USDC</option>
-                        <option value="0x55d398326f99059fF775485246999027B3197955">USDT</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="tokenOut">Token de Saída:</label>
-                    <select id="tokenOut">
-                        <option value="0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d">USDC</option>
-                        <option value="0x55d398326f99059fF775485246999027B3197955">USDT</option>
-                        <option value="0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c">BNB</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="amount">Valor a Investir:</label>
-                    <input type="number" id="amount" placeholder="0.0" step="0.001" min="0" />
-                </div>
-
-                <div class="form-group">
-                    <label>Alavancagem: <span id="leverageValue">1</span>x</label>
-                    <input type="range" id="leverage" class="leverage-slider" min="1" max="10" value="1" />
-                </div>
-
-                <div class="leverage-display">
-                    Valor Total: <span id="totalValue">0</span>
-                </div>
-
-                <button id="openPosition" disabled>Abrir Posição Alavancada</button>
-            </div>
-
-            <!-- Card de Posições Abertas -->
-            <div class="card">
-                <h2>📊 Posições Abertas</h2>
-                <div id="openPositions">
-                    <p>Nenhuma posição aberta</p>
-                </div>
-            </div>
-
-            <!-- Card de Histórico -->
-            <div class="card">
-                <h2>📋 Histórico de Operações</h2>
-                <div id="positionHistory">
-                    <p>Nenhuma operação realizada</p>
-                </div>
-            </div>
+        <!-- Logs -->
+        <div class="card">
+            <h3>📝 Logs de Execução</h3>
+            <div id="logs" class="log"></div>
+            <button id="clearLogs">Limpar Logs</button>
         </div>
     </div>
 
     <script>
-        // Configurações
-        const CONTRACT_ADDRESS = "0xDf0C15ECF4193c58B009C05F2bBC9d9b11A02F54";
-        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
-
-        // ABI do Contrato (mantida igual)
-        const CONTRACT_ABI = [
+        // ABI Completa do Contrato
+        const contractABI = [
             {
-                "inputs": [{"internalType": "address", "name": "_router", "type": "address"}],
+                "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
                 "stateMutability": "nonpayable",
                 "type": "constructor"
             },
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "positionId", "type": "uint256"},
-                    {"indexed": false, "internalType": "bool", "name": "wasProfitable", "type": "bool"}
+                    {"indexed": false, "internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
                 ],
-                "name": "PositionClosed",
+                "name": "FrontRunExecuted",
                 "type": "event"
             },
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "positionId", "type": "uint256"}
+                    {"indexed": false, "internalType": "uint256", "name": "usdtAdded", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "usdcAdded", "type": "uint256"}
                 ],
-                "name": "PositionOpened",
+                "name": "LiquidityUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [{"indexed": false, "internalType": "address", "name": "newOwner", "type": "address"}],
+                "name": "OwnershipTransferred",
                 "type": "event"
             },
             {
                 "inputs": [],
-                "name": "MAX_LEVERAGE",
+                "name": "ARTIFICIAL_RATE",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "uint256", "name": "_positionId", "type": "uint256"}],
-                "name": "closePosition",
+                "inputs": [],
+                "name": "ROUTER",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDC",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDT",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdcAmount", "type": "uint256"}
+                ],
+                "name": "addLiquidity",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "_token", "type": "address"}],
+                "inputs": [
+                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"}
+                ],
+                "name": "checkArbitrageOpportunity",
+                "outputs": [
+                    {"internalType": "uint256", "name": "expectedProfit", "type": "uint256"},
+                    {"internalType": "bool", "name": "profitable", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "destroyContract",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
                 "name": "emergencyWithdraw",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
-                "inputs": [
-                    {"internalType": "uint256", "name": "_amount", "type": "uint256"},
-                    {"internalType": "address", "name": "_fromToken", "type": "address"},
-                    {"internalType": "address", "name": "_toToken", "type": "address"}
-                ],
-                "name": "getEquivalentValue",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                "stateMutability": "view",
+                "inputs": [],
+                "name": "emergencyWithdrawETH",
+                "outputs": [],
+                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
-                "inputs": [
-                    {"internalType": "address", "name": "_user", "type": "address"},
-                    {"internalType": "uint256", "name": "_index", "type": "uint256"}
-                ],
-                "name": "getPosition",
-                "outputs": [
-                    {"internalType": "address", "name": "tokenIn", "type": "address"},
-                    {"internalType": "address", "name": "tokenOut", "type": "address"},
-                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
-                    {"internalType": "uint256", "name": "leverage", "type": "uint256"},
-                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
-                    {"internalType": "bool", "name": "isOpen", "type": "bool"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
-                "name": "getUserPositionCount",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "_tokenIn", "type": "address"},
-                    {"internalType": "address", "name": "_tokenOut", "type": "address"},
-                    {"internalType": "uint256", "name": "_amountIn", "type": "uint256"},
-                    {"internalType": "uint256", "name": "_leverage", "type": "uint256"},
-                    {"internalType": "uint256", "name": "_deadline", "type": "uint256"}
-                ],
-                "name": "openLeveragedPosition",
+                "inputs": [{"internalType": "uint256", "name": "usdtAmount", "type": "uint256"}],
+                "name": "executeFrontRun",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractBalances",
+                "outputs": [
+                    {"internalType": "uint256", "name": "usdt", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdc", "type": "uint256"},
+                    {"internalType": "uint256", "name": "bnb", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getPoolBalances",
+                "outputs": [
+                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdcBalance", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "isActive",
+                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "minArbitrageAmount",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -242,425 +231,255 @@
             },
             {
                 "inputs": [],
-                "name": "router",
-                "outputs": [{"internalType": "contract IPancakeRouter", "name": "", "type": "address"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "uint256", "name": "_slippage", "type": "uint256"}],
-                "name": "setSlippageTolerance",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "slippageTolerance",
+                "name": "poolUSDC",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [
-                    {"internalType": "address", "name": "", "type": "address"},
-                    {"internalType": "uint256", "name": "", "type": "uint256"}
-                ],
-                "name": "userPositions",
-                "outputs": [
-                    {"internalType": "address", "name": "user", "type": "address"},
-                    {"internalType": "address", "name": "tokenIn", "type": "address"},
-                    {"internalType": "address", "name": "tokenOut", "type": "address"},
-                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
-                    {"internalType": "uint256", "name": "leverage", "type": "uint256"},
-                    {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
-                    {"internalType": "bool", "name": "isOpen", "type": "bool"}
-                ],
+                "inputs": [],
+                "name": "poolUSDT",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "bool", "name": "_active", "type": "bool"}],
+                "name": "setActive",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
+                "name": "setDevWallet",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_minAmount", "type": "uint256"}],
+                "name": "setMinArbitrageAmount",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}],
+                "name": "transferOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
                 "type": "function"
             }
         ];
 
-        // Tokens BSC Mainnet
-        const TOKENS = {
-            BNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-            USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-            USDT: "0x55d398326f99059fF775485246999027B3197955"
-        };
+        let web3;
+        let contract;
+        let userAccount;
+        const contractAddress = "0x289FbEd3cCecE405fd386e8CF08a087d083fCE2c"; // Substituir após deploy
 
-        let provider, signer, contract, userAddress;
-
-        // Elementos DOM
+        // Elementos da UI
         const elements = {
             connectWallet: document.getElementById('connectWallet'),
-            connectionStatus: document.getElementById('connectionStatus'),
-            walletInfo: document.getElementById('walletInfo'),
-            walletAddress: document.getElementById('walletAddress'),
-            bnbBalance: document.getElementById('bnbBalance'),
-            networkStatus: document.getElementById('networkStatus'),
-            networkWarning: document.getElementById('networkWarning'),
-            tokenIn: document.getElementById('tokenIn'),
-            tokenOut: document.getElementById('tokenOut'),
-            amount: document.getElementById('amount'),
-            leverage: document.getElementById('leverage'),
-            leverageValue: document.getElementById('leverageValue'),
-            totalValue: document.getElementById('totalValue'),
-            openPosition: document.getElementById('openPosition'),
-            openPositions: document.getElementById('openPositions'),
-            positionHistory: document.getElementById('positionHistory')
+            walletStatus: document.getElementById('walletStatus'),
+            poolBalance: document.getElementById('poolBalance'),
+            botStatus: document.getElementById('botStatus'),
+            addLiquidity: document.getElementById('addLiquidity'),
+            checkBalances: document.getElementById('checkBalances'),
+            executeFrontRun: document.getElementById('executeFrontRun'),
+            checkOpportunity: document.getElementById('checkOpportunity'),
+            toggleActive: document.getElementById('toggleActive'),
+            withdrawUSDT: document.getElementById('withdrawUSDT'),
+            withdrawUSDC: document.getElementById('withdrawUSDC'),
+            updateDevWallet: document.getElementById('updateDevWallet'),
+            clearLogs: document.getElementById('clearLogs'),
+            logs: document.getElementById('logs'),
+            opportunityResult: document.getElementById('opportunityResult')
         };
 
-        // Event Listeners
-        elements.connectWallet.addEventListener('click', connectWallet);
-        elements.leverage.addEventListener('input', updateLeverageDisplay);
-        elements.amount.addEventListener('input', updateLeverageDisplay);
-        elements.openPosition.addEventListener('click', openPosition);
-
-        // Conectar Carteira - VERSÃO SIMPLIFICADA E FUNCIONAL
-        async function connectWallet() {
-            try {
-                console.log('Iniciando conexão...');
-                
-                if (typeof window.ethereum === 'undefined') {
-                    alert('MetaMask não instalado! Por favor, instale o MetaMask.');
-                    return;
-                }
-
-                elements.connectWallet.disabled = true;
-                elements.connectWallet.textContent = 'Conectando...';
-
-                // 1. Primeiro conectar a carteira
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                console.log('Provider criado');
-                
-                // Solicitar contas
-                const accounts = await provider.send("eth_requestAccounts", []);
-                console.log('Contas:', accounts);
-                
-                if (accounts.length === 0) {
-                    throw new Error('Nenhuma conta encontrada');
-                }
-
-                userAddress = accounts[0];
-                signer = provider.getSigner();
-                console.log('Signer criado');
-
-                // 2. Verificar a rede
-                const network = await provider.getNetwork();
-                console.log('Rede:', network);
-                
-                if (network.chainId !== 56) {
-                    elements.networkWarning.style.display = 'block';
-                    elements.networkStatus.textContent = 'Rede Incorreta';
-                    elements.networkStatus.style.color = '#ff4757';
-                    
-                    // Oferecer opção de mudar para BSC
-                    const switchNetwork = confirm('Você não está na BSC Mainnet. Deseja mudar para a BSC Mainnet agora?');
-                    if (switchNetwork) {
-                        await switchToBSC();
-                        // Recarregar após mudança de rede
-                        window.location.reload();
-                        return;
-                    }
-                } else {
-                    elements.networkWarning.style.display = 'none';
-                    elements.networkStatus.textContent = 'BSC Mainnet ✓';
-                    elements.networkStatus.style.color = '#2ed573';
-                }
-
-                // 3. Inicializar contrato
-                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                console.log('Contrato inicializado');
-
-                // 4. Atualizar UI
-                elements.connectionStatus.textContent = 'Conectado';
-                elements.connectionStatus.className = 'status-connected';
-                elements.walletInfo.style.display = 'block';
-                elements.walletAddress.textContent = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
-                elements.openPosition.disabled = false;
-                elements.connectWallet.textContent = 'Conectado ✓';
-
-                // 5. Carregar dados
-                await updateBalances();
-                await loadUserPositions();
-
-                // 6. Configurar listeners
-                setupEventListeners();
-
-                console.log('Conexão concluída com sucesso!');
-
-            } catch (error) {
-                console.error('Erro detalhado:', error);
-                alert('Erro ao conectar: ' + (error.message || 'Verifique o MetaMask'));
-                
-                elements.connectWallet.disabled = false;
-                elements.connectWallet.textContent = 'Conectar MetaMask';
-                elements.connectionStatus.textContent = 'Erro na Conexão';
-                elements.connectionStatus.className = 'status-disconnected';
-            }
-        }
-
-        // Mudar para BSC
-        async function switchToBSC() {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x38' }] // 56 em hexadecimal
-                });
-            } catch (switchError) {
-                // Se a rede não existir, adicionar
-                if (switchError.code === 4902) {
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: '0x38',
-                                chainName: 'Binance Smart Chain Mainnet',
-                                rpcUrls: ['https://bsc-dataseed.binance.org/'],
-                                nativeCurrency: {
-                                    name: 'BNB',
-                                    symbol: 'BNB',
-                                    decimals: 18
-                                },
-                                blockExplorerUrls: ['https://bscscan.com/']
-                            }]
-                        });
-                    } catch (addError) {
-                        throw new Error('Falha ao adicionar BSC: ' + addError.message);
-                    }
-                } else {
-                    throw switchError;
-                }
-            }
-        }
-
-        // Configurar listeners de eventos
-        function setupEventListeners() {
-            if (window.ethereum) {
-                window.ethereum.on('accountsChanged', (accounts) => {
-                    if (accounts.length === 0) {
-                        resetUI();
-                    } else {
-                        userAddress = accounts[0];
-                        updateUI();
-                    }
-                });
-
-                window.ethereum.on('chainChanged', (chainId) => {
-                    if (chainId === '0x38') {
-                        elements.networkWarning.style.display = 'none';
-                        elements.networkStatus.textContent = 'BSC Mainnet ✓';
-                        elements.networkStatus.style.color = '#2ed573';
-                    } else {
-                        elements.networkWarning.style.display = 'block';
-                        elements.networkStatus.textContent = 'Rede Incorreta';
-                        elements.networkStatus.style.color = '#ff4757';
-                        elements.openPosition.disabled = true;
-                    }
-                });
-            }
-        }
-
-        // Atualizar UI após mudanças
-        async function updateUI() {
-            if (userAddress && provider) {
-                signer = provider.getSigner();
-                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                elements.walletAddress.textContent = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
-                await updateBalances();
-                await loadUserPositions();
-            }
-        }
-
-        // Reset UI
-        function resetUI() {
-            elements.connectionStatus.textContent = 'Desconectado';
-            elements.connectionStatus.className = 'status-disconnected';
-            elements.walletInfo.style.display = 'none';
-            elements.openPosition.disabled = true;
-            elements.connectWallet.disabled = false;
-            elements.connectWallet.textContent = 'Conectar MetaMask';
-            elements.openPositions.innerHTML = '<p>Nenhuma posição aberta</p>';
-            elements.positionHistory.innerHTML = '<p>Nenhuma operação realizada</p>';
-        }
-
-        // Resto das funções permanecem iguais...
-        function updateLeverageDisplay() {
-            const leverage = parseInt(elements.leverage.value);
-            const amount = parseFloat(elements.amount.value) || 0;
-            elements.leverageValue.textContent = leverage;
-            elements.totalValue.textContent = (amount * leverage).toFixed(4);
-        }
-
-        async function openPosition() {
-            try {
-                const tokenIn = elements.tokenIn.value;
-                const tokenOut = elements.tokenOut.value;
-                const amount = elements.amount.value;
-                const leverage = parseInt(elements.leverage.value);
-
-                if (!amount || amount <= 0) {
-                    alert('Insira um valor válido');
-                    return;
-                }
-                if (tokenIn === tokenOut) {
-                    alert('Selecione tokens diferentes');
-                    return;
-                }
-
-                elements.openPosition.disabled = true;
-                elements.openPosition.textContent = 'Abrindo Posição...';
-
-                const deadline = Math.floor(Date.now() / 1000) + 600;
-
-                const tx = await contract.openLeveragedPosition(
-                    tokenIn,
-                    tokenOut,
-                    ethers.utils.parseEther(amount.toString()),
-                    leverage,
-                    deadline
-                );
-
-                elements.openPosition.textContent = 'Confirmando...';
-                await tx.wait();
-                
-                alert('Posição aberta com sucesso!');
-                await loadUserPositions();
-                await updateBalances();
-
-            } catch (error) {
-                console.error('Erro ao abrir posição:', error);
-                const message = error.message || String(error);
-                if (message.includes("Trade would be unprofitable")) {
-                    alert('Operação cancelada: Prejuízo detectado!');
-                } else if (message.toLowerCase().includes("user rejected")) {
-                    alert('Transação rejeitada pelo usuário');
-                } else {
-                    alert('Erro ao abrir posição: ' + message);
-                }
-            } finally {
-                elements.openPosition.disabled = false;
-                elements.openPosition.textContent = 'Abrir Posição Alavancada';
-            }
-        }
-
-        async function closePosition(positionId) {
-            try {
-                const tx = await contract.closePosition(positionId);
-                await tx.wait();
-                alert('Posição fechada com sucesso!');
-                await loadUserPositions();
-                await updateBalances();
-            } catch (error) {
-                console.error('Erro ao fechar posição:', error);
-                alert('Erro ao fechar posição: ' + error.message);
-            }
-        }
-        window.closePosition = closePosition;
-
-        async function loadUserPositions() {
-            if (!contract || !userAddress) return;
-
-            try {
-                const positionCount = await contract.getUserPositionCount(userAddress);
-                const count = positionCount.toNumber ? positionCount.toNumber() : parseInt(positionCount);
-
-                elements.openPositions.innerHTML = '';
-                elements.positionHistory.innerHTML = '';
-
-                let hasOpenPositions = false;
-                let hasHistory = false;
-
-                for (let i = 0; i < count; i++) {
-                    const position = await contract.getPosition(userAddress, i);
-                    const posObj = {
-                        tokenIn: position.tokenIn || position[1],
-                        tokenOut: position.tokenOut || position[2],
-                        amountIn: position.amountIn || position[3],
-                        leverage: position.leverage || position[4],
-                        timestamp: position.timestamp || position[5],
-                        isOpen: (typeof position.isOpen !== 'undefined') ? position.isOpen : position[6]
-                    };
-                    const positionElement = createPositionElement(i, posObj);
-
-                    if (posObj.isOpen) {
-                        elements.openPositions.appendChild(positionElement);
-                        hasOpenPositions = true;
-                    } else {
-                        elements.positionHistory.appendChild(positionElement);
-                        hasHistory = true;
-                    }
-                }
-
-                if (!hasOpenPositions) elements.openPositions.innerHTML = '<p>Nenhuma posição aberta</p>';
-                if (!hasHistory) elements.positionHistory.innerHTML = '<p>Nenhuma operação realizada</p>';
-
-            } catch (error) {
-                console.error('Erro ao carregar posições:', error);
-            }
-        }
-
-        function createPositionElement(id, position) {
-            const div = document.createElement('div');
-            div.className = `position-card ${position.isOpen ? '' : 'position-loss'}`;
-
-            const tokenInName = getTokenName(position.tokenIn);
-            const tokenOutName = getTokenName(position.tokenOut);
-            const amount = ethers.utils.formatEther(position.amountIn);
-            const timestamp = new Date(Number(position.timestamp) * 1000).toLocaleString();
-
-            div.innerHTML = `
-                <div class="token-info">
-                    <strong>Par:</strong>
-                    <span>${tokenInName} → ${tokenOutName}</span>
-                </div>
-                <div class="token-info">
-                    <strong>Investimento:</strong>
-                    <span>${amount} ${tokenInName}</span>
-                </div>
-                <div class="token-info">
-                    <strong>Alavancagem:</strong>
-                    <span>${position.leverage}x</span>
-                </div>
-                <div class="token-info">
-                    <strong>Data:</strong>
-                    <span>${timestamp}</span>
-                </div>
-                ${position.isOpen ?
-                    `<button onclick="closePosition(${id})" style="margin-top: 10px;">Fechar Posição</button>` :
-                    '<div style="color: #ff4757; margin-top: 10px; font-weight: bold;">FECHADA</div>'
-                }
-            `;
-            return div;
-        }
-
-        async function updateBalances() {
-            if (!provider || !userAddress) return;
-            try {
-                const balance = await provider.getBalance(userAddress);
-                const balanceEth = parseFloat(ethers.utils.formatEther(balance));
-                let display = '';
-                if (balanceEth >= 1) display = balanceEth.toFixed(4) + ' BNB';
-                else if (balanceEth >= 0.0001) display = balanceEth.toFixed(6) + ' BNB';
-                else display = balanceEth.toExponential(4) + ' BNB';
-                elements.bnbBalance.textContent = display;
-            } catch (error) {
-                console.error('Erro ao atualizar saldo:', error);
-            }
-        }
-
-        function getTokenName(address) {
-            if (!address) return 'Unknown';
-            for (const [name, addr] of Object.entries(TOKENS)) {
-                if (addr.toLowerCase() === address.toLowerCase()) {
-                    return name;
-                }
-            }
-            return address.substring(0,6) + '...' + address.substring(address.length-4);
-        }
-
         // Inicialização
-        updateLeverageDisplay();
+        elements.connectWallet.onclick = connectWallet;
+        elements.addLiquidity.onclick = addLiquidity;
+        elements.checkBalances.onclick = updateContractInfo;
+        elements.executeFrontRun.onclick = executeFrontRun;
+        elements.checkOpportunity.onclick = checkOpportunity;
+        elements.toggleActive.onclick = toggleActive;
+        elements.withdrawUSDT.onclick = () => emergencyWithdraw('USDT');
+        elements.withdrawUSDC.onclick = () => emergencyWithdraw('USDC');
+        elements.updateDevWallet.onclick = updateDevWallet;
+        elements.clearLogs.onclick = () => elements.logs.innerHTML = '';
+
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    web3 = new Web3(window.ethereum);
+                    userAccount = (await web3.eth.getAccounts())[0];
+                    
+                    elements.walletStatus.textContent = `Conectado: ${userAccount}`;
+                    elements.walletStatus.className = 'success';
+                    
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    addLog('✅ Carteira conectada com sucesso');
+                    await updateContractInfo();
+                    
+                } catch (error) {
+                    addLog(`❌ Erro na conexão: ${error.message}`, 'error');
+                }
+            } else {
+                addLog('❌ MetaMask não encontrado!', 'error');
+            }
+        }
+
+        async function addLiquidity() {
+            const usdtAmount = document.getElementById('usdtAdd').value;
+            const usdcAmount = document.getElementById('usdcAdd').value;
+            
+            if (!usdtAmount || !usdcAmount) {
+                addLog('❌ Preencha ambos os valores', 'error');
+                return;
+            }
+            
+            try {
+                addLog(`💰 Adicionando liquidez: ${usdtAmount} USDT + ${usdcAmount} USDC`);
+                await contract.methods.addLiquidity(
+                    web3.utils.toWei(usdtAmount, 'ether'),
+                    web3.utils.toWei(usdcAmount, 'ether')
+                ).send({ from: userAccount });
+                
+                addLog('✅ Liquidez adicionada com sucesso!');
+                await updateContractInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function executeFrontRun() {
+            const amount = document.getElementById('frontRunAmount').value;
+            
+            if (!amount) {
+                addLog('❌ Informe a quantidade de USDT', 'error');
+                return;
+            }
+            
+            try {
+                addLog(`⚡ Executando FrontRun com ${amount} USDT...`);
+                const result = await contract.methods.executeFrontRun(
+                    web3.utils.toWei(amount, 'ether')
+                ).send({ from: userAccount });
+                
+                const profit = web3.utils.fromWei(result.events.FrontRunExecuted.returnValues.profit);
+                addLog(`🎉 FrontRun executado! Lucro: ${profit} USDC`, 'success');
+                await updateContractInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro no FrontRun: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkOpportunity() {
+            const amount = document.getElementById('frontRunAmount').value;
+            
+            if (!amount) {
+                elements.opportunityResult.innerHTML = '<span class="error">Informe a quantidade</span>';
+                return;
+            }
+            
+            try {
+                const [expectedProfit, profitable] = await contract.methods.checkArbitrageOpportunity(
+                    web3.utils.toWei(amount, 'ether')
+                ).call();
+                
+                const profit = web3.utils.fromWei(expectedProfit);
+                
+                if (profitable) {
+                    elements.opportunityResult.innerHTML = 
+                        `<span class="success">💰 Oportunidade encontrada! Lucro esperado: ${profit} USDC</span>`;
+                } else {
+                    elements.opportunityResult.innerHTML = 
+                        `<span class="warning">⚠️ Sem oportunidade no momento</span>`;
+                }
+                
+            } catch (error) {
+                elements.opportunityResult.innerHTML = 
+                    `<span class="error">Erro: ${error.message}</span>`;
+            }
+        }
+
+        async function toggleActive() {
+            try {
+                const currentStatus = await contract.methods.isActive().call();
+                await contract.methods.setActive(!currentStatus).send({ from: userAccount });
+                
+                addLog(`🔧 Bot ${!currentStatus ? 'ativado' : 'desativado'}`);
+                await updateContractInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateDevWallet() {
+            const newWallet = document.getElementById('newDevWallet').value;
+            
+            if (!web3.utils.isAddress(newWallet)) {
+                addLog('❌ Endereço inválido', 'error');
+                return;
+            }
+            
+            try {
+                await contract.methods.setDevWallet(newWallet).send({ from: userAccount });
+                addLog(`✅ Dev Wallet atualizada: ${newWallet}`);
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function emergencyWithdraw(token) {
+            try {
+                const tokenAddress = token === 'USDT' ? 
+                    '0x55d398326f99059fF775485246999027B3197955' : 
+                    '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d';
+                
+                await contract.methods.emergencyWithdraw(tokenAddress).send({ from: userAccount });
+                addLog(`✅ ${token} retirado com sucesso`);
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateContractInfo() {
+            if (!contract) return;
+            
+            try {
+                const [usdtPool, usdcPool] = await contract.methods.getPoolBalances().call();
+                const isActive = await contract.methods.isActive().call();
+                
+                elements.poolBalance.textContent = 
+                    `${web3.utils.fromWei(usdtPool)} USDT | ${web3.utils.fromWei(usdcPool)} USDC`;
+                
+                elements.botStatus.textContent = isActive ? '🟢 ATIVO' : '🔴 INATIVO';
+                elements.botStatus.className = isActive ? 'success' : 'error';
+                
+            } catch (error) {
+                console.error('Erro ao atualizar info:', error);
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logEntry.className = type;
+            elements.logs.appendChild(logEntry);
+            elements.logs.scrollTop = elements.logs.scrollHeight;
+        }
+
+        // Atualizar informações a cada 30 segundos
+        setInterval(updateContractInfo, 30000);
     </script>
 </body>
 </html>
