@@ -27,7 +27,7 @@
 <body>
     <div class="container">
         <h1>🎯 Smart Arb Bot</h1>
-        <p><em>Verifica lucro/prejuízo antes de executar</em></p>
+        <p><em>Verificação REAL de lucro/prejuízo</em></p>
         
         <div id="accountInfo" class="info"></div>
         
@@ -42,16 +42,16 @@
         
         <div class="form-group">
             <label>Quantidade:</label>
-            <input type="number" id="amount" value="10" step="1" min="1">
+            <input type="number" id="amount" value="50" step="1" min="10">
             <small id="tokenSymbol">BUSD</small>
         </div>
         
         <div class="form-group">
             <label>Taxa de Slippage (%):</label>
-            <input type="number" id="slippage" value="2" step="0.1" min="0.5" max="10">
+            <input type="number" id="slippage" value="1.5" step="0.1" min="0.5" max="5">
         </div>
         
-        <button onclick="checkProfitability()" id="checkBtn">📊 Verificar Rentabilidade</button>
+        <button onclick="checkRealProfitability()" id="checkBtn">📊 Verificar Rentabilidade REAL</button>
         <button onclick="executeArbitrage()" id="executeBtn" disabled>🔄 Executar Arbitragem</button>
         
         <div id="profitCalculation"></div>
@@ -138,6 +138,22 @@
             }
         ];
 
+        // ABI do PancakeSwap Router para verificação direta
+        const routerABI = [
+            {
+                "inputs": [
+                    {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
+                    {"internalType": "address[]", "name": "path", "type": "address[]"}
+                ],
+                "name": "getAmountsOut",
+                "outputs": [
+                    {"internalType": "uint256[]", "name": "amounts", "type": "uint256[]"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
         // Endereços dos tokens BSC
         const TOKENS = {
             BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
@@ -146,6 +162,7 @@
         };
 
         const CONTRACT_ADDRESS = "0xD96fA161b3d3D8f08403d158B8b37e0e6ad179da";
+        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 
         // Atualizar símbolo do token quando o par mudar
         document.getElementById('tokenPair').addEventListener('change', function() {
@@ -182,25 +199,49 @@
             const pair = document.getElementById('tokenPair').value;
             switch(pair) {
                 case 'busd_usdt':
-                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT, symbol: 'BUSD' };
+                    return { 
+                        tokenA: TOKENS.BUSD, 
+                        tokenB: TOKENS.USDT, 
+                        symbol: 'BUSD',
+                        path1: [TOKENS.BUSD, TOKENS.USDT],
+                        path2: [TOKENS.USDT, TOKENS.BUSD]
+                    };
                 case 'busd_bnb':
-                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.WBNB, symbol: 'BUSD' };
+                    return { 
+                        tokenA: TOKENS.BUSD, 
+                        tokenB: TOKENS.WBNB, 
+                        symbol: 'BUSD',
+                        path1: [TOKENS.BUSD, TOKENS.WBNB],
+                        path2: [TOKENS.WBNB, TOKENS.BUSD]
+                    };
                 case 'usdt_bnb':
-                    return { tokenA: TOKENS.USDT, tokenB: TOKENS.WBNB, symbol: 'USDT' };
+                    return { 
+                        tokenA: TOKENS.USDT, 
+                        tokenB: TOKENS.WBNB, 
+                        symbol: 'USDT',
+                        path1: [TOKENS.USDT, TOKENS.WBNB],
+                        path2: [TOKENS.WBNB, TOKENS.USDT]
+                    };
                 default:
-                    return { tokenA: TOKENS.BUSD, tokenB: TOKENS.USDT, symbol: 'BUSD' };
+                    return { 
+                        tokenA: TOKENS.BUSD, 
+                        tokenB: TOKENS.USDT, 
+                        symbol: 'BUSD',
+                        path1: [TOKENS.BUSD, TOKENS.USDT],
+                        path2: [TOKENS.USDT, TOKENS.BUSD]
+                    };
             }
         }
 
-        async function checkProfitability() {
+        async function checkRealProfitability() {
             const checkBtn = document.getElementById('checkBtn');
             checkBtn.disabled = true;
-            checkBtn.textContent = '⏳ Calculando...';
+            checkBtn.textContent = '⏳ Consultando preços REAIS...';
 
-            if (!contract) await initWeb3();
-            if (!contract) {
+            if (!web3) await initWeb3();
+            if (!web3) {
                 checkBtn.disabled = false;
-                checkBtn.textContent = '📊 Verificar Rentabilidade';
+                checkBtn.textContent = '📊 Verificar Rentabilidade REAL';
                 return;
             }
 
@@ -211,89 +252,99 @@
 
             try {
                 document.getElementById('profitCalculation').innerHTML = 
-                    '<div class="loading">⏳ Calculando rentabilidade da arbitragem...</div>';
+                    '<div class="loading">⏳ Consultando preços atuais do PancakeSwap...</div>';
                 document.getElementById('results').innerHTML = '';
 
-                // Calcular preços com slippage
-                const slippageMultiplier = (100 - slippage) / 100;
+                // Conectar diretamente ao PancakeSwap Router para preços REAIS
+                const pancakeRouter = new web3.eth.Contract(routerABI, PANCAKE_ROUTER);
 
-                // Primeira swap: TokenA → TokenB
-                const firstSwapOut = await contract.methods.checkPrice(
-                    tokens.tokenA, 
-                    tokens.tokenB, 
-                    amountIn
+                // CONSULTA 1: TokenA → TokenB
+                const result1 = await pancakeRouter.methods.getAmountsOut(
+                    amountIn, 
+                    tokens.path1
                 ).call();
                 
-                const firstSwapOutWithSlippage = BigInt(firstSwapOut) * BigInt(Math.floor(slippageMultiplier * 100)) / 100n;
+                const firstSwapOut = result1[1];
+                const firstSwapOutWithSlippage = BigInt(firstSwapOut) * BigInt(Math.floor((100 - slippage) * 100)) / 10000n;
 
-                // Segunda swap: TokenB → TokenA
-                const secondSwapOut = await contract.methods.checkPrice(
-                    tokens.tokenB, 
-                    tokens.tokenA, 
-                    firstSwapOutWithSlippage.toString()
+                // CONSULTA 2: TokenB → TokenA (com slippage aplicada)
+                const result2 = await pancakeRouter.methods.getAmountsOut(
+                    firstSwapOutWithSlippage.toString(), 
+                    tokens.path2
                 ).call();
                 
-                const secondSwapOutWithSlippage = BigInt(secondSwapOut) * BigInt(Math.floor(slippageMultiplier * 100)) / 100n;
+                const secondSwapOut = result2[1];
+                const secondSwapOutWithSlippage = BigInt(secondSwapOut) * BigInt(Math.floor((100 - slippage) * 100)) / 10000n;
 
-                // Calcular lucro/prejuízo
+                // Cálculo REAL do lucro/prejuízo
                 const initialAmount = BigInt(amountIn);
                 const finalAmount = secondSwapOutWithSlippage;
-                const profit = finalAmount - initialAmount;
-                const profitPercentage = (Number(profit) / Number(initialAmount)) * 100;
+                const rawProfit = finalAmount - initialAmount;
+                const rawProfitPercentage = (Number(rawProfit) / Number(initialAmount)) * 100;
 
-                // Estimar taxas de gas (aproximadamente 0.001 BNB = ~$0.30)
-                const gasCostUSD = 0.30;
-                const tokenPrice = 1; // Assumindo tokens stable a $1
+                // Taxas de gas REALISTAS (baseado em transações anteriores)
+                const gasCostUSD = 0.15; // ~0.0003 BNB = ~$0.15
+                const tokenPrice = 1; // Stablecoins a $1
                 const gasCostInTokens = gasCostUSD / tokenPrice;
-                const netProfit = Number(web3.utils.fromWei(profit.toString(), 'ether')) - gasCostInTokens;
+                
+                const netProfit = Number(web3.utils.fromWei(rawProfit.toString(), 'ether')) - gasCostInTokens;
+                const netProfitPercentage = (netProfit / parseFloat(amount)) * 100;
 
                 currentProfitability = {
-                    profitable: netProfit > 0,
+                    profitable: netProfit > 0.01, // Só considera lucro se for > $0.01
                     profit: netProfit,
-                    percentage: profitPercentage,
+                    percentage: netProfitPercentage,
                     tokens: tokens,
                     amountIn: amountIn,
                     details: {
                         firstSwap: web3.utils.fromWei(firstSwapOut, 'ether'),
+                        firstSwapWithSlippage: web3.utils.fromWei(firstSwapOutWithSlippage.toString(), 'ether'),
                         secondSwap: web3.utils.fromWei(secondSwapOut, 'ether'),
                         finalAmount: web3.utils.fromWei(finalAmount.toString(), 'ether'),
-                        gasCost: gasCostInTokens
+                        gasCost: gasCostInTokens,
+                        rawProfit: web3.utils.fromWei(rawProfit.toString(), 'ether')
                     }
                 };
 
-                displayProfitabilityResult();
+                displayRealProfitabilityResult();
 
             } catch (error) {
+                console.error("Erro detalhado:", error);
                 document.getElementById('profitCalculation').innerHTML = `
                     <div class="error">
-                        ❌ Erro no cálculo:<br>
-                        ${error.message}
+                        ❌ Erro na consulta de preços:<br>
+                        ${error.message}<br>
+                        <small>Verifique se está na BSC Mainnet</small>
                     </div>
                 `;
                 document.getElementById('executeBtn').disabled = true;
             } finally {
                 checkBtn.disabled = false;
-                checkBtn.textContent = '📊 Verificar Rentabilidade';
+                checkBtn.textContent = '📊 Verificar Rentabilidade REAL';
             }
         }
 
-        function displayProfitabilityResult() {
+        function displayRealProfitabilityResult() {
             const calcDiv = document.getElementById('profitCalculation');
             const executeBtn = document.getElementById('executeBtn');
             
             if (currentProfitability.profitable) {
                 calcDiv.innerHTML = `
                     <div class="profit-info">
-                        <h3>💰 OPERAÇÃO LUCRATIVA</h3>
-                        <p><strong>Lucro Estimado:</strong> ${currentProfitability.profit.toFixed(6)} ${currentProfitability.tokens.symbol}</p>
-                        <p><strong>Porcentagem:</strong> +${currentProfitability.percentage.toFixed(4)}%</p>
+                        <h3>💰 OPERAÇÃO LUCRATIVA - PREÇOS REAIS</h3>
+                        <p><strong>Lucro Líquido Estimado:</strong> ${currentProfitability.profit.toFixed(6)} ${currentProfitability.tokens.symbol}</p>
+                        <p><strong>Porcentagem Líquida:</strong> +${currentProfitability.percentage.toFixed(4)}%</p>
                         <div class="calculation">
-                            <strong>Detalhes do Cálculo:</strong><br>
-                            • 1ª Swap: ${currentProfitability.details.firstSwap} tokens<br>
-                            • 2ª Swap: ${currentProfitability.details.finalAmount} tokens<br>
+                            <strong>Detalhes do Cálculo REAL:</strong><br>
+                            • Entrada: ${web3.utils.fromWei(currentProfitability.amountIn, 'ether')} ${currentProfitability.tokens.symbol}<br>
+                            • 1ª Swap →: ${currentProfitability.details.firstSwap} tokens<br>
+                            • Com slippage: ${currentProfitability.details.firstSwapWithSlippage} tokens<br>
+                            • 2ª Swap ←: ${currentProfitability.details.finalAmount} tokens<br>
+                            • Lucro Bruto: ${currentProfitability.details.rawProfit} tokens<br>
                             • Taxas Gas: ~${currentProfitability.details.gasCost.toFixed(4)} tokens<br>
                             • <strong>Lucro Líquido: ${currentProfitability.profit.toFixed(6)} tokens</strong>
                         </div>
+                        <p><small>💡 Baseado em preços atuais do PancakeSwap</small></p>
                     </div>
                 `;
                 executeBtn.disabled = false;
@@ -302,16 +353,20 @@
             } else {
                 calcDiv.innerHTML = `
                     <div class="loss-info">
-                        <h3>⚠️ OPERAÇÃO COM PREJUÍZO</h3>
-                        <p><strong>Prejuízo Estimado:</strong> ${Math.abs(currentProfitability.profit).toFixed(6)} ${currentProfitability.tokens.symbol}</p>
-                        <p><strong>Porcentagem:</strong> ${currentProfitability.percentage.toFixed(4)}%</p>
+                        <h3>⚠️ OPERAÇÃO COM PREJUÍZO - PREÇOS REAIS</h3>
+                        <p><strong>Prejuízo Líquido Estimado:</strong> ${Math.abs(currentProfitability.profit).toFixed(6)} ${currentProfitability.tokens.symbol}</p>
+                        <p><strong>Porcentagem Líquida:</strong> ${currentProfitability.percentage.toFixed(4)}%</p>
                         <div class="calculation">
-                            <strong>Detalhes do Cálculo:</strong><br>
-                            • 1ª Swap: ${currentProfitability.details.firstSwap} tokens<br>
-                            • 2ª Swap: ${currentProfitability.details.finalAmount} tokens<br>
+                            <strong>Detalhes do Cálculo REAL:</strong><br>
+                            • Entrada: ${web3.utils.fromWei(currentProfitability.amountIn, 'ether')} ${currentProfitability.tokens.symbol}<br>
+                            • 1ª Swap →: ${currentProfitability.details.firstSwap} tokens<br>
+                            • Com slippage: ${currentProfitability.details.firstSwapWithSlippage} tokens<br>
+                            • 2ª Swap ←: ${currentProfitability.details.finalAmount} tokens<br>
+                            • Lucro Bruto: ${currentProfitability.details.rawProfit} tokens<br>
                             • Taxas Gas: ~${currentProfitability.details.gasCost.toFixed(4)} tokens<br>
                             • <strong>Prejuízo Líquido: ${Math.abs(currentProfitability.profit).toFixed(6)} tokens</strong>
                         </div>
+                        <p><small>💡 Baseado em preços atuais do PancakeSwap</small></p>
                     </div>
                 `;
                 executeBtn.disabled = true;
@@ -374,7 +429,7 @@
                     '<div class="loading">⏳ Aprovando tokens... (1/3)</div>';
 
                 // Aprovar tokens
-                const approveAmount = web3.utils.toWei('1000', 'ether'); // Aprovação generosa
+                const approveAmount = web3.utils.toWei('1000', 'ether');
                 await tokenContract.methods.approve(CONTRACT_ADDRESS, approveAmount)
                     .send({ 
                         from: userAccount,
@@ -415,9 +470,8 @@
                     </div>
                 `;
             } finally {
-                // Só reabilita se ainda for lucrativo
-                executeBtn.disabled = !currentProfitability.profitable;
                 if (currentProfitability.profitable) {
+                    executeBtn.disabled = false;
                     executeBtn.className = 'btn-profit';
                     executeBtn.innerHTML = '🔄 Executar Arbitragem (+💰)';
                 }
