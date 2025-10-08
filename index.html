@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Safe Leveraged Trading - BSC</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" integrity="sha384-Yx8ZCj7mFhF3p1E7U01O4YHzbA5NncfkK6bM1vKZYFwnMHTDObi4K7a8qjLJZ8sG" crossorigin="anonymous"></script>
-
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -34,6 +33,7 @@
         .status-connected { color:#2ed573; font-weight:bold; }
         .status-disconnected { color:#ff4757; font-weight:bold; }
         .token-info { display:flex; justify-content:space-between; margin-bottom:10px; }
+        .network-warning { background: #ffa502; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; }
     </style>
 </head>
 <body>
@@ -45,6 +45,10 @@
 
         <div class="warning-banner">
             ⚠️ AVISO: Trading alavancado é de ALTÍSSIMO RISCO. Só opere com valores que pode perder completamente!
+        </div>
+
+        <div id="networkWarning" class="network-warning" style="display: none;">
+            ⚠️ Por favor, mude para a <strong>Binance Smart Chain (BSC) Mainnet</strong> no MetaMask
         </div>
 
         <div class="grid">
@@ -65,6 +69,10 @@
                     <div class="token-info">
                         <span>Saldo BNB:</span>
                         <span id="bnbBalance"></span>
+                    </div>
+                    <div class="token-info">
+                        <span>Rede:</span>
+                        <span id="networkStatus">Verificando...</span>
                     </div>
                 </div>
             </div>
@@ -127,10 +135,10 @@
 
     <script>
         // Configurações
-        const CONTRACT_ADDRESS = "0xDf0C15ECF4193c58B009C05F2bBC9d9b11A02F54"; // Seu contrato implantado
-        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // Router PancakeSwap BSC Mainnet
+        const CONTRACT_ADDRESS = "0xDf0C15ECF4193c58B009C05F2bBC9d9b11A02F54";
+        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 
-        // ABI do Contrato (mantida como no original)
+        // ABI do Contrato (mantida igual)
         const CONTRACT_ABI = [
             {
                 "inputs": [{"internalType": "address", "name": "_router", "type": "address"}],
@@ -289,6 +297,8 @@
             walletInfo: document.getElementById('walletInfo'),
             walletAddress: document.getElementById('walletAddress'),
             bnbBalance: document.getElementById('bnbBalance'),
+            networkStatus: document.getElementById('networkStatus'),
+            networkWarning: document.getElementById('networkWarning'),
             tokenIn: document.getElementById('tokenIn'),
             tokenOut: document.getElementById('tokenOut'),
             amount: document.getElementById('amount'),
@@ -306,153 +316,175 @@
         elements.amount.addEventListener('input', updateLeverageDisplay);
         elements.openPosition.addEventListener('click', openPosition);
 
-        // Função para garantir que o usuário esteja na BSC Mainnet (chainId 56)
-        async function ensureBSCNetwork() {
-            if (!window.ethereum) throw new Error('MetaMask não encontrado');
-            try {
-                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                if (chainId === '0x38') {
-                    // Já está na BSC mainnet
-                    return;
-                }
-                // Tentar trocar para BSC
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x38' }] // 56
-                    });
-                    return;
-                } catch (switchError) {
-                    // Código 4902: a chain não foi encontrada na MetaMask — devemos adicioná-la
-                    if (switchError.code === 4902 || switchError.message && switchError.message.includes('4902')) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [{
-                                    chainId: '0x38',
-                                    chainName: 'Binance Smart Chain Mainnet',
-                                    rpcUrls: ['https://bsc-dataseed.binance.org/'],
-                                    nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                                    blockExplorerUrls: ['https://bscscan.com']
-                                }]
-                            });
-                            return;
-                        } catch (addError) {
-                            throw new Error('Falha ao adicionar BSC na MetaMask: ' + (addError.message || addError));
-                        }
-                    } else {
-                        throw new Error('Usuário recusou mudança de rede ou erro ao trocar rede: ' + (switchError.message || switchError));
-                    }
-                }
-            } catch (err) {
-                throw err;
-            }
-        }
-
-        // Conectar Carteira
+        // Conectar Carteira - VERSÃO SIMPLIFICADA E FUNCIONAL
         async function connectWallet() {
             try {
+                console.log('Iniciando conexão...');
+                
                 if (typeof window.ethereum === 'undefined') {
-                    alert('MetaMask não instalado!');
+                    alert('MetaMask não instalado! Por favor, instale o MetaMask.');
                     return;
                 }
 
-                // Solicita que o usuário troque/adicione a BSC antes de solicitar contas
-                await ensureBSCNetwork();
+                elements.connectWallet.disabled = true;
+                elements.connectWallet.textContent = 'Conectando...';
 
-                provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+                // 1. Primeiro conectar a carteira
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                console.log('Provider criado');
+                
                 // Solicitar contas
-                await provider.send("eth_requestAccounts", []);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                console.log('Contas:', accounts);
+                
+                if (accounts.length === 0) {
+                    throw new Error('Nenhuma conta encontrada');
+                }
+
+                userAddress = accounts[0];
                 signer = provider.getSigner();
-                userAddress = await signer.getAddress();
+                console.log('Signer criado');
 
-                // Inicializar contrato com signer
+                // 2. Verificar a rede
+                const network = await provider.getNetwork();
+                console.log('Rede:', network);
+                
+                if (network.chainId !== 56) {
+                    elements.networkWarning.style.display = 'block';
+                    elements.networkStatus.textContent = 'Rede Incorreta';
+                    elements.networkStatus.style.color = '#ff4757';
+                    
+                    // Oferecer opção de mudar para BSC
+                    const switchNetwork = confirm('Você não está na BSC Mainnet. Deseja mudar para a BSC Mainnet agora?');
+                    if (switchNetwork) {
+                        await switchToBSC();
+                        // Recarregar após mudança de rede
+                        window.location.reload();
+                        return;
+                    }
+                } else {
+                    elements.networkWarning.style.display = 'none';
+                    elements.networkStatus.textContent = 'BSC Mainnet ✓';
+                    elements.networkStatus.style.color = '#2ed573';
+                }
+
+                // 3. Inicializar contrato
                 contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                console.log('Contrato inicializado');
 
-                // Atualizar UI
-                elements.connectionStatus.textContent = 'Conectado (BSC)';
+                // 4. Atualizar UI
+                elements.connectionStatus.textContent = 'Conectado';
                 elements.connectionStatus.className = 'status-connected';
                 elements.walletInfo.style.display = 'block';
                 elements.walletAddress.textContent = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
                 elements.openPosition.disabled = false;
+                elements.connectWallet.textContent = 'Conectado ✓';
 
-                // Carregar dados
+                // 5. Carregar dados
                 await updateBalances();
                 await loadUserPositions();
 
-                // Escutar mudanças de conta / rede
-                if (window.ethereum && !window._listenersSet) {
-                    window.ethereum.on('accountsChanged', handleAccountsChanged);
-                    window.ethereum.on('chainChanged', handleChainChanged);
-                    window._listenersSet = true;
-                }
+                // 6. Configurar listeners
+                setupEventListeners();
+
+                console.log('Conexão concluída com sucesso!');
 
             } catch (error) {
-                console.error('Erro ao conectar carteira:', error);
-                // mensagem amigável
-                alert('Erro ao conectar carteira: ' + (error.message || error));
+                console.error('Erro detalhado:', error);
+                alert('Erro ao conectar: ' + (error.message || 'Verifique o MetaMask'));
+                
+                elements.connectWallet.disabled = false;
+                elements.connectWallet.textContent = 'Conectar MetaMask';
+                elements.connectionStatus.textContent = 'Erro na Conexão';
+                elements.connectionStatus.className = 'status-disconnected';
             }
         }
 
-        // Handlers para accounts/chain changes
-        async function handleAccountsChanged(accounts) {
-            if (!accounts || accounts.length === 0) {
-                // desconectado
-                resetUI();
-                return;
+        // Mudar para BSC
+        async function switchToBSC() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x38' }] // 56 em hexadecimal
+                });
+            } catch (switchError) {
+                // Se a rede não existir, adicionar
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x38',
+                                chainName: 'Binance Smart Chain Mainnet',
+                                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                                nativeCurrency: {
+                                    name: 'BNB',
+                                    symbol: 'BNB',
+                                    decimals: 18
+                                },
+                                blockExplorerUrls: ['https://bscscan.com/']
+                            }]
+                        });
+                    } catch (addError) {
+                        throw new Error('Falha ao adicionar BSC: ' + addError.message);
+                    }
+                } else {
+                    throw switchError;
+                }
             }
-            userAddress = accounts[0];
+        }
+
+        // Configurar listeners de eventos
+        function setupEventListeners() {
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        resetUI();
+                    } else {
+                        userAddress = accounts[0];
+                        updateUI();
+                    }
+                });
+
+                window.ethereum.on('chainChanged', (chainId) => {
+                    if (chainId === '0x38') {
+                        elements.networkWarning.style.display = 'none';
+                        elements.networkStatus.textContent = 'BSC Mainnet ✓';
+                        elements.networkStatus.style.color = '#2ed573';
+                    } else {
+                        elements.networkWarning.style.display = 'block';
+                        elements.networkStatus.textContent = 'Rede Incorreta';
+                        elements.networkStatus.style.color = '#ff4757';
+                        elements.openPosition.disabled = true;
+                    }
+                });
+            }
+        }
+
+        // Atualizar UI após mudanças
+        async function updateUI() {
             if (userAddress && provider) {
                 signer = provider.getSigner();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
                 elements.walletAddress.textContent = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
                 await updateBalances();
                 await loadUserPositions();
             }
         }
 
-        async function handleChainChanged(chainId) {
-            // Forçar reload simples da UI: se não estiver em BSC, sinalizar e desabilitar ações
-            if (chainId !== '0x38') {
-                elements.connectionStatus.textContent = 'Rede incorreta';
-                elements.connectionStatus.className = 'status-disconnected';
-                elements.openPosition.disabled = true;
-                alert('Por favor mude para a Binance Smart Chain (BSC) na MetaMask.');
-            } else {
-                // Reconectar e recarregar dados
-                try {
-                    provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-                    signer = provider.getSigner();
-                    userAddress = await signer.getAddress();
-                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                    elements.connectionStatus.textContent = 'Conectado (BSC)';
-                    elements.connectionStatus.className = 'status-connected';
-                    elements.openPosition.disabled = false;
-                    elements.walletAddress.textContent = `${userAddress.substring(0,6)}...${userAddress.substring(userAddress.length-4)}`;
-                    await updateBalances();
-                    await loadUserPositions();
-                } catch (err) {
-                    console.error('Erro ao reconectar após troca de rede:', err);
-                }
-            }
-        }
-
-        // Reset UI ao desconectar
+        // Reset UI
         function resetUI() {
-            userAddress = null;
-            provider = null;
-            signer = null;
-            contract = null;
             elements.connectionStatus.textContent = 'Desconectado';
             elements.connectionStatus.className = 'status-disconnected';
             elements.walletInfo.style.display = 'none';
-            elements.walletAddress.textContent = '';
-            elements.bnbBalance.textContent = '';
             elements.openPosition.disabled = true;
+            elements.connectWallet.disabled = false;
+            elements.connectWallet.textContent = 'Conectar MetaMask';
             elements.openPositions.innerHTML = '<p>Nenhuma posição aberta</p>';
             elements.positionHistory.innerHTML = '<p>Nenhuma operação realizada</p>';
         }
 
-        // Atualizar display da alavancagem
+        // Resto das funções permanecem iguais...
         function updateLeverageDisplay() {
             const leverage = parseInt(elements.leverage.value);
             const amount = parseFloat(elements.amount.value) || 0;
@@ -460,14 +492,8 @@
             elements.totalValue.textContent = (amount * leverage).toFixed(4);
         }
 
-        // Abrir nova posição
         async function openPosition() {
             try {
-                if (!contract || !signer) {
-                    alert('Carteira não conectada');
-                    return;
-                }
-
                 const tokenIn = elements.tokenIn.value;
                 const tokenOut = elements.tokenOut.value;
                 const amount = elements.amount.value;
@@ -483,13 +509,10 @@
                 }
 
                 elements.openPosition.disabled = true;
-                const previousText = elements.openPosition.textContent;
                 elements.openPosition.textContent = 'Abrindo Posição...';
 
-                // Calcular deadline (10 minutos)
                 const deadline = Math.floor(Date.now() / 1000) + 600;
 
-                // Observação: parseEther assume 18 decimais; manter como estava no original
                 const tx = await contract.openLeveragedPosition(
                     tokenIn,
                     tokenOut,
@@ -498,14 +521,16 @@
                     deadline
                 );
 
+                elements.openPosition.textContent = 'Confirmando...';
                 await tx.wait();
+                
                 alert('Posição aberta com sucesso!');
                 await loadUserPositions();
                 await updateBalances();
 
             } catch (error) {
                 console.error('Erro ao abrir posição:', error);
-                const message = (error && (error.data && error.data.message)) || (error && error.message) || String(error);
+                const message = error.message || String(error);
                 if (message.includes("Trade would be unprofitable")) {
                     alert('Operação cancelada: Prejuízo detectado!');
                 } else if (message.toLowerCase().includes("user rejected")) {
@@ -519,10 +544,8 @@
             }
         }
 
-        // Fechar posição
         async function closePosition(positionId) {
             try {
-                if (!contract) { alert('Contrato não inicializado'); return; }
                 const tx = await contract.closePosition(positionId);
                 await tx.wait();
                 alert('Posição fechada com sucesso!');
@@ -530,20 +553,17 @@
                 await updateBalances();
             } catch (error) {
                 console.error('Erro ao fechar posição:', error);
-                alert('Erro ao fechar posição: ' + ((error && error.message) || error));
+                alert('Erro ao fechar posição: ' + error.message);
             }
         }
-        // Tornar closePosition acessível como onclick inline (já usado no HTML dinâmico)
         window.closePosition = closePosition;
 
-        // Carregar posições do usuário
         async function loadUserPositions() {
             if (!contract || !userAddress) return;
 
             try {
-                const positionCountBN = await contract.getUserPositionCount(userAddress);
-                // positionCount pode ser BigNumber
-                const positionCount = positionCountBN.toNumber ? positionCountBN.toNumber() : parseInt(positionCountBN);
+                const positionCount = await contract.getUserPositionCount(userAddress);
+                const count = positionCount.toNumber ? positionCount.toNumber() : parseInt(positionCount);
 
                 elements.openPositions.innerHTML = '';
                 elements.positionHistory.innerHTML = '';
@@ -551,9 +571,8 @@
                 let hasOpenPositions = false;
                 let hasHistory = false;
 
-                for (let i = 0; i < positionCount; i++) {
+                for (let i = 0; i < count; i++) {
                     const position = await contract.getPosition(userAddress, i);
-                    // posição pode vir como array-like; normalizar
                     const posObj = {
                         tokenIn: position.tokenIn || position[1],
                         tokenOut: position.tokenOut || position[2],
@@ -581,21 +600,14 @@
             }
         }
 
-        // Criar elemento de posição
         function createPositionElement(id, position) {
             const div = document.createElement('div');
             div.className = `position-card ${position.isOpen ? '' : 'position-loss'}`;
 
             const tokenInName = getTokenName(position.tokenIn);
             const tokenOutName = getTokenName(position.tokenOut);
-            let amount;
-            try {
-                amount = ethers.utils.formatEther(position.amountIn);
-            } catch (e) {
-                // fallback se não for BigNumber padrão
-                amount = position.amountIn.toString ? position.amountIn.toString() : String(position.amountIn);
-            }
-            const timestamp = position.timestamp && Number(position.timestamp) ? new Date(Number(position.timestamp) * 1000).toLocaleString() : '—';
+            const amount = ethers.utils.formatEther(position.amountIn);
+            const timestamp = new Date(Number(position.timestamp) * 1000).toLocaleString();
 
             div.innerHTML = `
                 <div class="token-info">
@@ -622,12 +634,10 @@
             return div;
         }
 
-        // Atualizar saldos
         async function updateBalances() {
             if (!provider || !userAddress) return;
             try {
                 const balance = await provider.getBalance(userAddress);
-                // mostrar até 6 caracteres significativos
                 const balanceEth = parseFloat(ethers.utils.formatEther(balance));
                 let display = '';
                 if (balanceEth >= 1) display = balanceEth.toFixed(4) + ' BNB';
@@ -639,7 +649,6 @@
             }
         }
 
-        // Helper para nome do token
         function getTokenName(address) {
             if (!address) return 'Unknown';
             for (const [name, addr] of Object.entries(TOKENS)) {
@@ -647,8 +656,6 @@
                     return name;
                 }
             }
-            // se for WBNB (endereço comum)
-            if (address.toLowerCase() === TOKENS.BNB.toLowerCase()) return 'BNB';
             return address.substring(0,6) + '...' + address.substring(address.length-4);
         }
 
