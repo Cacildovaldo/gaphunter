@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Liquidity Gap Hunter</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .result { background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Liquidity Gap Hunter</h1>
+        
+        <div class="form-group">
+            <label>Contract Address:</label>
+            <input type="text" id="contractAddress" placeholder="0x...">
+        </div>
+        
+        <div class="form-group">
+            <label>Token A (Address):</label>
+            <input type="text" id="tokenA" placeholder="0x...">
+        </div>
+        
+        <div class="form-group">
+            <label>Token B (Address):</label>
+            <input type="text" id="tokenB" placeholder="0x...">
+        </div>
+        
+        <div class="form-group">
+            <label>Amount to Trade:</label>
+            <input type="number" id="amount" placeholder="1.0" step="0.1">
+        </div>
+        
+        <div class="form-group">
+            <label>Minimum Profit:</label>
+            <input type="number" id="minProfit" placeholder="0.01" step="0.001">
+        </div>
+        
+        <button onclick="checkOpportunity()">🔍 Check Opportunity</button>
+        <button onclick="executeArbitrage()">⚡ Execute Arbitrage</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let web3;
+        let contract;
+        let userAccount;
+
+        // ABI do contrato
+        const contractABI = [
+    {
+        "inputs": [
+            {"internalType": "address", "name": "_pancakeRouter", "type": "address"},
+            {"internalType": "address", "name": "_apeswapRouter", "type": "address"}
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {"indexed": false, "internalType": "address", "name": "tokenIn", "type": "address"},
+            {"indexed": false, "internalType": "address", "name": "tokenOut", "type": "address"},
+            {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
+            {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+        ],
+        "name": "ArbitrageExecuted",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "apeswapRouter",
+        "outputs": [{"internalType": "contract IUniswapV2Router", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "tokenA", "type": "address"},
+            {"internalType": "address", "name": "tokenB", "type": "address"},
+            {"internalType": "uint256", "name": "amountIn", "type": "uint256"}
+        ],
+        "name": "checkArbitrage",
+        "outputs": [
+            {"internalType": "bool", "name": "opportunity", "type": "bool"},
+            {"internalType": "uint256", "name": "expectedProfit", "type": "uint256"},
+            {"internalType": "address", "name": "buyRouter", "type": "address"},
+            {"internalType": "address", "name": "sellRouter", "type": "address"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "tokenA", "type": "address"},
+            {"internalType": "address", "name": "tokenB", "type": "address"},
+            {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
+            {"internalType": "uint256", "name": "minProfit", "type": "uint256"}
+        ],
+        "name": "executeArbitrage",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "pancakeRouter",
+        "outputs": [{"internalType": "contract IUniswapV2Router", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawETH",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
+        "name": "withdrawToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+];
+
+        // Endereços dos routers (BSC)
+        const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
+        const APESWAP_ROUTER = "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7";
+
+        async function initWeb3() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await web3.eth.getAccounts();
+                    userAccount = accounts[0];
+                    console.log("Connected:", userAccount);
+                } catch (error) {
+                    console.error("User denied account access");
+                }
+            } else {
+                alert("Please install MetaMask!");
+            }
+        }
+
+        function getContract() {
+            const contractAddress = document.getElementById('contractAddress').value;
+            if (!contractAddress) {
+                alert("Please enter contract address");
+                return null;
+            }
+            return new web3.eth.Contract(contractABI, contractAddress);
+        }
+
+        async function checkOpportunity() {
+            await initWeb3();
+            contract = getContract();
+            if (!contract) return;
+
+            const tokenA = document.getElementById('tokenA').value;
+            const tokenB = document.getElementById('tokenB').value;
+            const amount = document.getElementById('amount').value;
+
+            const amountIn = web3.utils.toWei(amount, 'ether');
+
+            try {
+                const result = await contract.methods.checkArbitrage(
+                    tokenA, tokenB, amountIn
+                ).call();
+
+                const resultsDiv = document.getElementById('results');
+                if (result.opportunity) {
+                    const profit = web3.utils.fromWei(result.expectedProfit, 'ether');
+                    resultsDiv.innerHTML = `
+                        <div class="result">
+                            <h3>💰 Opportunity Found!</h3>
+                            <p><strong>Expected Profit:</strong> ${profit} tokens</p>
+                            <p><strong>Buy From:</strong> ${result.buyRouter}</p>
+                            <p><strong>Sell To:</strong> ${result.sellRouter}</p>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            ❌ No arbitrage opportunity found
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function executeArbitrage() {
+            await initWeb3();
+            contract = getContract();
+            if (!contract) return;
+
+            const tokenA = document.getElementById('tokenA').value;
+            const tokenB = document.getElementById('tokenB').value;
+            const amount = document.getElementById('amount').value;
+            const minProfit = document.getElementById('minProfit').value;
+
+            const amountIn = web3.utils.toWei(amount, 'ether');
+            const minProfitWei = web3.utils.toWei(minProfit, 'ether');
+
+            try {
+                // Approve token spending first
+                const tokenContract = new web3.eth.Contract([
+                    {
+                        "constant": false,
+                        "inputs": [
+                            {"name":"spender","type":"address"},
+                            {"name":"amount","type":"uint256"}
+                        ],
+                        "name":"approve",
+                        "outputs": [{"name":"","type":"bool"}],
+                        "type":"function"
+                    }
+                ], tokenA);
+
+                await tokenContract.methods.approve(contract._address, amountIn)
+                    .send({ from: userAccount });
+
+                // Execute arbitrage
+                const result = await contract.methods.executeArbitrage(
+                    tokenA, tokenB, amountIn, minProfitWei
+                ).send({ from: userAccount, gas: 500000 });
+
+                document.getElementById('results').innerHTML = `
+                    <div class="result">
+                        ✅ Arbitrage executed successfully!
+                        <p>Transaction: ${result.transactionHash}</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-initialize
+        window.addEventListener('load', initWeb3);
+    </script>
+</body>
+</html>
