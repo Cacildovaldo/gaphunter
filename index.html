@@ -4,7 +4,6 @@
     <title>FrontRun Bot - BSC</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bignumber.js@9.1.0/bignumber.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: #fff; }
         .container { max-width: 800px; margin: 0 auto; }
@@ -39,7 +38,7 @@
             <div id="contractStatus">
                 <p>Pool Artificial: <span id="poolRate">1 USDT = 0.001 USDC</span></p>
                 <p>Saldo Pool: <span id="poolBalance">Carregando...</span></p>
-                <p>Status: <span id="botStatus">Carregando...</span></p>
+                <p>Preço Mercado: <span id="marketPrice">Carregando...</span></p>
                 <p>Saldo Contrato: <span id="contractBalances">Carregando...</span></p>
             </div>
         </div>
@@ -57,33 +56,26 @@
                 <button id="approveUSDC">Aprovar USDC</button>
                 <button id="checkBalances">Verificar Saldos</button>
             </div>
-            <div class="small">
-                💡 Aprove primeiro os tokens antes de adicionar liquidez
-            </div>
         </div>
 
         <!-- Execução do FrontRun -->
         <div class="card">
             <h3>⚡ Executar FrontRun</h3>
             <div>
-                <input type="number" id="frontRunAmount" placeholder="Quantidade USDT" step="0.001" min="0.1" value="1">
-                <button id="checkOpportunity">Verificar Oportunidade</button>
+                <input type="number" id="frontRunAmount" placeholder="Quantidade USDT" step="0.001" min="0.001" value="1">
                 <button id="executeFrontRun">Executar FrontRun</button>
             </div>
-            <div id="opportunityResult" style="margin-top: 10px;"></div>
+            <div class="small">
+                💡 Compra no pool artificial a 0.001 USDC e vende no mercado a ~1 USDC
+            </div>
         </div>
 
         <!-- Configurações -->
         <div class="card">
             <h3>⚙️ Configurações</h3>
             <div>
-                <button id="toggleActive">Ativar/Desativar Bot</button>
                 <button id="withdrawUSDT">Retirar USDT</button>
                 <button id="withdrawUSDC">Retirar USDC</button>
-            </div>
-            <div style="margin-top: 10px;">
-                <input type="text" id="newDevWallet" placeholder="Nova Dev Wallet" style="width: 300px;">
-                <button id="updateDevWallet">Atualizar Dev Wallet</button>
             </div>
         </div>
 
@@ -96,7 +88,7 @@
     </div>
 
     <script>
-        // ABI Completa do Contrato
+        // ABI do Novo Contrato Simplificado
         const contractABI = [
             {
                 "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
@@ -120,12 +112,6 @@
                     {"indexed": false, "internalType": "uint256", "name": "usdcAdded", "type": "uint256"}
                 ],
                 "name": "LiquidityUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [{"indexed": false, "internalType": "address", "name": "newOwner", "type": "address"}],
-                "name": "OwnershipTransferred",
                 "type": "event"
             },
             {
@@ -167,34 +153,8 @@
                 "type": "function"
             },
             {
-                "inputs": [
-                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"}
-                ],
-                "name": "checkArbitrageOpportunity",
-                "outputs": [
-                    {"internalType": "uint256", "name": "expectedProfit", "type": "uint256"},
-                    {"internalType": "bool", "name": "profitable", "type": "bool"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "destroyContract",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
                 "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
                 "name": "emergencyWithdraw",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "emergencyWithdrawETH",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -218,33 +178,19 @@
                 "type": "function"
             },
             {
-                "inputs": [],
-                "name": "getPoolBalances",
-                "outputs": [
-                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"},
-                    {"internalType": "uint256", "name": "usdcBalance", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "isActive",
-                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "minArbitrageAmount",
+                "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+                "name": "getMarketPrice",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
-                "name": "owner",
-                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "name": "getPoolBalances",
+                "outputs": [
+                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdcBalance", "type": "uint256"}
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
@@ -263,36 +209,19 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "bool", "name": "_active", "type": "bool"}],
-                "name": "setActive",
+                "inputs": [{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}],
+                "name": "withdrawTokens",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
-                "name": "setDevWallet",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "uint256", "name": "_minAmount", "type": "uint256"}],
-                "name": "setMinArbitrageAmount",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}],
-                "name": "transferOwnership",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
+                "stateMutability": "payable",
+                "type": "receive"
             }
         ];
 
-        // ABI simplificada para tokens ERC-20
+        // ABI para tokens ERC-20
         const tokenABI = [
             {
                 "constant": false,
@@ -310,23 +239,13 @@
                 "name": "balanceOf",
                 "outputs": [{"name": "", "type": "uint256"}],
                 "type": "function"
-            },
-            {
-                "constant": true,
-                "inputs": [
-                    {"name": "owner", "type": "address"},
-                    {"name": "spender", "type": "address"}
-                ],
-                "name": "allowance",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "type": "function"
             }
         ];
 
         let web3;
         let contract;
         let userAccount;
-        const contractAddress = "0x289FbEd3cCecE405fd386e8CF08a087d083fCE2c";
+        const contractAddress = "0xaa60D11E47502b4E47741B58FD75a42BF3D69d40"; // SEU CONTRATO
 
         // Endereços dos tokens
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
@@ -338,21 +257,17 @@
             walletStatus: document.getElementById('walletStatus'),
             walletBalances: document.getElementById('walletBalances'),
             poolBalance: document.getElementById('poolBalance'),
-            botStatus: document.getElementById('botStatus'),
+            marketPrice: document.getElementById('marketPrice'),
             contractBalances: document.getElementById('contractBalances'),
             addLiquidity: document.getElementById('addLiquidity'),
             approveUSDT: document.getElementById('approveUSDT'),
             approveUSDC: document.getElementById('approveUSDC'),
             checkBalances: document.getElementById('checkBalances'),
             executeFrontRun: document.getElementById('executeFrontRun'),
-            checkOpportunity: document.getElementById('checkOpportunity'),
-            toggleActive: document.getElementById('toggleActive'),
             withdrawUSDT: document.getElementById('withdrawUSDT'),
             withdrawUSDC: document.getElementById('withdrawUSDC'),
-            updateDevWallet: document.getElementById('updateDevWallet'),
             clearLogs: document.getElementById('clearLogs'),
-            logs: document.getElementById('logs'),
-            opportunityResult: document.getElementById('opportunityResult')
+            logs: document.getElementById('logs')
         };
 
         // Inicialização
@@ -362,11 +277,8 @@
         elements.approveUSDC.onclick = () => approveToken('USDC', USDC_ADDRESS);
         elements.checkBalances.onclick = updateAllBalances;
         elements.executeFrontRun.onclick = executeFrontRun;
-        elements.checkOpportunity.onclick = checkOpportunity;
-        elements.toggleActive.onclick = toggleActive;
         elements.withdrawUSDT.onclick = () => emergencyWithdraw('USDT');
         elements.withdrawUSDC.onclick = () => emergencyWithdraw('USDC');
-        elements.updateDevWallet.onclick = updateDevWallet;
         elements.clearLogs.onclick = () => elements.logs.innerHTML = '';
 
         // Função para converter números decimais para wei
@@ -436,9 +348,6 @@
                 
             } catch (error) {
                 addLog(`❌ Erro: ${error.message}`, 'error');
-                if (error.message.includes('allowance')) {
-                    addLog('💡 Você precisa aprovar os tokens primeiro!', 'warning');
-                }
             }
         }
 
@@ -456,76 +365,17 @@
                 
                 const result = await contract.methods.executeFrontRun(amountWei).send({ from: userAccount });
                 
-                // Verificar se o evento foi emitido
                 if (result.events.FrontRunExecuted) {
                     const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
                     addLog(`🎉 FrontRun executado! Lucro: ${profit} USDC`, 'success');
                 } else {
-                    addLog('⚠️ FrontRun executado, mas sem lucro', 'warning');
+                    addLog('✅ FrontRun executado!', 'success');
                 }
                 
                 await updateAllBalances();
                 
             } catch (error) {
                 addLog(`❌ Erro no FrontRun: ${error.message}`, 'error');
-            }
-        }
-
-        async function checkOpportunity() {
-            const amount = document.getElementById('frontRunAmount').value;
-            
-            if (!amount) {
-                elements.opportunityResult.innerHTML = '<span class="error">Informe a quantidade</span>';
-                return;
-            }
-            
-            try {
-                const amountWei = toWei(amount);
-                const [expectedProfit, profitable] = await contract.methods.checkArbitrageOpportunity(amountWei).call();
-                
-                const profit = fromWei(expectedProfit);
-                
-                if (profitable && expectedProfit > 0) {
-                    elements.opportunityResult.innerHTML = 
-                        `<span class="success">💰 Oportunidade encontrada! Lucro esperado: ${profit} USDC</span>`;
-                } else {
-                    elements.opportunityResult.innerHTML = 
-                        `<span class="warning">⚠️ Sem oportunidade no momento</span>`;
-                }
-                
-            } catch (error) {
-                elements.opportunityResult.innerHTML = 
-                    `<span class="error">Erro: ${error.message}</span>`;
-            }
-        }
-
-        async function toggleActive() {
-            try {
-                const currentStatus = await contract.methods.isActive().call();
-                await contract.methods.setActive(!currentStatus).send({ from: userAccount });
-                
-                addLog(`🔧 Bot ${!currentStatus ? 'ativado' : 'desativado'}`);
-                await updateAllBalances();
-                
-            } catch (error) {
-                addLog(`❌ Erro: ${error.message}`, 'error');
-            }
-        }
-
-        async function updateDevWallet() {
-            const newWallet = document.getElementById('newDevWallet').value;
-            
-            if (!web3.utils.isAddress(newWallet)) {
-                addLog('❌ Endereço inválido', 'error');
-                return;
-            }
-            
-            try {
-                await contract.methods.setDevWallet(newWallet).send({ from: userAccount });
-                addLog(`✅ Dev Wallet atualizada: ${newWallet}`);
-                
-            } catch (error) {
-                addLog(`❌ Erro: ${error.message}`, 'error');
             }
         }
 
@@ -547,18 +397,18 @@
             try {
                 // Atualizar pool balances
                 const [usdtPool, usdcPool] = await contract.methods.getPoolBalances().call();
-                const isActive = await contract.methods.isActive().call();
                 
                 elements.poolBalance.textContent = 
                     `${fromWei(usdtPool)} USDT | ${fromWei(usdcPool)} USDC`;
-                
-                elements.botStatus.textContent = isActive ? '🟢 ATIVO' : '🔴 INATIVO';
-                elements.botStatus.className = isActive ? 'success' : 'error';
                 
                 // Atualizar contract balances
                 const [usdtContract, usdcContract, bnbContract] = await contract.methods.getContractBalances().call();
                 elements.contractBalances.textContent = 
                     `${fromWei(usdtContract)} USDT | ${fromWei(usdcContract)} USDC | ${fromWei(bnbContract)} BNB`;
+                
+                // Atualizar preço de mercado
+                const marketPrice = await contract.methods.getMarketPrice(toWei('1')).call();
+                elements.marketPrice.textContent = `1 USDT = ${fromWei(marketPrice)} USDC`;
                 
                 // Atualizar wallet balances
                 await updateWalletBalances();
