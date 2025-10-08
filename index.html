@@ -144,6 +144,12 @@
             justify-content: space-between;
             margin-bottom: 10px;
         }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -175,6 +181,10 @@
                     <div class="token-info">
                         <span>Saldo BNB:</span>
                         <span id="bnbBalance"></span>
+                    </div>
+                    <div class="token-info">
+                        <span>Rede:</span>
+                        <span id="networkInfo"></span>
                     </div>
                 </div>
             </div>
@@ -236,6 +246,11 @@
     </div>
 
     <script>
+        // Verificar se ethers está carregado
+        if (typeof ethers === 'undefined') {
+            alert('Erro: Biblioteca ethers.js não carregada. Verifique sua conexão com a internet.');
+        }
+
         // Configurações
         const CONTRACT_ADDRESS = "0xDf0C15ECF4193c58B009C05F2bBC9d9b11A02F54"; // Seu contrato implantado
         const PANCAKE_ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // Router PancakeSwap BSC Mainnet
@@ -390,6 +405,19 @@
             USDT: "0x55d398326f99059fF775485246999027B3197955"
         };
 
+        // Configuração da rede BSC
+        const BSC_NETWORK = {
+            chainId: '0x38', // 56 em decimal
+            chainName: 'Binance Smart Chain',
+            nativeCurrency: {
+                name: 'BNB',
+                symbol: 'BNB',
+                decimals: 18
+            },
+            rpcUrls: ['https://bsc-dataseed.binance.org/'],
+            blockExplorerUrls: ['https://bscscan.com/']
+        };
+
         let provider, signer, contract, userAddress;
 
         // Elementos DOM
@@ -399,6 +427,7 @@
             walletInfo: document.getElementById('walletInfo'),
             walletAddress: document.getElementById('walletAddress'),
             bnbBalance: document.getElementById('bnbBalance'),
+            networkInfo: document.getElementById('networkInfo'),
             tokenIn: document.getElementById('tokenIn'),
             tokenOut: document.getElementById('tokenOut'),
             amount: document.getElementById('amount'),
@@ -416,15 +445,60 @@
         elements.amount.addEventListener('input', updateLeverageDisplay);
         elements.openPosition.addEventListener('click', openPosition);
 
+        // Verificar e adicionar rede BSC se necessário
+        async function checkAndSwitchNetwork() {
+            try {
+                if (!window.ethereum) return false;
+
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                
+                if (chainId !== BSC_NETWORK.chainId) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: BSC_NETWORK.chainId }],
+                        });
+                        return true;
+                    } catch (switchError) {
+                        // Se a rede não existir na carteira, adicionar
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [BSC_NETWORK],
+                            });
+                            return true;
+                        }
+                        throw switchError;
+                    }
+                }
+                return true;
+            } catch (error) {
+                console.error('Erro ao mudar de rede:', error);
+                return false;
+            }
+        }
+
         // Conectar Carteira
         async function connectWallet() {
             try {
                 if (typeof window.ethereum === 'undefined') {
-                    alert('MetaMask não instalado!');
+                    alert('MetaMask não instalado! Por favor, instale o MetaMask.');
                     return;
                 }
 
+                // Verificar e mudar para BSC
+                const networkSwitched = await checkAndSwitchNetwork();
+                if (!networkSwitched) {
+                    alert('Por favor, mude para a rede Binance Smart Chain no MetaMask.');
+                    return;
+                }
+
+                elements.connectWallet.textContent = 'Conectando...';
+                elements.connectWallet.disabled = true;
+
                 provider = new ethers.providers.Web3Provider(window.ethereum);
+                
+                // Solicitar contas
                 await provider.send("eth_requestAccounts", []);
                 signer = provider.getSigner();
                 userAddress = await signer.getAddress();
@@ -442,10 +516,30 @@
                 // Carregar dados
                 await updateBalances();
                 await loadUserPositions();
+                await updateNetworkInfo();
+
+                elements.connectWallet.textContent = 'Conectado ✓';
+                
+                console.log('Carteira conectada com sucesso!');
 
             } catch (error) {
                 console.error('Erro ao conectar carteira:', error);
-                alert('Erro ao conectar carteira: ' + error.message);
+                alert('Erro ao conectar carteira: ' + (error.message || 'Verifique se o MetaMask está instalado e desbloqueado.'));
+                
+                elements.connectWallet.textContent = 'Conectar MetaMask';
+                elements.connectWallet.disabled = false;
+            }
+        }
+
+        // Atualizar informações da rede
+        async function updateNetworkInfo() {
+            if (!provider) return;
+            
+            try {
+                const network = await provider.getNetwork();
+                elements.networkInfo.textContent = `BSC Mainnet (${network.chainId})`;
+            } catch (error) {
+                elements.networkInfo.textContent = 'Erro ao carregar rede';
             }
         }
 
@@ -491,7 +585,9 @@
                     deadline
                 );
 
+                elements.openPosition.textContent = 'Confirmando...';
                 await tx.wait();
+                
                 alert('Posição aberta com sucesso!');
                 
                 // Recarregar dados
@@ -505,6 +601,8 @@
                     alert('Operação cancelada: Prejuízo detectado!');
                 } else if (error.message.includes("user rejected transaction")) {
                     alert('Transação rejeitada pelo usuário');
+                } else if (error.message.includes("insufficient funds")) {
+                    alert('Saldo insuficiente para a transação');
                 } else {
                     alert('Erro ao abrir posição: ' + error.message);
                 }
@@ -533,9 +631,10 @@
             if (!contract || !userAddress) return;
 
             try {
+                elements.openPositions.innerHTML = '<div class="loading">Carregando...</div>';
+                
                 const positionCount = await contract.getUserPositionCount(userAddress);
                 
-                // Posições abertas
                 elements.openPositions.innerHTML = '';
                 elements.positionHistory.innerHTML = '';
                 
@@ -564,6 +663,7 @@
 
             } catch (error) {
                 console.error('Erro ao carregar posições:', error);
+                elements.openPositions.innerHTML = '<p>Erro ao carregar posições</p>';
             }
         }
 
@@ -609,9 +709,10 @@
 
             try {
                 const balance = await provider.getBalance(userAddress);
-                elements.bnbBalance.textContent = ethers.utils.formatEther(balance).substring(0, 6) + ' BNB';
+                elements.bnbBalance.textContent = ethers.utils.formatEther(balance).substring(0, 8) + ' BNB';
             } catch (error) {
                 console.error('Erro ao atualizar saldo:', error);
+                elements.bnbBalance.textContent = 'Erro';
             }
         }
 
@@ -627,6 +728,23 @@
 
         // Inicialização
         updateLeverageDisplay();
+
+        // Verificar se já está conectado
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const accounts = await provider.listAccounts();
+                    if (accounts.length > 0) {
+                        // Já está conectado, reconectar automaticamente
+                        await connectWallet();
+                    }
+                } catch (error) {
+                    console.log('Nenhuma conexão anterior encontrada');
+                }
+            }
+        });
+
     </script>
 </body>
 </html>
