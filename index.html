@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Front-Run Bot Pro - BSC</title>
+    <title>Balance Consolidator - BSC</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         :root {
-            --primary: #ff6b35;
+            --primary: #3498db;
             --success: #00d26a;
             --danger: #ff0080;
             --warning: #ffb800;
@@ -36,7 +36,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary), #ff8c42);
+            background: linear-gradient(135deg, var(--primary), #42a5f5);
             padding: 30px;
             border-radius: 15px;
             margin-bottom: 20px;
@@ -60,7 +60,7 @@
         
         .card-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
@@ -86,7 +86,7 @@
         }
         
         .btn:hover {
-            background: #e55a2b;
+            background: #2980b9;
             transform: translateY(-2px);
         }
         
@@ -182,12 +182,12 @@
         .log-warning { border-left-color: var(--warning); background: rgba(255,184,0,0.1); }
         .log-info { border-left-color: #2196F3; background: rgba(33,150,243,0.1); }
         
-        .token-list {
+        .wallet-list {
             max-height: 300px;
             overflow-y: auto;
         }
         
-        .token-item {
+        .wallet-item {
             background: var(--lighter);
             padding: 15px;
             margin: 8px 0;
@@ -197,7 +197,7 @@
             align-items: center;
         }
         
-        .monitor-item {
+        .balance-item {
             background: var(--darker);
             padding: 12px;
             margin: 6px 0;
@@ -230,31 +230,31 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🤖 Front-Run Bot Professional - BSC</h1>
-            <p>Sistema avançado de front-running para tokens voláteis</p>
+            <h1>🔄 Balance Consolidator - BSC</h1>
+            <p>Sistema de consolidação automática de saldos de múltiplas carteiras</p>
         </div>
 
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div>Lucro Total</div>
-                <div class="stat-value stat-success" id="totalProfit">0 USDT</div>
-                <div>All Time</div>
+                <div>Saldo Contrato</div>
+                <div class="stat-value stat-success" id="contractBalance">0 USDT</div>
+                <div>Total Consolidado</div>
             </div>
             <div class="stat-card">
-                <div>Taxa de Sucesso</div>
-                <div class="stat-value stat-primary" id="successRate">0%</div>
-                <div>Performance</div>
+                <div>Carteiras Ativas</div>
+                <div class="stat-value stat-primary" id="activeWallets">0/5</div>
+                <div>Autorizadas</div>
             </div>
             <div class="stat-card">
-                <div>Total de Trades</div>
-                <div class="stat-value stat-warning" id="totalTrades">0</div>
-                <div>Execuções</div>
+                <div>Última Consolidação</div>
+                <div class="stat-value stat-warning" id="lastConsolidation">-</div>
+                <div>Timestamp</div>
             </div>
             <div class="stat-card">
-                <div>Saldo USDT</div>
-                <div class="stat-value stat-success" id="usdtBalance">0</div>
-                <div>Disponível</div>
+                <div>Saldo Principal</div>
+                <div class="stat-value stat-success" id="mainBalance">0 BNB</div>
+                <div>Carteira Conectada</div>
             </div>
         </div>
 
@@ -274,60 +274,63 @@
                     </div>
                 </div>
 
-                <!-- Gerenciar Tokens -->
+                <!-- Gerenciar Carteiras -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>💰 Gerenciar Tokens</h3>
+                        <h3>👛 Gerenciar Carteiras</h3>
                     </div>
                     <div class="form-group">
-                        <label>Endereço do Token:</label>
-                        <input type="text" id="tokenAddress" placeholder="0x..." style="font-family: monospace;">
+                        <label>Endereço da Carteira:</label>
+                        <input type="text" id="walletAddress" placeholder="0x..." style="font-family: monospace;">
                     </div>
                     <div class="form-group">
-                        <label>Tamanho do Trade (USDT):</label>
-                        <input type="number" id="tradeSize" value="50" min="10">
+                        <label>Apelido (Opcional):</label>
+                        <input type="text" id="walletNickname" placeholder="Carteira Secundária 1">
                     </div>
-                    <div class="form-group">
-                        <label>Lucro Mínimo (USDT):</label>
-                        <input type="number" id="minProfit" value="2" min="0.5" step="0.5">
-                    </div>
-                    <div class="form-group">
-                        <label>Slippage Máxima (%):</label>
-                        <input type="number" id="maxSlippage" value="3" min="1" max="10">
-                    </div>
-                    <button class="btn btn-success" id="addToken">Adicionar Token</button>
-                    <button class="btn btn-warning" id="analyzeToken">Analisar Token</button>
+                    <button class="btn btn-success" id="addWallet">Autorizar Carteira</button>
+                    <button class="btn btn-warning" id="checkApprovals">Verificar Aprovações</button>
                 </div>
 
-                <!-- Tokens Ativos -->
+                <!-- Carteiras Autorizadas -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>📋 Tokens Ativos</h3>
+                        <h3>📋 Carteiras Autorizadas</h3>
                     </div>
-                    <div class="token-list" id="activeTokens">
-                        <!-- Tokens serão listados aqui -->
+                    <div class="wallet-list" id="authorizedWallets">
+                        <!-- Carteiras serão listadas aqui -->
                     </div>
                 </div>
             </div>
 
             <!-- Coluna Direita -->
             <div>
-                <!-- Controle do Bot -->
+                <!-- Controle de Consolidação -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>🎮 Controle do Bot</h3>
+                        <h3>🔄 Controle de Consolidação</h3>
                     </div>
                     <div class="form-group">
-                        <label>Gas Multiplier:</label>
-                        <input type="number" id="gasMultiplier" value="1.2" min="1.1" max="3" step="0.1">
+                        <label>Carteira para Consolidar:</label>
+                        <select id="consolidateWallet">
+                            <option value="all">TODAS AS CARTEIRAS</option>
+                            <!-- Opções preenchidas via JS -->
+                        </select>
                     </div>
-                    <button class="btn btn-success" id="startBot">Iniciar Bot</button>
-                    <button class="btn btn-danger" id="stopBot" disabled>Parar Bot</button>
-                    <button class="btn btn-warning" id="manualRun">Execução Manual</button>
+                    <div class="form-group">
+                        <label>Token para Consolidar:</label>
+                        <select id="consolidateToken">
+                            <option value="all">TODOS OS STABLECOINS</option>
+                            <option value="USDT">USDT</option>
+                            <option value="BUSD">BUSD</option>
+                            <option value="USDC">USDC</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" id="consolidateBtn">Executar Consolidação</button>
+                    <button class="btn btn-warning" id="approveAllTokens">Aprovar Todos Tokens</button>
                     
                     <div style="margin-top: 15px;">
-                        <label>Status do Bot:</label>
-                        <div id="botStatus" class="status-badge status-inactive">INATIVO</div>
+                        <label>Status:</label>
+                        <div id="consolidationStatus" class="status-badge status-inactive">AGUARDANDO</div>
                     </div>
                 </div>
 
@@ -337,24 +340,31 @@
                         <h3>🏦 Gerenciar Fundos</h3>
                     </div>
                     <div class="form-group">
-                        <label>Quantidade USDT:</label>
-                        <input type="number" id="fundAmount" value="100" min="10">
+                        <label>Token para Retirar:</label>
+                        <select id="withdrawToken">
+                            <option value="USDT">USDT</option>
+                            <option value="BUSD">BUSD</option>
+                            <option value="USDC">USDC</option>
+                        </select>
                     </div>
-                    <button class="btn" id="addFunds">Adicionar USDT</button>
-                    <button class="btn btn-warning" id="withdrawFunds">Retirar USDT</button>
-                    <button class="btn" id="approveUSDT">Aprovar USDT</button>
+                    <div class="form-group">
+                        <label>Quantidade:</label>
+                        <input type="number" id="withdrawAmount" placeholder="Deixe vazio para retirar tudo">
+                    </div>
+                    <button class="btn btn-success" id="withdrawFunds">Retirar para Carteira</button>
+                    <button class="btn" id="refreshBalances">Atualizar Saldos</button>
                 </div>
 
-                <!-- Monitor em Tempo Real -->
+                <!-- Saldos em Tempo Real -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>🔍 Monitor em Tempo Real</h3>
+                        <h3>💰 Saldos em Tempo Real</h3>
                     </div>
-                    <div id="monitorDisplay" style="height: 200px; overflow-y: auto;">
-                        <div class="monitor-item">Aguardando transações...</div>
+                    <div id="balancesDisplay" style="height: 200px; overflow-y: auto;">
+                        <div class="balance-item">Conecte para ver saldos...</div>
                     </div>
                     <div style="margin-top: 10px; font-size: 12px; color: #ccc;">
-                        <span id="monitorStats">Transações detectadas: 0</span>
+                        <span id="balanceStats">Atualizado: -</span>
                     </div>
                 </div>
             </div>
@@ -371,194 +381,493 @@
     </div>
 
     <script>
-        // ABI DO CONTRATO - ATUALIZADA
+        // ABI DO CONTRATO
         const contractABI = [
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
             {
-                "inputs": [
-                    {"internalType": "address", "name": "_token", "type": "address"},
-                    {"internalType": "uint256", "name": "_tradeSizeUSDT", "type": "uint256"},
-                    {"internalType": "uint256", "name": "_minProfitUSDT", "type": "uint256"},
-                    {"internalType": "uint256", "name": "_maxSlippagePercent", "type": "uint256"}
-                ],
-                "name": "addToken",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
             },
             {
-                "inputs": [
-                    {"internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "addUSDT",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalTokens",
+                "type": "uint256"
             },
             {
-                "inputs": [
-                    {"internalType": "address", "name": "token", "type": "address"},
-                    {"internalType": "uint256", "name": "tradeSize", "type": "uint256"}
-                ],
-                "name": "analyzeOpportunity",
-                "outputs": [
-                    {"internalType": "uint256", "name": "expectedProfit", "type": "uint256"},
-                    {"internalType": "uint256", "name": "expectedSlippage", "type": "uint256"},
-                    {"internalType": "bool", "name": "profitable", "type": "bool"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "token", "type": "address"},
-                    {"internalType": "uint256", "name": "gasPrice", "type": "uint256"}
-                ],
-                "name": "executeFrontRun",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getActiveTokens",
-                "outputs": [
-                    {"internalType": "address[]", "name": "", "type": "address[]"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getStats",
-                "outputs": [
-                    {"internalType": "uint256", "name": "totalProfit", "type": "uint256"},
-                    {"internalType": "uint256", "name": "totalTrades", "type": "uint256"},
-                    {"internalType": "uint256", "name": "successRate", "type": "uint256"},
-                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "token", "type": "address"}
-                ],
-                "name": "getTokenConfig",
-                "outputs": [
-                    {"internalType": "uint256", "name": "tradeSizeUSDT", "type": "uint256"},
-                    {"internalType": "uint256", "name": "minProfitUSDT", "type": "uint256"},
-                    {"internalType": "uint256", "name": "maxSlippagePercent", "type": "uint256"},
-                    {"internalType": "bool", "name": "active", "type": "bool"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "_token", "type": "address"}
-                ],
-                "name": "removeToken",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "withdrawUSDT",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "gasUsed", "type": "uint256"}
-                ],
-                "name": "FrontRunExecuted",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "FundsAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "FundsWithdrawn",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "tradeSize", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "minProfit", "type": "uint256"}
-                ],
-                "name": "TokenAdded",
-                "type": "event"
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalValue",
+                "type": "uint256"
             }
-        ];
+        ],
+        "name": "BulkConsolidation",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "fromWallet",
+                "type": "address"
+            }
+        ],
+        "name": "TokensConsolidated",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "nickname",
+                "type": "string"
+            }
+        ],
+        "name": "WalletAuthorized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "wallet",
+                "type": "address"
+            }
+        ],
+        "name": "WalletRemoved",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            },
+            {
+                "internalType": "string",
+                "name": "_nickname",
+                "type": "string"
+            }
+        ],
+        "name": "authorizeWallet",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "BUSD",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "USDC",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "USDT",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "approveContractForTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "approveTokenForWallet",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "authorizedWallets",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "walletAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "string",
+                "name": "nickname",
+                "type": "string"
+            },
+            {
+                "internalType": "bool",
+                "name": "isActive",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lastConsolidation",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "consolidateAllWallets",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            }
+        ],
+        "name": "consolidateStablecoinsFromWallet",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            }
+        ],
+        "name": "consolidateTokensFromWallet",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getAuthorizedWallets",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "walletAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "nickname",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isActive",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "lastConsolidation",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct BalanceConsolidator.AuthorizedWallet[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            }
+        ],
+        "name": "getContractBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getWalletCount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            }
+        ],
+        "name": "getWalletBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_wallet",
+                "type": "address"
+            }
+        ],
+        "name": "removeWallet",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "walletAddresses",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+];
         
         let web3, contract, userAccount;
-        const contractAddress = "0xE6181879b5B845E0001ffE11E3bf076B60270bFC";
-        const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+        const contractAddress = "0x0890eeE190B5cCf483942616C25395aE4f7B302B"; // INSERIR ENDEREÇO DO CONTRATO DEPLOYADO
+        
+        // Endereços dos tokens
+        const TOKENS = {
+            USDT: "0x55d398326f99059fF775485246999027B3197955",
+            BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", 
+            USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+        };
 
-        // Estado do bot
-        let isBotRunning = false;
-        let botInterval;
-        let detectedTransactions = 0;
-        let activeTokensList = [];
+        // Estado da aplicação
+        let authorizedWallets = [];
+        let isConsolidating = false;
 
         // Elementos da UI
         const elements = {
-            // Coneexão
+            // Conexão
             connectWallet: document.getElementById('connectWallet'),
             walletStatus: document.getElementById('walletStatus'),
             walletInfo: document.getElementById('walletInfo'),
             
             // Stats
-            totalProfit: document.getElementById('totalProfit'),
-            successRate: document.getElementById('successRate'),
-            totalTrades: document.getElementById('totalTrades'),
-            usdtBalance: document.getElementById('usdtBalance'),
+            contractBalance: document.getElementById('contractBalance'),
+            activeWallets: document.getElementById('activeWallets'),
+            lastConsolidation: document.getElementById('lastConsolidation'),
+            mainBalance: document.getElementById('mainBalance'),
             
-            // Tokens
-            tokenAddress: document.getElementById('tokenAddress'),
-            tradeSize: document.getElementById('tradeSize'),
-            minProfit: document.getElementById('minProfit'),
-            maxSlippage: document.getElementById('maxSlippage'),
-            addToken: document.getElementById('addToken'),
-            analyzeToken: document.getElementById('analyzeToken'),
-            activeTokens: document.getElementById('activeTokens'),
+            // Carteiras
+            walletAddress: document.getElementById('walletAddress'),
+            walletNickname: document.getElementById('walletNickname'),
+            addWallet: document.getElementById('addWallet'),
+            checkApprovals: document.getElementById('checkApprovals'),
+            authorizedWallets: document.getElementById('authorizedWallets'),
             
-            // Controle
-            gasMultiplier: document.getElementById('gasMultiplier'),
-            startBot: document.getElementById('startBot'),
-            stopBot: document.getElementById('stopBot'),
-            manualRun: document.getElementById('manualRun'),
-            botStatus: document.getElementById('botStatus'),
+            // Consolidação
+            consolidateWallet: document.getElementById('consolidateWallet'),
+            consolidateToken: document.getElementById('consolidateToken'),
+            consolidateBtn: document.getElementById('consolidateBtn'),
+            approveAllTokens: document.getElementById('approveAllTokens'),
+            consolidationStatus: document.getElementById('consolidationStatus'),
             
             // Fundos
-            fundAmount: document.getElementById('fundAmount'),
-            addFunds: document.getElementById('addFunds'),
+            withdrawToken: document.getElementById('withdrawToken'),
+            withdrawAmount: document.getElementById('withdrawAmount'),
             withdrawFunds: document.getElementById('withdrawFunds'),
-            approveUSDT: document.getElementById('approveUSDT'),
+            refreshBalances: document.getElementById('refreshBalances'),
             
-            // Monitor
-            monitorDisplay: document.getElementById('monitorDisplay'),
-            monitorStats: document.getElementById('monitorStats'),
+            // Saldos
+            balancesDisplay: document.getElementById('balancesDisplay'),
+            balanceStats: document.getElementById('balanceStats'),
             
             // Logs
             logs: document.getElementById('logs'),
@@ -569,17 +878,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Event listeners
             elements.connectWallet.addEventListener('click', connectWallet);
-            elements.addToken.addEventListener('click', addToken);
-            elements.analyzeToken.addEventListener('click', analyzeToken);
-            elements.startBot.addEventListener('click', startBot);
-            elements.stopBot.addEventListener('click', stopBot);
-            elements.manualRun.addEventListener('click', executeManual);
-            elements.addFunds.addEventListener('click', addFunds);
+            elements.addWallet.addEventListener('click', addWallet);
+            elements.checkApprovals.addEventListener('click', checkTokenApprovals);
+            elements.consolidateBtn.addEventListener('click', executeConsolidation);
+            elements.approveAllTokens.addEventListener('click', approveAllTokens);
             elements.withdrawFunds.addEventListener('click', withdrawFunds);
-            elements.approveUSDT.addEventListener('click', () => approveToken('USDT', USDT_ADDRESS));
+            elements.refreshBalances.addEventListener('click', updateAllBalances);
             elements.clearLogs.addEventListener('click', () => elements.logs.innerHTML = '');
             
-            addLog('Sistema inicializado. Conecte sua carteira para começar.', 'info');
+            addLog('Sistema de consolidação inicializado. Conecte sua carteira para começar.', 'info');
         });
 
         // Funções de utilidade
@@ -605,7 +912,7 @@
                     
                     addLog('✅ Carteira conectada com sucesso', 'success');
                     await updateAllInfo();
-                    await loadActiveTokens();
+                    await loadAuthorizedWallets();
                     
                 } catch (error) {
                     addLog(`❌ Erro na conexão: ${error.message}`, 'error');
@@ -615,340 +922,285 @@
             }
         }
 
-        async function addToken() {
-            const tokenAddress = elements.tokenAddress.value;
-            const tradeSize = elements.tradeSize.value;
-            const minProfit = elements.minProfit.value;
-            const maxSlippage = elements.maxSlippage.value;
+        async function addWallet() {
+            const walletAddress = elements.walletAddress.value;
+            const nickname = elements.walletNickname.value || `Carteira ${authorizedWallets.length + 1}`;
             
-            if (!web3.utils.isAddress(tokenAddress)) {
-                addLog('❌ Endereço de token inválido', 'error');
+            if (!web3.utils.isAddress(walletAddress)) {
+                addLog('❌ Endereço de carteira inválido', 'error');
                 return;
             }
             
             try {
-                addLog(`💰 Adicionando token ${tokenAddress.substring(0, 10)}...`, 'info');
+                addLog(`👛 Autorizando carteira ${walletAddress.substring(0, 10)}...`, 'info');
                 
-                await contract.methods.addToken(
-                    tokenAddress,
-                    toWei(tradeSize),
-                    toWei(minProfit),
-                    maxSlippage
+                await contract.methods.authorizeWallet(
+                    walletAddress,
+                    nickname
                 ).send({ from: userAccount });
                 
-                addLog('✅ Token adicionado com sucesso!', 'success');
-                await loadActiveTokens();
+                addLog(`✅ Carteira autorizada com sucesso: ${nickname}`, 'success');
                 
-            } catch (error) {
-                addLog(`❌ Erro ao adicionar token: ${error.message}`, 'error');
-            }
-        }
-
-        async function analyzeToken() {
-            const tokenAddress = elements.tokenAddress.value;
-            const tradeSize = elements.tradeSize.value;
-            
-            if (!web3.utils.isAddress(tokenAddress)) {
-                addLog('❌ Endereço de token inválido', 'error');
-                return;
-            }
-            
-            try {
-                addLog(`🔍 Analisando oportunidade para o token...`, 'info');
+                elements.walletAddress.value = '';
+                elements.walletNickname.value = '';
                 
-                const [expectedProfit, expectedSlippage, profitable] = await contract.methods.analyzeOpportunity(
-                    tokenAddress, 
-                    toWei(tradeSize)
-                ).call();
-                
-                const profit = fromWei(expectedProfit);
-                const slippage = expectedSlippage / 100; // Convert to percentage
-                
-                if (profitable) {
-                    addLog(`💰 Oportunidade detectada! Lucro esperado: ${profit} USDT (${slippage.toFixed(2)}%)`, 'success');
-                } else {
-                    addLog('⚠️ Sem oportunidades lucrativas no momento', 'warning');
-                }
-                
-            } catch (error) {
-                addLog(`❌ Erro na análise: ${error.message}`, 'error');
-            }
-        }
-
-        async function startBot() {
-            if (!contract) {
-                addLog('❌ Conecte a carteira primeiro', 'error');
-                return;
-            }
-            
-            isBotRunning = true;
-            elements.startBot.disabled = true;
-            elements.stopBot.disabled = false;
-            elements.botStatus.textContent = 'ATIVO';
-            elements.botStatus.className = 'status-badge status-active';
-            
-            addLog('🤖 Bot iniciado - Monitorando mempool...', 'success');
-            
-            // Simular monitoramento (em produção seria WebSocket real)
-            botInterval = setInterval(simulateMempoolMonitoring, 5000);
-        }
-
-        function stopBot() {
-            isBotRunning = false;
-            elements.startBot.disabled = false;
-            elements.stopBot.disabled = true;
-            elements.botStatus.textContent = 'INATIVO';
-            elements.botStatus.className = 'status-badge status-inactive';
-            
-            if (botInterval) {
-                clearInterval(botInterval);
-            }
-            
-            addLog('⏹️ Bot parado', 'warning');
-        }
-
-        async function executeManual() {
-            if (activeTokensList.length === 0) {
-                addLog('❌ Nenhum token configurado', 'error');
-                return;
-            }
-            
-            const tokenAddress = activeTokensList[0]; // Usa o primeiro token ativo
-            const gasMultiplier = elements.gasMultiplier.value;
-            
-            try {
-                addLog(`⚡ Executando front-run manual...`, 'info');
-                
-                const currentGasPrice = await web3.eth.getGasPrice();
-                const frontRunGasPrice = Math.floor(currentGasPrice * gasMultiplier);
-                
-                const result = await contract.methods.executeFrontRun(
-                    tokenAddress,
-                    frontRunGasPrice
-                ).send({ 
-                    from: userAccount,
-                    gasPrice: frontRunGasPrice
-                });
-                
-                if (result.events.FrontRunExecuted) {
-                    const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
-                    addLog(`✅ Front-run executado! Lucro: ${profit} USDT`, 'success');
-                }
-                
+                await loadAuthorizedWallets();
                 await updateAllInfo();
                 
             } catch (error) {
-                addLog(`❌ Erro no front-run: ${error.message}`, 'error');
+                addLog(`❌ Erro ao autorizar carteira: ${error.message}`, 'error');
             }
         }
 
-        // Simulação de monitoramento (substituir por WebSocket real)
-        async function simulateMempoolMonitoring() {
-            if (!isBotRunning || activeTokensList.length === 0) return;
-            
-            const simulatedTxs = [
-                { 
-                    hash: '0x' + Math.random().toString(16).substr(2, 64), 
-                    token: activeTokensList[0],
-                    value: (Math.random() * 5).toFixed(2) + ' BNB',
-                    type: 'Compra Grande',
-                    opportunity: 'ALTA'
-                }
-            ];
-            
-            detectedTransactions++;
-            elements.monitorStats.textContent = `Transações detectadas: ${detectedTransactions}`;
-            
-            simulatedTxs.forEach(tx => {
-                const txElement = document.createElement('div');
-                txElement.className = 'monitor-item';
-                txElement.innerHTML = `
-                    <strong>${tx.type}</strong> - ${tx.value} - ${tx.opportunity}<br>
-                    <small>Token: ${tx.token.substring(0, 10)}... | Hash: ${tx.hash.substring(0, 16)}...</small>
-                    <button onclick="executeFrontRunForToken('${tx.token}')" style="float: right; padding: 4px 8px; font-size: 10px; background: var(--success); color: white; border: none; border-radius: 4px; cursor: pointer;">Executar</button>
-                `;
-                elements.monitorDisplay.appendChild(txElement);
-            });
-            
-            // Manter apenas últimas transações
-            while (elements.monitorDisplay.children.length > 10) {
-                elements.monitorDisplay.removeChild(elements.monitorDisplay.firstChild);
-            }
-            
-            elements.monitorDisplay.scrollTop = elements.monitorDisplay.scrollHeight;
-        }
-
-        // Função global para execução via monitor
-        window.executeFrontRunForToken = async function(tokenAddress) {
-            const gasMultiplier = elements.gasMultiplier.value;
-            
+        async function loadAuthorizedWallets() {
             try {
-                addLog(`⚡ Executando front-run para token ${tokenAddress.substring(0, 10)}...`, 'info');
+                const wallets = await contract.methods.getAuthorizedWallets().call();
+                authorizedWallets = wallets.filter(w => w.isActive);
                 
-                const currentGasPrice = await web3.eth.getGasPrice();
-                const frontRunGasPrice = Math.floor(currentGasPrice * gasMultiplier);
+                elements.authorizedWallets.innerHTML = '';
+                elements.consolidateWallet.innerHTML = '<option value="all">TODAS AS CARTEIRAS</option>';
                 
-                const result = await contract.methods.executeFrontRun(
-                    tokenAddress,
-                    frontRunGasPrice
-                ).send({ 
-                    from: userAccount,
-                    gasPrice: frontRunGasPrice
-                });
-                
-                if (result.events.FrontRunExecuted) {
-                    const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
-                    addLog(`✅ Front-run executado! Lucro: ${profit} USDT`, 'success');
-                }
-                
-                await updateAllInfo();
-                
-            } catch (error) {
-                addLog(`❌ Erro no front-run: ${error.message}`, 'error');
-            }
-        };
-
-        async function loadActiveTokens() {
-            if (!contract) return;
-            
-            try {
-                const tokens = await contract.methods.getActiveTokens().call();
-                activeTokensList = tokens;
-                
-                elements.activeTokens.innerHTML = '';
-                
-                if (tokens.length === 0) {
-                    elements.activeTokens.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Nenhum token ativo</div>';
-                    return;
-                }
-                
-                for (const tokenAddress of tokens) {
-                    const config = await contract.methods.getTokenConfig(tokenAddress).call();
-                    
-                    const tokenElement = document.createElement('div');
-                    tokenElement.className = 'token-item';
-                    tokenElement.innerHTML = `
+                authorizedWallets.forEach(wallet => {
+                    // Adicionar à lista de carteiras
+                    const walletElement = document.createElement('div');
+                    walletElement.className = 'wallet-item';
+                    walletElement.innerHTML = `
                         <div>
-                            <strong>${tokenAddress.substring(0, 8)}...${tokenAddress.substring(36)}</strong><br>
-                            <small>Trade: ${fromWei(config.tradeSizeUSDT)} USDT | Min: ${fromWei(config.minProfitUSDT)} USDT</small>
+                            <strong>${wallet.nickname}</strong><br>
+                            <small style="font-family: monospace">${wallet.walletAddress}</small>
                         </div>
-                        <button onclick="removeToken('${tokenAddress}')" style="background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>
+                        <div>
+                            <span class="status-badge status-active">ATIVA</span>
+                            <button class="btn btn-danger" onclick="removeWallet('${wallet.walletAddress}')">Remover</button>
+                        </div>
                     `;
-                    elements.activeTokens.appendChild(tokenElement);
-                }
+                    elements.authorizedWallets.appendChild(walletElement);
+                    
+                    // Adicionar ao dropdown de consolidação
+                    const option = document.createElement('option');
+                    option.value = wallet.walletAddress;
+                    option.textContent = `${wallet.nickname} (${wallet.walletAddress.substring(0, 8)}...)`;
+                    elements.consolidateWallet.appendChild(option);
+                });
+                
+                elements.activeWallets.textContent = `${authorizedWallets.length}/5`;
                 
             } catch (error) {
-                console.error('Erro ao carregar tokens:', error);
+                addLog(`❌ Erro ao carregar carteiras: ${error.message}`, 'error');
             }
         }
 
-        window.removeToken = async function(tokenAddress) {
-            try {
-                addLog(`🗑️ Removendo token...`, 'info');
-                await contract.methods.removeToken(tokenAddress).send({ from: userAccount });
-                addLog('✅ Token removido com sucesso!', 'success');
-                await loadActiveTokens();
-            } catch (error) {
-                addLog(`❌ Erro ao remover token: ${error.message}`, 'error');
+        async function executeConsolidation() {
+            if (isConsolidating) {
+                addLog('⚠️ Consolidação já em andamento', 'warning');
+                return;
             }
-        };
-
-        async function addFunds() {
-            const amount = elements.fundAmount.value;
+            
+            const wallet = elements.consolidateWallet.value;
+            const token = elements.consolidateToken.value;
             
             try {
-                addLog(`💰 Adicionando ${amount} USDT...`, 'info');
-                await contract.methods.addUSDT(toWei(amount)).send({ from: userAccount });
-                addLog('✅ USDT adicionado com sucesso!', 'success');
-                await updateAllInfo();
+                isConsolidating = true;
+                elements.consolidationStatus.textContent = 'CONSOLIDANDO...';
+                elements.consolidationStatus.className = 'status-badge status-warning';
+                
+                addLog(`🔄 Iniciando consolidação...`, 'info');
+                
+                let result;
+                if (wallet === 'all') {
+                    addLog('📦 Consolidando TODAS as carteiras...', 'info');
+                    result = await contract.methods.consolidateAllWallets().send({ from: userAccount });
+                } else if (token === 'all') {
+                    addLog(`💰 Consolidando stablecoins da carteira...`, 'info');
+                    result = await contract.methods.consolidateStablecoinsFromWallet(wallet).send({ from: userAccount });
+                } else {
+                    addLog(`🪙 Consolidando ${token} da carteira...`, 'info');
+                    const tokenAddress = TOKENS[token];
+                    result = await contract.methods.consolidateTokensFromWallet(wallet, tokenAddress).send({ from: userAccount });
+                }
+                
+                addLog(`✅ Consolidação concluída com sucesso!`, 'success');
+                elements.consolidationStatus.textContent = 'CONCLUÍDO';
+                elements.consolidationStatus.className = 'status-badge status-success';
+                
+                await updateAllBalances();
+                
             } catch (error) {
-                addLog(`❌ Erro ao adicionar fundos: ${error.message}`, 'error');
+                addLog(`❌ Erro na consolidação: ${error.message}`, 'error');
+                elements.consolidationStatus.textContent = 'ERRO';
+                elements.consolidationStatus.className = 'status-badge status-danger';
+            } finally {
+                isConsolidating = false;
+            }
+        }
+
+        async function checkTokenApprovals() {
+            addLog('🔍 Verificando aprovações de tokens...', 'info');
+            
+            for (const wallet of authorizedWallets) {
+                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
+                    try {
+                        const tokenContract = new web3.eth.Contract([
+                            {
+                                "constant": true,
+                                "inputs": [
+                                    {"name": "_owner", "type": "address"},
+                                    {"name": "_spender", "type": "address"}
+                                ],
+                                "name": "allowance",
+                                "outputs": [{"name": "", "type": "uint256"}],
+                                "type": "function"
+                            }
+                        ], tokenAddress);
+                        
+                        const allowance = await tokenContract.methods.allowance(
+                            wallet.walletAddress,
+                            contractAddress
+                        ).call();
+                        
+                        if (allowance > 0) {
+                            addLog(`✅ ${tokenName} aprovado para ${wallet.nickname}: ${fromWei(allowance)}`, 'success');
+                        } else {
+                            addLog(`❌ ${tokenName} NÃO aprovado para ${wallet.nickname}`, 'warning');
+                        }
+                    } catch (error) {
+                        addLog(`⚠️ Erro ao verificar ${tokenName} para ${wallet.nickname}`, 'warning');
+                    }
+                }
+            }
+        }
+
+        async function approveAllTokens() {
+            addLog('✅ Aprovando todos os tokens...', 'info');
+            
+            for (const wallet of authorizedWallets) {
+                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
+                    try {
+                        const tokenContract = new web3.eth.Contract([
+                            {
+                                "constant": false,
+                                "inputs": [
+                                    {"name": "_spender", "type": "address"},
+                                    {"name": "_value", "type": "uint256"}
+                                ],
+                                "name": "approve",
+                                "outputs": [{"name": "", "type": "bool"}],
+                                "type": "function"
+                            }
+                        ], tokenAddress);
+                        
+                        await tokenContract.methods.approve(
+                            contractAddress,
+                            web3.utils.toWei('1000000', 'ether') // Aprovação alta
+                        ).send({ from: userAccount });
+                        
+                        addLog(`✅ ${tokenName} aprovado para ${wallet.nickname}`, 'success');
+                        
+                    } catch (error) {
+                        addLog(`❌ Erro ao aprovar ${tokenName} para ${wallet.nickname}: ${error.message}`, 'error');
+                    }
+                }
             }
         }
 
         async function withdrawFunds() {
-            const amount = elements.fundAmount.value;
+            const token = elements.withdrawToken.value;
+            const amount = elements.withdrawAmount.value;
+            const tokenAddress = TOKENS[token];
             
             try {
-                addLog(`🏦 Retirando ${amount} USDT...`, 'info');
-                await contract.methods.withdrawUSDT(toWei(amount)).send({ from: userAccount });
-                addLog('✅ USDT retirado com sucesso!', 'success');
-                await updateAllInfo();
+                addLog(`🏦 Retirando ${token}...`, 'info');
+                
+                let tx;
+                if (amount) {
+                    tx = await contract.methods.withdrawFunds(
+                        tokenAddress,
+                        toWei(amount)
+                    ).send({ from: userAccount });
+                } else {
+                    // Retirar tudo
+                    const balance = await contract.methods.getContractBalance(tokenAddress).call();
+                    tx = await contract.methods.withdrawFunds(
+                        tokenAddress,
+                        balance
+                    ).send({ from: userAccount });
+                }
+                
+                addLog(`✅ ${token} retirado com sucesso!`, 'success');
+                elements.withdrawAmount.value = '';
+                
+                await updateAllBalances();
+                
             } catch (error) {
                 addLog(`❌ Erro ao retirar fundos: ${error.message}`, 'error');
             }
         }
 
-        async function approveToken(tokenName, tokenAddress) {
+        async function updateAllBalances() {
             try {
-                const tokenABI = [
-                    {
-                        "constant": false,
-                        "inputs": [
-                            {"name": "spender", "type": "address"},
-                            {"name": "value", "type": "uint256"}
-                        ],
-                        "name": "approve",
-                        "outputs": [{"name": "", "type": "bool"}],
-                        "type": "function"
-                    }
-                ];
+                // Saldo do contrato
+                const usdtBalance = await contract.methods.getContractBalance(TOKENS.USDT).call();
+                elements.contractBalance.textContent = `${fromWei(usdtBalance)} USDT`;
                 
-                const tokenContract = new web3.eth.Contract(tokenABI, tokenAddress);
-                const amount = toWei('1000000'); // 1 milhão
+                // Saldo principal (BNB)
+                const bnbBalance = await web3.eth.getBalance(userAccount);
+                elements.mainBalance.textContent = `${fromWei(bnbBalance)} BNB`;
                 
-                addLog(`🔏 Aprovando ${tokenName}...`, 'info');
-                await tokenContract.methods.approve(contractAddress, amount).send({ from: userAccount });
-                addLog(`✅ ${tokenName} aprovado com sucesso!`, 'success');
+                // Atualizar display de saldos
+                elements.balancesDisplay.innerHTML = '';
+                
+                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
+                    const balance = await contract.methods.getContractBalance(tokenAddress).call();
+                    const balanceElement = document.createElement('div');
+                    balanceElement.className = 'balance-item';
+                    balanceElement.innerHTML = `
+                        <strong>${tokenName}</strong>: ${fromWei(balance)} tokens
+                    `;
+                    elements.balancesDisplay.appendChild(balanceElement);
+                }
+                
+                elements.balanceStats.textContent = `Atualizado: ${new Date().toLocaleTimeString()}`;
                 
             } catch (error) {
-                addLog(`❌ Erro ao aprovar ${tokenName}: ${error.message}`, 'error');
+                addLog(`❌ Erro ao atualizar saldos: ${error.message}`, 'error');
             }
         }
 
         async function updateAllInfo() {
-            if (!contract || !web3) return;
-            
-            try {
-                const [totalProfit, totalTrades, successRate, usdtBalance] = await contract.methods.getStats().call();
-                
-                elements.totalProfit.textContent = `${fromWei(totalProfit)} USDT`;
-                elements.totalTrades.textContent = totalTrades;
-                elements.successRate.textContent = `${(successRate / 100).toFixed(2)}%`;
-                elements.usdtBalance.textContent = `${fromWei(usdtBalance)}`;
-                
-                // Atualizar info da carteira
-                if (userAccount) {
-                    const usdtContract = new web3.eth.Contract([
-                        {"constant": true, "inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
-                    ], USDT_ADDRESS);
-                    
-                    const walletUSDT = await usdtContract.methods.balanceOf(userAccount).call();
-                    const bnbBalance = await web3.eth.getBalance(userAccount);
-                    
-                    elements.walletInfo.innerHTML = `
-                        USDT: ${fromWei(walletUSDT)} | BNB: ${fromWei(bnbBalance).substring(0, 8)}
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('Erro ao atualizar info:', error);
-            }
+            await updateAllBalances();
+            await loadAuthorizedWallets();
         }
 
         function addLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
             const logEntry = document.createElement('div');
             logEntry.className = `log-entry log-${type}`;
-            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
             elements.logs.appendChild(logEntry);
             elements.logs.scrollTop = elements.logs.scrollHeight;
         }
 
-        // Atualizar informações periodicamente
-        setInterval(() => {
-            if (userAccount) updateAllInfo();
-        }, 10000);
+        // Funções globais para botões
+        window.removeWallet = async function(walletAddress) {
+            try {
+                addLog(`🗑️ Removendo carteira...`, 'info');
+                await contract.methods.removeWallet(walletAddress).send({ from: userAccount });
+                addLog(`✅ Carteira removida com sucesso`, 'success');
+                await loadAuthorizedWallets();
+            } catch (error) {
+                addLog(`❌ Erro ao remover carteira: ${error.message}`, 'error');
+            }
+        };
+
+        // Listeners para eventos do contrato
+        if (contract) {
+            contract.events.WalletAuthorized({}, (error, event) => {
+                if (!error) addLog(`👛 Nova carteira autorizada: ${event.returnValues.nickname}`, 'success');
+            });
+            
+            contract.events.TokensConsolidated({}, (error, event) => {
+                if (!error) addLog(`💰 Tokens consolidados: ${fromWei(event.returnValues.amount)}`, 'success');
+            });
+        }
     </script>
 </body>
 </html>
