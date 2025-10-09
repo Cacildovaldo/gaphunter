@@ -1,33 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FrontRun Bot - BSC</title>
+    <title>Stablecoin FrontRun Bot - Corrigido</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: #fff; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         .card { background: #2d2d2d; padding: 20px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; }
         button { background: #ff6b35; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
         button:hover { background: #e55a2b; }
-        button:disabled { background: #666; cursor: not-allowed; }
         input { padding: 10px; border: 1px solid #444; border-radius: 5px; background: #1a1a1a; color: white; margin: 5px; width: 150px; }
-        .log { background: #1a1a1a; padding: 10px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .log { background: #1a1a1a; padding: 10px; border-radius: 5px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
         .warning { color: #ff9800; }
         .info { color: #2196F3; }
         .small { font-size: 12px; color: #888; }
-        .monitor { background: #1a1a1a; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-        .status-active { background: #4CAF50; }
-        .status-inactive { background: #f44336; }
-        .transaction { background: #333; padding: 8px; margin: 5px 0; border-radius: 5px; font-family: monospace; }
+        .debug { background: #333; padding: 10px; border-radius: 5px; margin: 5px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 FrontRun Bot - BSC</h1>
+        <h1>💰 Stablecoin FrontRun Bot - CORRIGIDO</h1>
         
         <!-- Conexão Wallet -->
         <div class="card">
@@ -37,61 +32,55 @@
             <div id="walletBalances" class="small" style="margin-top: 10px;"></div>
         </div>
 
-        <!-- Status do Bot -->
+        <!-- Debug Info -->
         <div class="card">
-            <h3>📊 Status do Bot</h3>
-            <div id="botStatus">
-                <p>Status: <span id="statusIndicator" class="status-indicator status-inactive"></span> <span id="statusText">INATIVO</span></p>
-                <p>Último Lucro: <span id="lastProfit">0 USDT</span></p>
-                <p>Transações Detectadas: <span id="txCount">0</span></p>
-                <p>Saldo Contrato: <span id="contractBalances">Carregando...</span></p>
+            <h3>🐛 Informações de Debug</h3>
+            <div class="debug">
+                <p><strong>Pool Interno (Contábil):</strong> <span id="internalPool">Carregando...</span></p>
+                <p><strong>Saldos Reais (BscScan):</strong> <span id="actualBalances">Carregando...</span></p>
+                <button id="refreshDebug">Atualizar Debug</button>
             </div>
         </div>
 
-        <!-- Monitor de Mempool -->
+        <!-- Status do Pool -->
         <div class="card">
-            <h3>🔍 Monitor de Mempool</h3>
-            <div class="monitor">
-                <div>
-                    <button id="startMonitor">Iniciar Monitoramento</button>
-                    <button id="stopMonitor" disabled>Parar Monitoramento</button>
-                    <span id="monitorStatus" class="warning">Parado</span>
-                </div>
-                <div style="margin-top: 10px;">
-                    <label>Gas Price Multiplier: </label>
-                    <input type="number" id="gasMultiplier" value="1.2" step="0.1" min="1.1" max="3.0">
-                    <label>Min Profit (USDT): </label>
-                    <input type="number" id="minProfit" value="1.0" step="0.1" min="0.1">
-                </div>
-                <div id="pendingTransactions" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
-                    <!-- Transações pendentes aparecerão aqui -->
-                </div>
-            </div>
+            <h3>📊 Pool Artificial</h3>
+            <p><strong>Taxa Fixa:</strong> 1 USDT = 0.001 USDC</p>
+            <p><strong>Saldo Pool:</strong> <span id="poolBalance">Carregando...</span></p>
+            <p><strong>Estatísticas:</strong> <span id="stats">Carregando...</span></p>
         </div>
 
-        <!-- Execução Manual -->
+        <!-- Gerenciamento de Liquidez -->
         <div class="card">
-            <h3>⚡ Execução Manual</h3>
+            <h3>💰 Configurar Pool</h3>
             <div>
-                <input type="number" id="flashAmount" placeholder="Quantidade USDT" step="1" min="100" value="1000">
-                <button id="checkOpportunity">Verificar Oportunidade</button>
-                <button id="executeManual">Executar Manualmente</button>
-            </div>
-            <div id="opportunityResult" style="margin-top: 10px;"></div>
-        </div>
-
-        <!-- Configurações -->
-        <div class="card">
-            <h3>⚙️ Configurações</h3>
-            <div>
-                <button id="withdrawUSDT">Retirar USDT</button>
-                <button id="withdrawUSDC">Retirar USDC</button>
-                <button id="withdrawBNB">Retirar BNB</button>
+                <input type="number" id="usdtAdd" placeholder="USDT" step="1" min="1" value="1">
+                <input type="number" id="usdcAdd" placeholder="USDC" step="0.001" min="0.001" value="0.001">
+                <button id="addLiquidity">Adicionar Liquidez</button>
             </div>
             <div style="margin-top: 10px;">
-                <input type="text" id="newDevWallet" placeholder="Nova Dev Wallet" style="width: 300px;">
-                <button id="updateDevWallet">Atualizar Dev Wallet</button>
+                <button id="approveUSDT">Aprovar USDT</button>
+                <button id="approveUSDC">Aprovar USDC</button>
             </div>
+        </div>
+
+        <!-- Execução do Bot -->
+        <div class="card">
+            <h3>⚡ Executar FrontRun</h3>
+            <div>
+                <input type="number" id="frontRunAmount" placeholder="USDT para operar" step="1" min="1" value="1">
+                <button id="executeSingle">Executar Uma Vez</button>
+            </div>
+            <div class="small">
+                ⚡ Comece com 1 USDT para testar
+            </div>
+        </div>
+
+        <!-- Retirada -->
+        <div class="card">
+            <h3>🏦 Retirar Fundos</h3>
+            <button id="withdrawProfits">Retirar Lucros USDC</button>
+            <button id="withdrawPool">Retirar Todo o Pool</button>
         </div>
 
         <!-- Logs -->
@@ -103,21 +92,38 @@
     </div>
 
     <script>
-        // ABI do Contrato de Front-Running
+        // ABI CORRIGIDA
         const contractABI = [
             {
-                "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
+                "inputs": [],
                 "stateMutability": "nonpayable",
                 "type": "constructor"
             },
             {
                 "anonymous": false,
                 "inputs": [
+                    {"indexed": false, "internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
                     {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
                     {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
                 ],
                 "name": "FrontRunExecuted",
                 "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": false, "internalType": "uint256", "name": "usdtAdded", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "usdcAdded", "type": "uint256"}
+                ],
+                "name": "LiquidityAdded",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "ARTIFICIAL_RATE",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
                 "inputs": [],
@@ -134,29 +140,21 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
-                "name": "checkArbitrageOpportunity",
-                "outputs": [
-                    {"internalType": "uint256", "name": "expectedProfit", "type": "uint256"},
-                    {"internalType": "bool", "name": "profitable", "type": "bool"}
+                "inputs": [
+                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdcAmount", "type": "uint256"}
                 ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
-                "name": "emergencyWithdraw",
+                "name": "addLiquidity",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
                 "inputs": [
-                    {"internalType": "uint256", "name": "flashAmount", "type": "uint256"},
-                    {"internalType": "uint256", "name": "minProfit", "type": "uint256"}
+                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"}
                 ],
                 "name": "executeFrontRun",
-                "outputs": [],
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
@@ -173,33 +171,74 @@
             },
             {
                 "inputs": [],
-                "name": "lastProfit",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "name": "getInternalBalances",
+                "outputs": [
+                    {"internalType": "uint256", "name": "internalUSDT", "type": "uint256"},
+                    {"internalType": "uint256", "name": "internalUSDC", "type": "uint256"},
+                    {"internalType": "uint256", "name": "actualUSDT", "type": "uint256"},
+                    {"internalType": "uint256", "name": "actualUSDC", "type": "uint256"}
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [
-                    {"internalType": "address", "name": "sender", "type": "address"},
-                    {"internalType": "uint256", "name": "amount0", "type": "uint256"},
-                    {"internalType": "uint256", "name": "amount1", "type": "uint256"},
-                    {"internalType": "bytes", "name": "data", "type": "bytes"}
+                "inputs": [],
+                "name": "getPoolBalances",
+                "outputs": [
+                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"},
+                    {"internalType": "uint256", "name": "usdcBalance", "type": "uint256"}
                 ],
-                "name": "pancakeSwapV2Call",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
-                "name": "simulateArbitrage",
+                "inputs": [],
+                "name": "getStats",
+                "outputs": [
+                    {"internalType": "uint256", "name": "profit", "type": "uint256"},
+                    {"internalType": "uint256", "name": "executions", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "poolUSDC",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
-                "name": "withdrawBNB",
+                "name": "poolUSDT",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalExecutions",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalProfit",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawPool",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawProfits",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -210,7 +249,7 @@
             }
         ];
 
-        // ABI para tokens ERC-20
+        // ABI para tokens
         const tokenABI = [
             {
                 "constant": false,
@@ -231,58 +270,42 @@
             }
         ];
 
-        let web3;
-        let contract;
-        let userAccount;
-        const contractAddress = "0x368BEa8b1462C781723BADB49610a0382da27CD3"; // Substituir após deploy
-
-        // Endereços
+        let web3, contract, userAccount;
+        const contractAddress = "0x19f356d752158f4A213FF0220D99664f8DbCe335";
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
         const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
-
-        // Variáveis do bot
-        let isMonitoring = false;
-        let monitorInterval;
-        let txCount = 0;
 
         // Elementos da UI
         const elements = {
             connectWallet: document.getElementById('connectWallet'),
             walletStatus: document.getElementById('walletStatus'),
             walletBalances: document.getElementById('walletBalances'),
-            statusIndicator: document.getElementById('statusIndicator'),
-            statusText: document.getElementById('statusText'),
-            lastProfit: document.getElementById('lastProfit'),
-            txCount: document.getElementById('txCount'),
-            contractBalances: document.getElementById('contractBalances'),
-            startMonitor: document.getElementById('startMonitor'),
-            stopMonitor: document.getElementById('stopMonitor'),
-            monitorStatus: document.getElementById('monitorStatus'),
-            pendingTransactions: document.getElementById('pendingTransactions'),
-            executeManual: document.getElementById('executeManual'),
-            checkOpportunity: document.getElementById('checkOpportunity'),
-            withdrawUSDT: document.getElementById('withdrawUSDT'),
-            withdrawUSDC: document.getElementById('withdrawUSDC'),
-            withdrawBNB: document.getElementById('withdrawBNB'),
-            updateDevWallet: document.getElementById('updateDevWallet'),
+            internalPool: document.getElementById('internalPool'),
+            actualBalances: document.getElementById('actualBalances'),
+            poolBalance: document.getElementById('poolBalance'),
+            stats: document.getElementById('stats'),
+            addLiquidity: document.getElementById('addLiquidity'),
+            approveUSDT: document.getElementById('approveUSDT'),
+            approveUSDC: document.getElementById('approveUSDC'),
+            refreshDebug: document.getElementById('refreshDebug'),
+            executeSingle: document.getElementById('executeSingle'),
+            withdrawProfits: document.getElementById('withdrawProfits'),
+            withdrawPool: document.getElementById('withdrawPool'),
             clearLogs: document.getElementById('clearLogs'),
-            logs: document.getElementById('logs'),
-            opportunityResult: document.getElementById('opportunityResult')
+            logs: document.getElementById('logs')
         };
 
         // Inicialização
         elements.connectWallet.onclick = connectWallet;
-        elements.startMonitor.onclick = startMonitoring;
-        elements.stopMonitor.onclick = stopMonitoring;
-        elements.executeManual.onclick = executeManualFrontRun;
-        elements.checkOpportunity.onclick = checkOpportunity;
-        elements.withdrawUSDT.onclick = () => emergencyWithdraw('USDT');
-        elements.withdrawUSDC.onclick = () => emergencyWithdraw('USDC');
-        elements.withdrawBNB.onclick = withdrawBNB;
-        elements.updateDevWallet.onclick = updateDevWallet;
+        elements.addLiquidity.onclick = addLiquidity;
+        elements.approveUSDT.onclick = () => approveToken('USDT', USDT_ADDRESS);
+        elements.approveUSDC.onclick = () => approveToken('USDC', USDC_ADDRESS);
+        elements.refreshDebug.onclick = updateDebugInfo;
+        elements.executeSingle.onclick = executeFrontRun;
+        elements.withdrawProfits.onclick = withdrawProfits;
+        elements.withdrawPool.onclick = withdrawPool;
         elements.clearLogs.onclick = () => elements.logs.innerHTML = '';
 
-        // Funções de conversão
         function toWei(amount) { return web3.utils.toWei(amount.toString(), 'ether'); }
         function fromWei(amount) { return web3.utils.fromWei(amount.toString(), 'ether'); }
 
@@ -308,169 +331,80 @@
             }
         }
 
-        async function startMonitoring() {
-            if (!contract) {
-                addLog('❌ Conecte a carteira primeiro', 'error');
-                return;
-            }
-            
-            isMonitoring = true;
-            elements.startMonitor.disabled = true;
-            elements.stopMonitor.disabled = false;
-            elements.monitorStatus.textContent = '🟢 MONITORANDO';
-            elements.monitorStatus.className = 'success';
-            elements.statusIndicator.className = 'status-indicator status-active';
-            elements.statusText.textContent = 'MONITORANDO MEMPOOL';
-            
-            addLog('🔍 Iniciando monitoramento do mempool...');
-            
-            // Simular monitoramento (em produção isso seria com WebSocket para mempool)
-            monitorInterval = setInterval(async () => {
-                await simulateMempoolMonitoring();
-            }, 5000); // Verificar a cada 5 segundos
-            
-            addLog('✅ Bot de front-running ativado');
-        }
-
-        function stopMonitoring() {
-            isMonitoring = false;
-            elements.startMonitor.disabled = false;
-            elements.stopMonitor.disabled = true;
-            elements.monitorStatus.textContent = '🔴 PARADO';
-            elements.monitorStatus.className = 'error';
-            elements.statusIndicator.className = 'status-indicator status-inactive';
-            elements.statusText.textContent = 'INATIVO';
-            
-            if (monitorInterval) {
-                clearInterval(monitorInterval);
-            }
-            
-            addLog('⏹️ Monitoramento parado');
-        }
-
-        async function simulateMempoolMonitoring() {
-            // Em produção, isso se conectaria a um node com WebSocket para mempool
-            // Por enquanto, vamos simular detecção de transações
-            
-            const simulatedTxs = [
-                { hash: '0x' + Math.random().toString(16).substr(2, 64), amount: '1000 USDT', type: 'Compra' },
-                { hash: '0x' + Math.random().toString(16).substr(2, 64), amount: '500 USDT', type: 'Venda' }
-            ];
-            
-            elements.pendingTransactions.innerHTML = '';
-            txCount += simulatedTxs.length;
-            elements.txCount.textContent = txCount;
-            
-            simulatedTxs.forEach(tx => {
-                const txElement = document.createElement('div');
-                txElement.className = 'transaction';
-                txElement.innerHTML = `
-                    <strong>${tx.type}</strong> - ${tx.amount}<br>
-                    <small>Hash: ${tx.hash.substring(0, 20)}...</small>
-                    <button onclick="executeFrontRunForTx('${tx.hash}', '${tx.amount}')" style="float: right; padding: 2px 8px; font-size: 10px;">FrontRun</button>
-                `;
-                elements.pendingTransactions.appendChild(txElement);
-            });
-            
-            addLog(`📡 Detectadas ${simulatedTxs.length} transações no mempool`, 'info');
-        }
-
-        async function executeFrontRunForTx(txHash, amount) {
-            const flashAmount = parseInt(amount);
-            const minProfit = parseFloat(document.getElementById('minProfit').value);
-            const gasMultiplier = parseFloat(document.getElementById('gasMultiplier').value);
-            
-            addLog(`⚡ Executando front-run para transação ${txHash.substring(0, 16)}...`);
-            
+        async function approveToken(tokenName, tokenAddress) {
             try {
-                // Usar gas price mais alto para front-running
-                const currentGasPrice = await web3.eth.getGasPrice();
-                const frontRunGasPrice = Math.floor(currentGasPrice * gasMultiplier);
+                const tokenContract = new web3.eth.Contract(tokenABI, tokenAddress);
+                const amount = toWei('1000000');
                 
-                await contract.methods.executeFrontRun(
-                    toWei(flashAmount),
-                    toWei(minProfit)
-                ).send({ 
-                    from: userAccount,
-                    gasPrice: frontRunGasPrice
-                });
-                
-                addLog(`✅ Front-run executado com sucesso!`, 'success');
-                await updateAllInfo();
+                addLog(`🔏 Aprovando ${tokenName}...`);
+                await tokenContract.methods.approve(contractAddress, amount).send({ from: userAccount });
+                addLog(`✅ ${tokenName} aprovado com sucesso!`);
                 
             } catch (error) {
-                addLog(`❌ Erro no front-run: ${error.message}`, 'error');
+                addLog(`❌ Erro ao aprovar ${tokenName}: ${error.message}`, 'error');
             }
         }
 
-        async function executeManualFrontRun() {
-            const flashAmount = document.getElementById('flashAmount').value;
-            const minProfit = parseFloat(document.getElementById('minProfit').value);
+        async function addLiquidity() {
+            const usdtAmount = document.getElementById('usdtAdd').value;
+            const usdcAmount = document.getElementById('usdcAdd').value;
             
-            if (!flashAmount) {
-                addLog('❌ Informe a quantidade para flash loan', 'error');
+            if (!usdtAmount || !usdcAmount) {
+                addLog('❌ Preencha ambos os valores', 'error');
                 return;
             }
             
             try {
-                addLog(`⚡ Executando front-run manual com ${flashAmount} USDT...`);
+                addLog(`💰 Adicionando liquidez: ${usdtAmount} USDT + ${usdcAmount} USDC`);
                 
-                await contract.methods.executeFrontRun(
-                    toWei(flashAmount),
-                    toWei(minProfit)
-                ).send({ from: userAccount });
+                const usdtWei = toWei(usdtAmount);
+                const usdcWei = toWei(usdcAmount);
                 
-                addLog(`✅ Front-run manual executado!`, 'success');
+                await contract.methods.addLiquidity(usdtWei, usdcWei).send({ from: userAccount });
+                addLog('✅ Liquidez adicionada com sucesso!');
                 await updateAllInfo();
                 
             } catch (error) {
-                addLog(`❌ Erro no front-run manual: ${error.message}`, 'error');
+                addLog(`❌ Erro: ${error.message}`, 'error');
             }
         }
 
-        async function checkOpportunity() {
-            const amount = document.getElementById('flashAmount').value;
+        async function executeFrontRun() {
+            const amount = document.getElementById('frontRunAmount').value;
             
             if (!amount) {
-                elements.opportunityResult.innerHTML = '<span class="error">Informe a quantidade</span>';
+                addLog('❌ Informe a quantidade de USDT', 'error');
                 return;
             }
             
             try {
-                const [expectedProfit, profitable] = await contract.methods.checkArbitrageOpportunity(toWei(amount)).call();
-                const profit = fromWei(expectedProfit);
+                addLog(`⚡ Executando FrontRun com ${amount} USDT...`);
+                const amountWei = toWei(amount);
                 
-                if (profitable && expectedProfit > 0) {
-                    elements.opportunityResult.innerHTML = 
-                        `<span class="success">💰 Oportunidade encontrada! Lucro esperado: ${profit} USDT</span>`;
+                // Processamento CORRETO do resultado
+                const result = await contract.methods.executeFrontRun(amountWei).send({ from: userAccount });
+                
+                // Verificar se o evento foi emitido de forma segura
+                if (result.events && result.events.FrontRunExecuted) {
+                    const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
+                    addLog(`✅ FrontRun executado! Lucro: ${profit} USDC`, 'success');
                 } else {
-                    elements.opportunityResult.innerHTML = 
-                        `<span class="warning">⚠️ Sem oportunidade no momento</span>`;
+                    // Se não conseguir ler o evento, pelo menos confirma que executou
+                    addLog('✅ FrontRun executado com sucesso!', 'success');
                 }
                 
+                await updateAllInfo();
+                
             } catch (error) {
-                elements.opportunityResult.innerHTML = 
-                    `<span class="error">Erro: ${error.message}</span>`;
+                addLog(`❌ Erro no FrontRun: ${error.message}`, 'error');
             }
         }
 
-        async function updateDevWallet() {
-            const newWallet = document.getElementById('newDevWallet').value;
-            
-            if (!web3.utils.isAddress(newWallet)) {
-                addLog('❌ Endereço inválido', 'error');
-                return;
-            }
-            
-            // Esta função precisaria ser adicionada ao contrato
-            addLog('⚠️ Função não implementada no contrato atual', 'warning');
-        }
-
-        async function emergencyWithdraw(token) {
+        async function withdrawProfits() {
             try {
-                const tokenAddress = token === 'USDT' ? USDT_ADDRESS : USDC_ADDRESS;
-                await contract.methods.emergencyWithdraw(tokenAddress).send({ from: userAccount });
-                addLog(`✅ ${token} retirado com sucesso`);
+                addLog('🏦 Retirando lucros em USDC...');
+                await contract.methods.withdrawProfits().send({ from: userAccount });
+                addLog('✅ Lucros retirados com sucesso!');
                 await updateAllInfo();
                 
             } catch (error) {
@@ -478,14 +412,32 @@
             }
         }
 
-        async function withdrawBNB() {
+        async function withdrawPool() {
             try {
-                await contract.methods.withdrawBNB().send({ from: userAccount });
-                addLog(`✅ BNB retirado com sucesso`);
+                addLog('🏦 Retirando todo o pool...');
+                await contract.methods.withdrawPool().send({ from: userAccount });
+                addLog('✅ Pool retirado com sucesso!');
                 await updateAllInfo();
                 
             } catch (error) {
                 addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateDebugInfo() {
+            if (!contract) return;
+            
+            try {
+                const [internalUSDT, internalUSDC, actualUSDT, actualUSDC] = await contract.methods.getInternalBalances().call();
+                
+                elements.internalPool.textContent = 
+                    `${fromWei(internalUSDT)} USDT | ${fromWei(internalUSDC)} USDC`;
+                
+                elements.actualBalances.textContent = 
+                    `${fromWei(actualUSDT)} USDT | ${fromWei(actualUSDC)} USDC`;
+                
+            } catch (error) {
+                console.error('Erro no debug:', error);
             }
         }
 
@@ -493,14 +445,18 @@
             if (!contract || !web3) return;
             
             try {
-                // Atualizar contract balances
-                const [usdtContract, usdcContract, bnbContract] = await contract.methods.getContractBalances().call();
-                elements.contractBalances.textContent = 
-                    `${fromWei(usdtContract)} USDT | ${fromWei(usdcContract)} USDC | ${fromWei(bnbContract)} BNB`;
+                // Atualizar pool balances
+                const [usdtPool, usdcPool] = await contract.methods.getPoolBalances().call();
+                elements.poolBalance.textContent = 
+                    `${fromWei(usdtPool)} USDT | ${fromWei(usdcPool)} USDC`;
                 
-                // Atualizar último lucro
-                const lastProfit = await contract.methods.lastProfit().call();
-                elements.lastProfit.textContent = `${fromWei(lastProfit)} USDT`;
+                // Atualizar estatísticas
+                const [totalProfit, executions] = await contract.methods.getStats().call();
+                elements.stats.textContent = 
+                    `Lucro Total: ${fromWei(totalProfit)} USDC | Execuções: ${executions}`;
+                
+                // Atualizar debug
+                await updateDebugInfo();
                 
                 // Atualizar wallet balances
                 await updateWalletBalances();
@@ -538,11 +494,7 @@
             elements.logs.scrollTop = elements.logs.scrollHeight;
         }
 
-        // Atualizar informações a cada 30 segundos
-        setInterval(updateAllInfo, 30000);
-
-        // Função global para o botão de front-run
-        window.executeFrontRunForTx = executeFrontRunForTx;
+        setInterval(updateAllInfo, 10000);
     </script>
 </body>
 </html>
