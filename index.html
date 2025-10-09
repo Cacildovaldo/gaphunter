@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FrontRun Bot - BSC</title>
+    <title>Stablecoin FrontRun Bot</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
@@ -10,8 +10,7 @@
         .card { background: #2d2d2d; padding: 20px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; }
         button { background: #ff6b35; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
         button:hover { background: #e55a2b; }
-        button:disabled { background: #666; cursor: not-allowed; }
-        input { padding: 10px; border: 1px solid #444; border-radius: 5px; background: #1a1a1a; color: white; margin: 5px; width: 120px; }
+        input { padding: 10px; border: 1px solid #444; border-radius: 5px; background: #1a1a1a; color: white; margin: 5px; width: 150px; }
         .log { background: #1a1a1a; padding: 10px; border-radius: 5px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
@@ -22,7 +21,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 FrontRun Bot - BSC</h1>
+        <h1>💰 Stablecoin FrontRun Bot</h1>
         
         <!-- Conexão Wallet -->
         <div class="card">
@@ -32,51 +31,55 @@
             <div id="walletBalances" class="small" style="margin-top: 10px;"></div>
         </div>
 
-        <!-- Status do Contrato -->
+        <!-- Status do Pool -->
         <div class="card">
-            <h3>📊 Status do Contrato</h3>
-            <div id="contractStatus">
-                <p>Pool Artificial: <span id="poolRate">1 USDT = 0.001 USDC</span></p>
-                <p>Saldo Pool: <span id="poolBalance">Carregando...</span></p>
-                <p>Preço Mercado: <span id="marketPrice">Carregando...</span></p>
-                <p>Saldo Contrato: <span id="contractBalances">Carregando...</span></p>
-            </div>
+            <h3>📊 Pool Artificial</h3>
+            <p><strong>Taxa Fixa:</strong> 1 USDT = 0.001 USDC</p>
+            <p><strong>Saldo Pool:</strong> <span id="poolBalance">Carregando...</span></p>
+            <p><strong>Estatísticas:</strong> <span id="stats">Carregando...</span></p>
+            <p><strong>Saldo Contrato:</strong> <span id="contractBalances">Carregando...</span></p>
         </div>
 
         <!-- Gerenciamento de Liquidez -->
         <div class="card">
-            <h3>💰 Gerenciar Liquidez</h3>
+            <h3>💰 Configurar Pool</h3>
             <div>
-                <input type="number" id="usdtAdd" placeholder="USDT Amount" step="0.001" min="0.001" value="1">
-                <input type="number" id="usdcAdd" placeholder="USDC Amount" step="0.000001" min="0.001" value="0.001">
+                <input type="number" id="usdtAdd" placeholder="USDT" step="1" min="1" value="1000">
+                <input type="number" id="usdcAdd" placeholder="USDC" step="0.001" min="0.001" value="1">
                 <button id="addLiquidity">Adicionar Liquidez</button>
             </div>
             <div style="margin-top: 10px;">
                 <button id="approveUSDT">Aprovar USDT</button>
                 <button id="approveUSDC">Aprovar USDC</button>
-                <button id="checkBalances">Verificar Saldos</button>
+                <button id="checkBalances">Atualizar Saldos</button>
+            </div>
+            <div class="small">
+                💡 Exemplo: 1000 USDT + 1 USDC = Pool com taxa 1 USDT = 0.001 USDC
             </div>
         </div>
 
-        <!-- Execução do FrontRun -->
+        <!-- Execução do Bot -->
         <div class="card">
             <h3>⚡ Executar FrontRun</h3>
             <div>
-                <input type="number" id="frontRunAmount" placeholder="Quantidade USDT" step="0.001" min="0.001" value="1">
-                <button id="executeFrontRun">Executar FrontRun</button>
+                <input type="number" id="frontRunAmount" placeholder="USDT para operar" step="1" min="1" value="100">
+                <button id="executeSingle">Executar Uma Vez</button>
+                <button id="executeMultiple">Executar 5x</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button id="executeMax">Executar Máximo Possível</button>
             </div>
             <div class="small">
-                💡 Compra no pool artificial a 0.001 USDC e vende no mercado a ~1 USDC
+                ⚡ Compra USDT a 0.001 USDC no pool artificial e vende a ~1 USDC no mercado
             </div>
         </div>
 
-        <!-- Configurações -->
+        <!-- Retirada -->
         <div class="card">
-            <h3>⚙️ Configurações</h3>
-            <div>
-                <button id="withdrawUSDT">Retirar USDT</button>
-                <button id="withdrawUSDC">Retirar USDC</button>
-            </div>
+            <h3>🏦 Retirar Fundos</h3>
+            <button id="withdrawProfits">Retirar Lucros USDC</button>
+            <button id="withdrawPool">Retirar Todo o Pool</button>
+            <button id="withdrawBNB">Retirar BNB</button>
         </div>
 
         <!-- Logs -->
@@ -88,19 +91,40 @@
     </div>
 
     <script>
-        // ABI do Novo Contrato Simplificado
+        // ABI COMPLETA DO CONTRATO
         const contractABI = [
             {
-                "inputs": [{"internalType": "address", "name": "_devWallet", "type": "address"}],
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_devWallet",
+                        "type": "address"
+                    }
+                ],
                 "stateMutability": "nonpayable",
                 "type": "constructor"
             },
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": false, "internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "profit", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256"}
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "usdtAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "profit",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    }
                 ],
                 "name": "FrontRunExecuted",
                 "type": "event"
@@ -108,44 +132,86 @@
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": false, "internalType": "uint256", "name": "usdtAdded", "type": "uint256"},
-                    {"indexed": false, "internalType": "uint256", "name": "usdcAdded", "type": "uint256"}
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "usdtAdded",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "usdcAdded",
+                        "type": "uint256"
+                    }
                 ],
-                "name": "LiquidityUpdated",
+                "name": "LiquidityAdded",
                 "type": "event"
             },
             {
                 "inputs": [],
                 "name": "ARTIFICIAL_RATE",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
                 "name": "ROUTER",
-                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
                 "name": "USDC",
-                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
                 "name": "USDT",
-                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [
-                    {"internalType": "uint256", "name": "usdtAmount", "type": "uint256"},
-                    {"internalType": "uint256", "name": "usdcAmount", "type": "uint256"}
+                    {
+                        "internalType": "uint256",
+                        "name": "usdtAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdcAmount",
+                        "type": "uint256"
+                    }
                 ],
                 "name": "addLiquidity",
                 "outputs": [],
@@ -153,16 +219,34 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
-                "name": "emergencyWithdraw",
+                "inputs": [
+                    {
+                        "internalType": "uint256[]",
+                        "name": "amounts",
+                        "type": "uint256[]"
+                    }
+                ],
+                "name": "executeBatchFrontRun",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "uint256", "name": "usdtAmount", "type": "uint256"}],
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "usdtAmount",
+                        "type": "uint256"
+                    }
+                ],
                 "name": "executeFrontRun",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
@@ -170,17 +254,22 @@
                 "inputs": [],
                 "name": "getContractBalances",
                 "outputs": [
-                    {"internalType": "uint256", "name": "usdt", "type": "uint256"},
-                    {"internalType": "uint256", "name": "usdc", "type": "uint256"},
-                    {"internalType": "uint256", "name": "bnb", "type": "uint256"}
+                    {
+                        "internalType": "uint256",
+                        "name": "usdt",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdc",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "bnb",
+                        "type": "uint256"
+                    }
                 ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
-                "name": "getMarketPrice",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
@@ -188,8 +277,34 @@
                 "inputs": [],
                 "name": "getPoolBalances",
                 "outputs": [
-                    {"internalType": "uint256", "name": "usdtBalance", "type": "uint256"},
-                    {"internalType": "uint256", "name": "usdcBalance", "type": "uint256"}
+                    {
+                        "internalType": "uint256",
+                        "name": "usdtBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdcBalance",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getStats",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "profit",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "executions",
+                        "type": "uint256"
+                    }
                 ],
                 "stateMutability": "view",
                 "type": "function"
@@ -197,20 +312,90 @@
             {
                 "inputs": [],
                 "name": "poolUSDC",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [],
                 "name": "poolUSDT",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}],
-                "name": "withdrawTokens",
+                "inputs": [],
+                "name": "totalExecutions",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalProfit",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawBNB",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawPoolTokens",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawProfits",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "usdtAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdcAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawPoolTokens",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -239,13 +424,20 @@
                 "name": "balanceOf",
                 "outputs": [{"name": "", "type": "uint256"}],
                 "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"name": "", "type": "uint8"}],
+                "type": "function"
             }
         ];
 
         let web3;
         let contract;
         let userAccount;
-        const contractAddress = "0xaa60D11E47502b4E47741B58FD75a42BF3D69d40"; // SEU CONTRATO
+        const contractAddress = "0x368BEa8b1462C781723BADB49610a0382da27CD3"; // Seu contrato
 
         // Endereços dos tokens
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
@@ -257,15 +449,18 @@
             walletStatus: document.getElementById('walletStatus'),
             walletBalances: document.getElementById('walletBalances'),
             poolBalance: document.getElementById('poolBalance'),
-            marketPrice: document.getElementById('marketPrice'),
+            stats: document.getElementById('stats'),
             contractBalances: document.getElementById('contractBalances'),
             addLiquidity: document.getElementById('addLiquidity'),
             approveUSDT: document.getElementById('approveUSDT'),
             approveUSDC: document.getElementById('approveUSDC'),
             checkBalances: document.getElementById('checkBalances'),
-            executeFrontRun: document.getElementById('executeFrontRun'),
-            withdrawUSDT: document.getElementById('withdrawUSDT'),
-            withdrawUSDC: document.getElementById('withdrawUSDC'),
+            executeSingle: document.getElementById('executeSingle'),
+            executeMultiple: document.getElementById('executeMultiple'),
+            executeMax: document.getElementById('executeMax'),
+            withdrawProfits: document.getElementById('withdrawProfits'),
+            withdrawPool: document.getElementById('withdrawPool'),
+            withdrawBNB: document.getElementById('withdrawBNB'),
             clearLogs: document.getElementById('clearLogs'),
             logs: document.getElementById('logs')
         };
@@ -275,13 +470,16 @@
         elements.addLiquidity.onclick = addLiquidity;
         elements.approveUSDT.onclick = () => approveToken('USDT', USDT_ADDRESS);
         elements.approveUSDC.onclick = () => approveToken('USDC', USDC_ADDRESS);
-        elements.checkBalances.onclick = updateAllBalances;
-        elements.executeFrontRun.onclick = executeFrontRun;
-        elements.withdrawUSDT.onclick = () => emergencyWithdraw('USDT');
-        elements.withdrawUSDC.onclick = () => emergencyWithdraw('USDC');
+        elements.checkBalances.onclick = updateAllInfo;
+        elements.executeSingle.onclick = () => executeFrontRun(1);
+        elements.executeMultiple.onclick = () => executeFrontRun(5);
+        elements.executeMax.onclick = executeMaxFrontRun;
+        elements.withdrawProfits.onclick = withdrawProfits;
+        elements.withdrawPool.onclick = withdrawPoolTokens;
+        elements.withdrawBNB.onclick = withdrawBNB;
         elements.clearLogs.onclick = () => elements.logs.innerHTML = '';
 
-        // Função para converter números decimais para wei
+        // Função para converter números decimais para wei (considerando 18 decimais)
         function toWei(amount) {
             return web3.utils.toWei(amount.toString(), 'ether');
         }
@@ -303,7 +501,7 @@
                     
                     contract = new web3.eth.Contract(contractABI, contractAddress);
                     addLog('✅ Carteira conectada com sucesso');
-                    await updateAllBalances();
+                    await updateAllInfo();
                     
                 } catch (error) {
                     addLog(`❌ Erro na conexão: ${error.message}`, 'error');
@@ -336,6 +534,11 @@
                 return;
             }
             
+            if (parseFloat(usdcAmount) > parseFloat(usdtAmount) * 0.01) {
+                addLog('❌ USDC deve ser aproximadamente 0.001 do valor de USDT', 'error');
+                return;
+            }
+            
             try {
                 addLog(`💰 Adicionando liquidez: ${usdtAmount} USDT + ${usdcAmount} USDC`);
                 
@@ -344,14 +547,17 @@
                 
                 await contract.methods.addLiquidity(usdtWei, usdcWei).send({ from: userAccount });
                 addLog('✅ Liquidez adicionada com sucesso!');
-                await updateAllBalances();
+                await updateAllInfo();
                 
             } catch (error) {
                 addLog(`❌ Erro: ${error.message}`, 'error');
+                if (error.message.includes('allowance')) {
+                    addLog('💡 Você precisa aprovar os tokens primeiro!', 'warning');
+                }
             }
         }
 
-        async function executeFrontRun() {
+        async function executeFrontRun(times) {
             const amount = document.getElementById('frontRunAmount').value;
             
             if (!amount) {
@@ -360,55 +566,106 @@
             }
             
             try {
-                addLog(`⚡ Executando FrontRun com ${amount} USDT...`);
-                const amountWei = toWei(amount);
-                
-                const result = await contract.methods.executeFrontRun(amountWei).send({ from: userAccount });
-                
-                if (result.events.FrontRunExecuted) {
-                    const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
-                    addLog(`🎉 FrontRun executado! Lucro: ${profit} USDC`, 'success');
-                } else {
-                    addLog('✅ FrontRun executado!', 'success');
+                for (let i = 0; i < times; i++) {
+                    addLog(`⚡ Executando FrontRun ${i+1}/${times} com ${amount} USDT...`);
+                    const amountWei = toWei(amount);
+                    
+                    const result = await contract.methods.executeFrontRun(amountWei).send({ from: userAccount });
+                    
+                    if (result.events.FrontRunExecuted) {
+                        const profit = fromWei(result.events.FrontRunExecuted.returnValues.profit);
+                        addLog(`✅ Lucro: ${profit} USDC`, 'success');
+                    }
+                    
+                    await updateAllInfo();
+                    
+                    // Pequena pausa entre execuções
+                    if (i < times - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
                 }
-                
-                await updateAllBalances();
                 
             } catch (error) {
                 addLog(`❌ Erro no FrontRun: ${error.message}`, 'error');
             }
         }
 
-        async function emergencyWithdraw(token) {
+        async function executeMaxFrontRun() {
             try {
-                const tokenAddress = token === 'USDT' ? USDT_ADDRESS : USDC_ADDRESS;
-                await contract.methods.emergencyWithdraw(tokenAddress).send({ from: userAccount });
-                addLog(`✅ ${token} retirado com sucesso`);
-                await updateAllBalances();
+                const [usdtPool, usdcPool] = await contract.methods.getPoolBalances().call();
+                const usdtPoolFormatted = parseFloat(fromWei(usdtPool));
+                
+                if (usdtPoolFormatted < 1) {
+                    addLog('❌ Pool insuficiente para executar', 'error');
+                    return;
+                }
+                
+                // Usar 90% do pool disponível
+                const maxAmount = Math.floor(usdtPoolFormatted * 0.9);
+                document.getElementById('frontRunAmount').value = maxAmount;
+                
+                addLog(`🎯 Executando com máximo possível: ${maxAmount} USDT`);
+                await executeFrontRun(1);
                 
             } catch (error) {
                 addLog(`❌ Erro: ${error.message}`, 'error');
             }
         }
 
-        async function updateAllBalances() {
+        async function withdrawProfits() {
+            try {
+                addLog('🏦 Retirando lucros em USDC...');
+                await contract.methods.withdrawProfits().send({ from: userAccount });
+                addLog('✅ Lucros retirados com sucesso!');
+                await updateAllInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function withdrawPoolTokens() {
+            try {
+                addLog('🏦 Retirando todo o pool...');
+                await contract.methods.withdrawPoolTokens().send({ from: userAccount });
+                addLog('✅ Pool retirado com sucesso!');
+                await updateAllInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function withdrawBNB() {
+            try {
+                addLog('🏦 Retirando BNB...');
+                await contract.methods.withdrawBNB().send({ from: userAccount });
+                addLog('✅ BNB retirado com sucesso!');
+                await updateAllInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateAllInfo() {
             if (!contract || !web3) return;
             
             try {
                 // Atualizar pool balances
                 const [usdtPool, usdcPool] = await contract.methods.getPoolBalances().call();
-                
                 elements.poolBalance.textContent = 
                     `${fromWei(usdtPool)} USDT | ${fromWei(usdcPool)} USDC`;
+                
+                // Atualizar estatísticas
+                const [totalProfit, executions] = await contract.methods.getStats().call();
+                elements.stats.textContent = 
+                    `Lucro Total: ${fromWei(totalProfit)} USDC | Execuções: ${executions}`;
                 
                 // Atualizar contract balances
                 const [usdtContract, usdcContract, bnbContract] = await contract.methods.getContractBalances().call();
                 elements.contractBalances.textContent = 
                     `${fromWei(usdtContract)} USDT | ${fromWei(usdcContract)} USDC | ${fromWei(bnbContract)} BNB`;
-                
-                // Atualizar preço de mercado
-                const marketPrice = await contract.methods.getMarketPrice(toWei('1')).call();
-                elements.marketPrice.textContent = `1 USDT = ${fromWei(marketPrice)} USDC`;
                 
                 // Atualizar wallet balances
                 await updateWalletBalances();
@@ -447,7 +704,7 @@
         }
 
         // Atualizar informações a cada 30 segundos
-        setInterval(updateAllBalances, 30000);
+        setInterval(updateAllInfo, 30000);
     </script>
 </body>
 </html>
