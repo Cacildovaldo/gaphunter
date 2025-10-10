@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Balance Consolidator - BSC</title>
+    <title>Balance Consolidator NFT - BSC</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         :root {
-            --primary: #3498db;
+            --primary: #9c27b0;
             --success: #00d26a;
             --danger: #ff0080;
             --warning: #ffb800;
@@ -36,7 +36,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary), #42a5f5);
+            background: linear-gradient(135deg, var(--primary), #ba68c8);
             padding: 30px;
             border-radius: 15px;
             margin-bottom: 20px;
@@ -86,7 +86,7 @@
         }
         
         .btn:hover {
-            background: #2980b9;
+            background: #7b1fa2;
             transform: translateY(-2px);
         }
         
@@ -215,6 +215,33 @@
         .status-active { background: var(--success); color: #000; }
         .status-inactive { background: var(--danger); color: #fff; }
         
+        .nft-badge {
+            background: linear-gradient(135deg, #9c27b0, #673ab7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        
+        .config-status {
+            background: var(--darker);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--warning);
+            margin: 10px 0;
+        }
+        
+        .config-status.success {
+            border-left-color: var(--success);
+            background: rgba(0,210,106,0.1);
+        }
+        
+        .config-status.error {
+            border-left-color: var(--danger);
+            background: rgba(255,0,128,0.1);
+        }
+        
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -230,31 +257,31 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🔄 Balance Consolidator - BSC</h1>
-            <p>Sistema de consolidação automática de saldos de múltiplas carteiras</p>
+            <h1>🎴 Balance Consolidator NFT - BSC</h1>
+            <p>Sistema de consolidação automática com NFT de autorização</p>
         </div>
 
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
+                <div>Total Consolidado</div>
+                <div class="stat-value stat-success" id="totalConsolidated">0 USDT</div>
+                <div>Valor Total</div>
+            </div>
+            <div class="stat-card">
+                <div>Carteiras Autorizadas</div>
+                <div class="stat-value stat-primary" id="authorizedWallets">0</div>
+                <div>Via NFT</div>
+            </div>
+            <div class="stat-card">
+                <div>Operações</div>
+                <div class="stat-value stat-warning" id="totalOperations">0</div>
+                <div>Realizadas</div>
+            </div>
+            <div class="stat-card">
                 <div>Saldo Contrato</div>
                 <div class="stat-value stat-success" id="contractBalance">0 USDT</div>
-                <div>Total Consolidado</div>
-            </div>
-            <div class="stat-card">
-                <div>Carteiras Ativas</div>
-                <div class="stat-value stat-primary" id="activeWallets">0/5</div>
-                <div>Autorizadas</div>
-            </div>
-            <div class="stat-card">
-                <div>Última Consolidação</div>
-                <div class="stat-value stat-warning" id="lastConsolidation">-</div>
-                <div>Timestamp</div>
-            </div>
-            <div class="stat-card">
-                <div>Saldo Principal</div>
-                <div class="stat-value stat-success" id="mainBalance">0 BNB</div>
-                <div>Carteira Conectada</div>
+                <div>Disponível</div>
             </div>
         </div>
 
@@ -274,36 +301,58 @@
                     </div>
                 </div>
 
-                <!-- Gerenciar Carteiras -->
+                <!-- Configuração do Sistema -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>👛 Gerenciar Carteiras</h3>
+                        <h3>⚙️ Configuração do Sistema</h3>
+                    </div>
+                    <div class="form-group">
+                        <label>Status da Configuração:</label>
+                        <div id="setupStatus" class="config-status">
+                            ⚠️ Sistema não configurado
+                        </div>
+                    </div>
+                    <button class="btn btn-warning" id="setupConsolidator">Configurar Relação NFT→Contrato</button>
+                    <button class="btn" id="verifySetup">Verificar Configuração</button>
+                </div>
+
+                <!-- Gerenciar NFTs de Autorização -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🎴 Gerenciar Autorizações NFT</h3>
                     </div>
                     <div class="form-group">
                         <label>Endereço da Carteira:</label>
-                        <input type="text" id="walletAddress" placeholder="0x..." style="font-family: monospace;">
+                        <input type="text" id="nftWalletAddress" placeholder="0x..." style="font-family: monospace;">
                     </div>
                     <div class="form-group">
-                        <label>Apelido (Opcional):</label>
-                        <input type="text" id="walletNickname" placeholder="Carteira Secundária 1">
+                        <label>Múltiplas Carteiras (separadas por vírgula):</label>
+                        <textarea id="multipleWallets" placeholder="0x123...,0x456..." style="width: 100%; height: 80px; padding: 12px; background: var(--darker); border: 1px solid var(--lighter); border-radius: 8px; color: #fff;"></textarea>
                     </div>
-                    <button class="btn btn-success" id="addWallet">Autorizar Carteira</button>
-                    <button class="btn btn-warning" id="checkApprovals">Verificar Aprovações</button>
-                </div>
-
-                <!-- Carteiras Autorizadas -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📋 Carteiras Autorizadas</h3>
-                    </div>
-                    <div class="wallet-list" id="authorizedWallets">
-                        <!-- Carteiras serão listadas aqui -->
+                    <button class="btn btn-success" id="mintAuthNFT">Emitir NFT Único</button>
+                    <button class="btn btn-warning" id="mintMultipleNFTs">Emitir Múltiplos NFTs</button>
+                    <button class="btn" id="checkNFTAuthorization">Verificar Autorização</button>
+                    
+                    <div style="margin-top: 15px;">
+                        <label>Status NFT:</label>
+                        <div id="nftStatus" class="status-badge status-inactive">NÃO VERIFICADO</div>
                     </div>
                 </div>
             </div>
 
             <!-- Coluna Direita -->
             <div>
+                <!-- Carteiras Autorizadas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📋 Carteiras Autorizadas</h3>
+                        <button class="btn" id="refreshWallets">Atualizar</button>
+                    </div>
+                    <div class="wallet-list" id="authorizedWalletsList">
+                        <!-- Carteiras serão listadas aqui -->
+                    </div>
+                </div>
+
                 <!-- Controle de Consolidação -->
                 <div class="card">
                     <div class="card-header">
@@ -326,7 +375,7 @@
                         </select>
                     </div>
                     <button class="btn btn-success" id="consolidateBtn">Executar Consolidação</button>
-                    <button class="btn btn-warning" id="approveAllTokens">Aprovar Todos Tokens</button>
+                    <button class="btn btn-warning" id="consolidateMultiple">Consolidar Múltiplas</button>
                     
                     <div style="margin-top: 15px;">
                         <label>Status:</label>
@@ -345,26 +394,38 @@
                             <option value="USDT">USDT</option>
                             <option value="BUSD">BUSD</option>
                             <option value="USDC">USDC</option>
+                            <option value="ALL">TODOS OS TOKENS</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Quantidade:</label>
-                        <input type="number" id="withdrawAmount" placeholder="Deixe vazio para retirar tudo">
+                        <label>Quantidade (deixe vazio para retirar tudo):</label>
+                        <input type="number" id="withdrawAmount" placeholder="Quantidade específica">
                     </div>
-                    <button class="btn btn-success" id="withdrawFunds">Retirar para Carteira</button>
-                    <button class="btn" id="refreshBalances">Atualizar Saldos</button>
+                    <button class="btn btn-success" id="withdrawFunds">Retirar Fundos</button>
+                    <button class="btn btn-warning" id="withdrawAll">Retirar Tudo</button>
                 </div>
 
-                <!-- Saldos em Tempo Real -->
+                <!-- Informações do Contrato -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>💰 Saldos em Tempo Real</h3>
+                        <h3>📊 Informações do Sistema</h3>
                     </div>
-                    <div id="balancesDisplay" style="height: 200px; overflow-y: auto;">
-                        <div class="balance-item">Conecte para ver saldos...</div>
+                    <div id="contractInfo" style="height: 200px; overflow-y: auto;">
+                        <div class="balance-item">
+                            <strong>Contrato Principal:</strong> 
+                            <span id="mainContractAddress" style="font-family: monospace; font-size: 12px;">-</span>
+                        </div>
+                        <div class="balance-item">
+                            <strong>Contrato NFT:</strong> 
+                            <span id="nftContractAddress" style="font-family: monospace; font-size: 12px;">-</span>
+                        </div>
+                        <div class="balance-item">
+                            <strong>Total NFTs Emitidos:</strong> 
+                            <span id="totalNFTs">0</span>
+                        </div>
                     </div>
-                    <div style="margin-top: 10px; font-size: 12px; color: #ccc;">
-                        <span id="balanceStats">Atualizado: -</span>
+                    <div style="margin-top: 10px;">
+                        <button class="btn" id="refreshAll">Atualizar Tudo</button>
                     </div>
                 </div>
             </div>
@@ -381,493 +442,1104 @@
     </div>
 
     <script>
-        // ABI DO CONTRATO
-        const contractABI = [
-    {
-        "inputs": [],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
+        // ABI do Contrato NFT
+        const nftABI = [
             {
-                "indexed": true,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "totalTokens",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "totalValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "BulkConsolidation",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "fromWallet",
-                "type": "address"
-            }
-        ],
-        "name": "TokensConsolidated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "wallet",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "string",
-                "name": "nickname",
-                "type": "string"
-            }
-        ],
-        "name": "WalletAuthorized",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "wallet",
-                "type": "address"
-            }
-        ],
-        "name": "WalletRemoved",
-        "type": "event"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "_nickname",
-                "type": "string"
-            }
-        ],
-        "name": "authorizeWallet",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "BUSD",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "USDC",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "USDT",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "approveContractForTokens",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "approveTokenForWallet",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "authorizedWallets",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "walletAddress",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "nickname",
-                "type": "string"
-            },
-            {
-                "internalType": "bool",
-                "name": "isActive",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "lastConsolidation",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "consolidateAllWallets",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
-            }
-        ],
-        "name": "consolidateStablecoinsFromWallet",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
-            }
-        ],
-        "name": "consolidateTokensFromWallet",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getAuthorizedWallets",
-        "outputs": [
-            {
-                "components": [
+                "anonymous": false,
+                "inputs": [
                     {
+                        "indexed": true,
                         "internalType": "address",
-                        "name": "walletAddress",
+                        "name": "owner",
                         "type": "address"
                     },
                     {
-                        "internalType": "string",
-                        "name": "nickname",
-                        "type": "string"
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "approved",
+                        "type": "address"
                     },
                     {
-                        "internalType": "bool",
-                        "name": "isActive",
-                        "type": "bool"
-                    },
-                    {
+                        "indexed": true,
                         "internalType": "uint256",
-                        "name": "lastConsolidation",
+                        "name": "tokenId",
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct BalanceConsolidator.AuthorizedWallet[]",
-                "name": "",
-                "type": "tuple[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
-            }
-        ],
-        "name": "getContractBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getWalletCount",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
+                "name": "Approval",
+                "type": "event"
             },
             {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
-            }
-        ],
-        "name": "getWalletBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_wallet",
-                "type": "address"
-            }
-        ],
-        "name": "removeWallet",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "walletAddresses",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_token",
-                "type": "address"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "ApprovalForAll",
+                "type": "event"
             },
             {
-                "internalType": "uint256",
-                "name": "_amount",
-                "type": "uint256"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "wallet",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "AuthorizationRevoked",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "wallet",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "WalletAuthorized",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newConsolidator",
+                        "type": "address"
+                    }
+                ],
+                "name": "ConsolidatorUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "previousOwner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnershipTransferred",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "BUSD",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDC",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDT",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "authorizeWallet",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "_wallets",
+                        "type": "address[]"
+                    }
+                ],
+                "name": "authorizeMultipleWallets",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "authorizedWallets",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "balanceConsolidator",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "baseTokenURI",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getApproved",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAllAuthorizedWallets",
+                "outputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "",
+                        "type": "address[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getWalletByTokenId",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "getTokenIdByWallet",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    }
+                ],
+                "name": "isApprovedForAll",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "isWalletAuthorized",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ownerOf",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "revokeAuthorization",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "data",
+                        "type": "bytes"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setApprovalForAll",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_baseTokenURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "setBaseURI",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_consolidator",
+                        "type": "address"
+                    }
+                ],
+                "name": "setConsolidator",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "bytes4",
+                        "name": "interfaceId",
+                        "type": "bytes4"
+                    }
+                ],
+                "name": "supportsInterface",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenURI",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalAuthorizations",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
             }
-        ],
-        "name": "withdrawFunds",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "stateMutability": "payable",
-        "type": "receive"
-    }
-];
-        
-        let web3, contract, userAccount;
-        const contractAddress = "0x0890eeE190B5cCf483942616C25395aE4f7B302B"; // INSERIR ENDEREÇO DO CONTRATO DEPLOYADO
+        ];
+
+        // ABI do Contrato Principal
+        const mainABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_authorizerNFT",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalTokens",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalValue",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "BulkConsolidation",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newAuthorizerNFT",
+                        "type": "address"
+                    }
+                ],
+                "name": "ConsolidatorUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "FundsWithdrawn",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "fromWallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "TokensConsolidated",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "BUSD",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDC",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDT",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "authorizerNFT",
+                "outputs": [
+                    {
+                        "internalType": "contract IAuthorizerNFT",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "_wallets",
+                        "type": "address[]"
+                    }
+                ],
+                "name": "consolidateMultipleWallets",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "consolidateStablecoinsFromWallet",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    }
+                ],
+                "name": "consolidateTokensFromWallet",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    }
+                ],
+                "name": "getContractBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getStats",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "totalConsolidatedValue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalOps",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "contractUSDT",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    }
+                ],
+                "name": "getWalletBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "isWalletAuthorized",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalConsolidated",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalOperations",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_authorizerNFT",
+                        "type": "address"
+                    }
+                ],
+                "name": "updateAuthorizerNFT",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawFunds",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawAllFunds",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "stateMutability": "payable",
+                "type": "receive"
+            }
+        ];
+
+        // Endereços dos contratos
+        const NFT_CONTRACT_ADDRESS = "0xbE3cC9cca3b7C4af920c0372692B1C14Be0B27C0";
+        const MAIN_CONTRACT_ADDRESS = "0xb45159C8f361d9672503a9929b2f1b53c48Fa5C0";
         
         // Endereços dos tokens
         const TOKENS = {
             USDT: "0x55d398326f99059fF775485246999027B3197955",
-            BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56", 
+            BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
             USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
         };
 
-        // Estado da aplicação
+        let web3, nftContract, mainContract, userAccount;
         let authorizedWallets = [];
-        let isConsolidating = false;
 
         // Elementos da UI
         const elements = {
-            // Conexão
             connectWallet: document.getElementById('connectWallet'),
             walletStatus: document.getElementById('walletStatus'),
             walletInfo: document.getElementById('walletInfo'),
             
             // Stats
-            contractBalance: document.getElementById('contractBalance'),
-            activeWallets: document.getElementById('activeWallets'),
-            lastConsolidation: document.getElementById('lastConsolidation'),
-            mainBalance: document.getElementById('mainBalance'),
-            
-            // Carteiras
-            walletAddress: document.getElementById('walletAddress'),
-            walletNickname: document.getElementById('walletNickname'),
-            addWallet: document.getElementById('addWallet'),
-            checkApprovals: document.getElementById('checkApprovals'),
+            totalConsolidated: document.getElementById('totalConsolidated'),
             authorizedWallets: document.getElementById('authorizedWallets'),
+            totalOperations: document.getElementById('totalOperations'),
+            contractBalance: document.getElementById('contractBalance'),
+            
+            // Configuração
+            setupConsolidator: document.getElementById('setupConsolidator'),
+            verifySetup: document.getElementById('verifySetup'),
+            setupStatus: document.getElementById('setupStatus'),
+            
+            // NFT
+            nftWalletAddress: document.getElementById('nftWalletAddress'),
+            multipleWallets: document.getElementById('multipleWallets'),
+            mintAuthNFT: document.getElementById('mintAuthNFT'),
+            mintMultipleNFTs: document.getElementById('mintMultipleNFTs'),
+            checkNFTAuthorization: document.getElementById('checkNFTAuthorization'),
+            nftStatus: document.getElementById('nftStatus'),
+            
+            // Wallets
+            authorizedWalletsList: document.getElementById('authorizedWalletsList'),
+            refreshWallets: document.getElementById('refreshWallets'),
             
             // Consolidação
             consolidateWallet: document.getElementById('consolidateWallet'),
             consolidateToken: document.getElementById('consolidateToken'),
             consolidateBtn: document.getElementById('consolidateBtn'),
-            approveAllTokens: document.getElementById('approveAllTokens'),
+            consolidateMultiple: document.getElementById('consolidateMultiple'),
             consolidationStatus: document.getElementById('consolidationStatus'),
             
             // Fundos
             withdrawToken: document.getElementById('withdrawToken'),
             withdrawAmount: document.getElementById('withdrawAmount'),
             withdrawFunds: document.getElementById('withdrawFunds'),
-            refreshBalances: document.getElementById('refreshBalances'),
+            withdrawAll: document.getElementById('withdrawAll'),
             
-            // Saldos
-            balancesDisplay: document.getElementById('balancesDisplay'),
-            balanceStats: document.getElementById('balanceStats'),
+            // Info
+            mainContractAddress: document.getElementById('mainContractAddress'),
+            nftContractAddress: document.getElementById('nftContractAddress'),
+            totalNFTs: document.getElementById('totalNFTs'),
+            refreshAll: document.getElementById('refreshAll'),
             
             // Logs
             logs: document.getElementById('logs'),
@@ -876,17 +1548,27 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
+            // Configurar endereços dos contratos
+            elements.mainContractAddress.textContent = MAIN_CONTRACT_ADDRESS;
+            elements.nftContractAddress.textContent = NFT_CONTRACT_ADDRESS;
+            
             // Event listeners
             elements.connectWallet.addEventListener('click', connectWallet);
-            elements.addWallet.addEventListener('click', addWallet);
-            elements.checkApprovals.addEventListener('click', checkTokenApprovals);
+            elements.setupConsolidator.addEventListener('click', setupConsolidator);
+            elements.verifySetup.addEventListener('click', verifySetup);
+            elements.mintAuthNFT.addEventListener('click', mintAuthNFT);
+            elements.mintMultipleNFTs.addEventListener('click', mintMultipleNFTs);
+            elements.checkNFTAuthorization.addEventListener('click', checkNFTAuthorization);
+            elements.refreshWallets.addEventListener('click', loadAuthorizedWallets);
             elements.consolidateBtn.addEventListener('click', executeConsolidation);
-            elements.approveAllTokens.addEventListener('click', approveAllTokens);
+            elements.consolidateMultiple.addEventListener('click', consolidateMultipleWallets);
             elements.withdrawFunds.addEventListener('click', withdrawFunds);
-            elements.refreshBalances.addEventListener('click', updateAllBalances);
+            elements.withdrawAll.addEventListener('click', withdrawAllFunds);
+            elements.refreshAll.addEventListener('click', updateAllInfo);
             elements.clearLogs.addEventListener('click', () => elements.logs.innerHTML = '');
             
-            addLog('Sistema de consolidação inicializado. Conecte sua carteira para começar.', 'info');
+            addLog('Sistema NFT de consolidação inicializado.', 'info');
+            addLog('Conecte sua carteira e configure o sistema.', 'info');
         });
 
         // Funções de utilidade
@@ -908,11 +1590,12 @@
                     elements.walletStatus.textContent = `Conectado: ${userAccount.substring(0, 8)}...`;
                     elements.walletStatus.className = 'status-badge status-active';
                     
-                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    // Inicializar contratos
+                    nftContract = new web3.eth.Contract(nftABI, NFT_CONTRACT_ADDRESS);
+                    mainContract = new web3.eth.Contract(mainABI, MAIN_CONTRACT_ADDRESS);
                     
                     addLog('✅ Carteira conectada com sucesso', 'success');
                     await updateAllInfo();
-                    await loadAuthorizedWallets();
                     
                 } catch (error) {
                     addLog(`❌ Erro na conexão: ${error.message}`, 'error');
@@ -922,9 +1605,51 @@
             }
         }
 
-        async function addWallet() {
-            const walletAddress = elements.walletAddress.value;
-            const nickname = elements.walletNickname.value || `Carteira ${authorizedWallets.length + 1}`;
+        // Configurar a relação entre NFT e Contrato Principal (CRÍTICO)
+        async function setupConsolidator() {
+            try {
+                addLog('⚙️ Configurando relação NFT → Contrato...', 'info');
+                
+                await nftContract.methods.setConsolidator(MAIN_CONTRACT_ADDRESS).send({ 
+                    from: userAccount 
+                });
+                
+                addLog('✅ Relação configurada com sucesso! O sistema está pronto.', 'success');
+                elements.setupStatus.innerHTML = '✅ <strong>Sistema Configurado</strong><br><small>NFT → Contrato Principal</small>';
+                elements.setupStatus.className = 'config-status success';
+                
+            } catch (error) {
+                addLog(`❌ Erro na configuração: ${error.message}`, 'error');
+                elements.setupStatus.innerHTML = '❌ <strong>Erro na Configuração</strong>';
+                elements.setupStatus.className = 'config-status error';
+            }
+        }
+
+        // Verificar configuração do sistema
+        async function verifySetup() {
+            try {
+                const consolidator = await nftContract.methods.balanceConsolidator().call();
+                const isConfigured = consolidator.toLowerCase() === MAIN_CONTRACT_ADDRESS.toLowerCase();
+                
+                if (isConfigured) {
+                    addLog('✅ Sistema configurado corretamente!', 'success');
+                    elements.setupStatus.innerHTML = '✅ <strong>Sistema Configurado</strong><br><small>NFT → Contrato Principal</small>';
+                    elements.setupStatus.className = 'config-status success';
+                } else {
+                    addLog('⚠️ Sistema não configurado. Execute a configuração.', 'warning');
+                    elements.setupStatus.innerHTML = '⚠️ <strong>Sistema Não Configurado</strong><br><small>Execute a configuração</small>';
+                    elements.setupStatus.className = 'config-status';
+                }
+                
+                return isConfigured;
+            } catch (error) {
+                addLog(`❌ Erro na verificação: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function mintAuthNFT() {
+            const walletAddress = elements.nftWalletAddress.value;
             
             if (!web3.utils.isAddress(walletAddress)) {
                 addLog('❌ Endereço de carteira inválido', 'error');
@@ -932,58 +1657,131 @@
             }
             
             try {
-                addLog(`👛 Autorizando carteira ${walletAddress.substring(0, 10)}...`, 'info');
+                addLog(`🎴 Emitindo NFT para ${walletAddress.substring(0, 10)}...`, 'info');
                 
-                await contract.methods.authorizeWallet(
-                    walletAddress,
-                    nickname
-                ).send({ from: userAccount });
+                const result = await nftContract.methods.authorizeWallet(walletAddress).send({ 
+                    from: userAccount 
+                });
                 
-                addLog(`✅ Carteira autorizada com sucesso: ${nickname}`, 'success');
+                const tokenId = result.events.WalletAuthorized.returnValues.tokenId;
                 
-                elements.walletAddress.value = '';
-                elements.walletNickname.value = '';
+                addLog(`✅ NFT emitido com sucesso! Token ID: ${tokenId}`, 'success');
                 
+                elements.nftWalletAddress.value = '';
                 await loadAuthorizedWallets();
-                await updateAllInfo();
                 
             } catch (error) {
-                addLog(`❌ Erro ao autorizar carteira: ${error.message}`, 'error');
+                addLog(`❌ Erro ao emitir NFT: ${error.message}`, 'error');
+            }
+        }
+
+        async function mintMultipleNFTs() {
+            const walletsText = elements.multipleWallets.value;
+            const wallets = walletsText.split(',').map(w => w.trim()).filter(w => w !== '');
+            
+            if (wallets.length === 0) {
+                addLog('❌ Nenhum endereço válido encontrado', 'error');
+                return;
+            }
+            
+            // Validar endereços
+            const validWallets = [];
+            for (const wallet of wallets) {
+                if (web3.utils.isAddress(wallet)) {
+                    validWallets.push(wallet);
+                } else {
+                    addLog(`⚠️ Endereço inválido ignorado: ${wallet}`, 'warning');
+                }
+            }
+            
+            if (validWallets.length === 0) {
+                addLog('❌ Nenhum endereço válido para processar', 'error');
+                return;
+            }
+            
+            try {
+                addLog(`🎴 Emitindo NFTs para ${validWallets.length} carteiras...`, 'info');
+                
+                const result = await nftContract.methods.authorizeMultipleWallets(validWallets).send({ 
+                    from: userAccount 
+                });
+                
+                addLog(`✅ ${validWallets.length} NFTs emitidos com sucesso!`, 'success');
+                
+                elements.multipleWallets.value = '';
+                await loadAuthorizedWallets();
+                
+            } catch (error) {
+                addLog(`❌ Erro ao emitir múltiplos NFTs: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkNFTAuthorization() {
+            const walletAddress = elements.nftWalletAddress.value || userAccount;
+            
+            if (!web3.utils.isAddress(walletAddress)) {
+                addLog('❌ Endereço de carteira inválido', 'error');
+                return;
+            }
+            
+            try {
+                const isAuthorized = await nftContract.methods.isWalletAuthorized(walletAddress).call();
+                const hasNFT = await nftContract.methods.balanceOf(walletAddress).call();
+                
+                if (isAuthorized && hasNFT > 0) {
+                    elements.nftStatus.textContent = 'AUTORIZADO';
+                    elements.nftStatus.className = 'status-badge status-active';
+                    addLog(`✅ Carteira ${walletAddress.substring(0, 10)} está autorizada via NFT`, 'success');
+                } else {
+                    elements.nftStatus.textContent = 'NÃO AUTORIZADO';
+                    elements.nftStatus.className = 'status-badge status-inactive';
+                    addLog(`❌ Carteira ${walletAddress.substring(0, 10)} NÃO está autorizada`, 'error');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Erro ao verificar autorização: ${error.message}`, 'error');
             }
         }
 
         async function loadAuthorizedWallets() {
             try {
-                const wallets = await contract.methods.getAuthorizedWallets().call();
-                authorizedWallets = wallets.filter(w => w.isActive);
+                const wallets = await nftContract.methods.getAllAuthorizedWallets().call();
+                // CORREÇÃO: usar string em vez de address(0)
+                authorizedWallets = wallets.filter(w => w !== "0x0000000000000000000000000000000000000000");
                 
-                elements.authorizedWallets.innerHTML = '';
+                elements.authorizedWalletsList.innerHTML = '';
                 elements.consolidateWallet.innerHTML = '<option value="all">TODAS AS CARTEIRAS</option>';
                 
-                authorizedWallets.forEach(wallet => {
-                    // Adicionar à lista de carteiras
+                if (authorizedWallets.length === 0) {
+                    elements.authorizedWalletsList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Nenhuma carteira autorizada</div>';
+                }
+                
+                for (const walletAddress of authorizedWallets) {
+                    const tokenId = await nftContract.methods.getTokenIdByWallet(walletAddress).call();
+                    const isAuthorized = await nftContract.methods.isWalletAuthorized(walletAddress).call();
+                    
                     const walletElement = document.createElement('div');
                     walletElement.className = 'wallet-item';
                     walletElement.innerHTML = `
                         <div>
-                            <strong>${wallet.nickname}</strong><br>
-                            <small style="font-family: monospace">${wallet.walletAddress}</small>
+                            <strong>${walletAddress.substring(0, 8)}...${walletAddress.substring(36)}</strong>
+                            <span class="nft-badge">NFT #${tokenId}</span><br>
+                            <small>Token ID: ${tokenId} | Status: ${isAuthorized ? 'Ativo' : 'Inativo'}</small>
                         </div>
                         <div>
-                            <span class="status-badge status-active">ATIVA</span>
-                            <button class="btn btn-danger" onclick="removeWallet('${wallet.walletAddress}')">Remover</button>
+                            <button class="btn btn-danger" onclick="revokeAuthorization('${walletAddress}')" style="padding: 5px 10px; font-size: 12px;">Revogar</button>
                         </div>
                     `;
-                    elements.authorizedWallets.appendChild(walletElement);
+                    elements.authorizedWalletsList.appendChild(walletElement);
                     
-                    // Adicionar ao dropdown de consolidação
+                    // Adicionar ao dropdown
                     const option = document.createElement('option');
-                    option.value = wallet.walletAddress;
-                    option.textContent = `${wallet.nickname} (${wallet.walletAddress.substring(0, 8)}...)`;
+                    option.value = walletAddress;
+                    option.textContent = `${walletAddress.substring(0, 8)}... (NFT #${tokenId})`;
                     elements.consolidateWallet.appendChild(option);
-                });
+                }
                 
-                elements.activeWallets.textContent = `${authorizedWallets.length}/5`;
+                elements.authorizedWallets.textContent = authorizedWallets.length;
                 
             } catch (error) {
                 addLog(`❌ Erro ao carregar carteiras: ${error.message}`, 'error');
@@ -991,121 +1789,81 @@
         }
 
         async function executeConsolidation() {
-            if (isConsolidating) {
-                addLog('⚠️ Consolidação já em andamento', 'warning');
-                return;
-            }
-            
             const wallet = elements.consolidateWallet.value;
             const token = elements.consolidateToken.value;
             
+            if (wallet === 'all') {
+                await consolidateMultipleWallets();
+                return;
+            }
+            
             try {
-                isConsolidating = true;
                 elements.consolidationStatus.textContent = 'CONSOLIDANDO...';
                 elements.consolidationStatus.className = 'status-badge status-warning';
                 
-                addLog(`🔄 Iniciando consolidação...`, 'info');
-                
                 let result;
-                if (wallet === 'all') {
-                    addLog('📦 Consolidando TODAS as carteiras...', 'info');
-                    result = await contract.methods.consolidateAllWallets().send({ from: userAccount });
-                } else if (token === 'all') {
+                if (token === 'all') {
                     addLog(`💰 Consolidando stablecoins da carteira...`, 'info');
-                    result = await contract.methods.consolidateStablecoinsFromWallet(wallet).send({ from: userAccount });
+                    result = await mainContract.methods.consolidateStablecoinsFromWallet(wallet).send({ from: userAccount });
                 } else {
-                    addLog(`🪙 Consolidando ${token} da carteira...`, 'info');
                     const tokenAddress = TOKENS[token];
-                    result = await contract.methods.consolidateTokensFromWallet(wallet, tokenAddress).send({ from: userAccount });
+                    addLog(`🪙 Consolidando ${token} da carteira...`, 'info');
+                    result = await mainContract.methods.consolidateTokensFromWallet(wallet, tokenAddress).send({ from: userAccount });
                 }
                 
-                addLog(`✅ Consolidação concluída com sucesso!`, 'success');
+                const amount = result.events.TokensConsolidated ? fromWei(result.events.TokensConsolidated.returnValues.amount) : '0';
+                
+                addLog(`✅ Consolidação concluída! Valor: ${amount}`, 'success');
                 elements.consolidationStatus.textContent = 'CONCLUÍDO';
                 elements.consolidationStatus.className = 'status-badge status-success';
                 
-                await updateAllBalances();
+                await updateAllInfo();
                 
             } catch (error) {
                 addLog(`❌ Erro na consolidação: ${error.message}`, 'error');
                 elements.consolidationStatus.textContent = 'ERRO';
                 elements.consolidationStatus.className = 'status-badge status-danger';
-            } finally {
-                isConsolidating = false;
             }
         }
 
-        async function checkTokenApprovals() {
-            addLog('🔍 Verificando aprovações de tokens...', 'info');
-            
-            for (const wallet of authorizedWallets) {
-                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
-                    try {
-                        const tokenContract = new web3.eth.Contract([
-                            {
-                                "constant": true,
-                                "inputs": [
-                                    {"name": "_owner", "type": "address"},
-                                    {"name": "_spender", "type": "address"}
-                                ],
-                                "name": "allowance",
-                                "outputs": [{"name": "", "type": "uint256"}],
-                                "type": "function"
-                            }
-                        ], tokenAddress);
-                        
-                        const allowance = await tokenContract.methods.allowance(
-                            wallet.walletAddress,
-                            contractAddress
-                        ).call();
-                        
-                        if (allowance > 0) {
-                            addLog(`✅ ${tokenName} aprovado para ${wallet.nickname}: ${fromWei(allowance)}`, 'success');
-                        } else {
-                            addLog(`❌ ${tokenName} NÃO aprovado para ${wallet.nickname}`, 'warning');
-                        }
-                    } catch (error) {
-                        addLog(`⚠️ Erro ao verificar ${tokenName} para ${wallet.nickname}`, 'warning');
-                    }
-                }
+        async function consolidateMultipleWallets() {
+            if (authorizedWallets.length === 0) {
+                addLog('❌ Nenhuma carteira autorizada para consolidar', 'error');
+                return;
             }
-        }
-
-        async function approveAllTokens() {
-            addLog('✅ Aprovando todos os tokens...', 'info');
             
-            for (const wallet of authorizedWallets) {
-                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
-                    try {
-                        const tokenContract = new web3.eth.Contract([
-                            {
-                                "constant": false,
-                                "inputs": [
-                                    {"name": "_spender", "type": "address"},
-                                    {"name": "_value", "type": "uint256"}
-                                ],
-                                "name": "approve",
-                                "outputs": [{"name": "", "type": "bool"}],
-                                "type": "function"
-                            }
-                        ], tokenAddress);
-                        
-                        await tokenContract.methods.approve(
-                            contractAddress,
-                            web3.utils.toWei('1000000', 'ether') // Aprovação alta
-                        ).send({ from: userAccount });
-                        
-                        addLog(`✅ ${tokenName} aprovado para ${wallet.nickname}`, 'success');
-                        
-                    } catch (error) {
-                        addLog(`❌ Erro ao aprovar ${tokenName} para ${wallet.nickname}: ${error.message}`, 'error');
-                    }
-                }
+            try {
+                elements.consolidationStatus.textContent = 'CONSOLIDANDO MÚLTIPLAS...';
+                elements.consolidationStatus.className = 'status-badge status-warning';
+                
+                addLog(`📦 Consolidando ${authorizedWallets.length} carteiras...`, 'info');
+                
+                const result = await mainContract.methods.consolidateMultipleWallets(authorizedWallets).send({ 
+                    from: userAccount 
+                });
+                
+                addLog(`✅ Consolidação em massa concluída!`, 'success');
+                elements.consolidationStatus.textContent = 'CONCLUÍDO';
+                elements.consolidationStatus.className = 'status-badge status-success';
+                
+                await updateAllInfo();
+                
+            } catch (error) {
+                addLog(`❌ Erro na consolidação múltipla: ${error.message}`, 'error');
+                elements.consolidationStatus.textContent = 'ERRO';
+                elements.consolidationStatus.className = 'status-badge status-danger';
             }
         }
 
         async function withdrawFunds() {
             const token = elements.withdrawToken.value;
             const amount = elements.withdrawAmount.value;
+            
+            if (token === 'ALL') {
+                await withdrawAllFunds();
+                return;
+            }
+            
             const tokenAddress = TOKENS[token];
             
             try {
@@ -1113,14 +1871,14 @@
                 
                 let tx;
                 if (amount) {
-                    tx = await contract.methods.withdrawFunds(
+                    tx = await mainContract.methods.withdrawFunds(
                         tokenAddress,
                         toWei(amount)
                     ).send({ from: userAccount });
                 } else {
                     // Retirar tudo
-                    const balance = await contract.methods.getContractBalance(tokenAddress).call();
-                    tx = await contract.methods.withdrawFunds(
+                    const balance = await mainContract.methods.getContractBalance(tokenAddress).call();
+                    tx = await mainContract.methods.withdrawFunds(
                         tokenAddress,
                         balance
                     ).send({ from: userAccount });
@@ -1129,78 +1887,88 @@
                 addLog(`✅ ${token} retirado com sucesso!`, 'success');
                 elements.withdrawAmount.value = '';
                 
-                await updateAllBalances();
+                await updateAllInfo();
                 
             } catch (error) {
                 addLog(`❌ Erro ao retirar fundos: ${error.message}`, 'error');
             }
         }
 
-        async function updateAllBalances() {
+        async function withdrawAllFunds() {
             try {
-                // Saldo do contrato
-                const usdtBalance = await contract.methods.getContractBalance(TOKENS.USDT).call();
-                elements.contractBalance.textContent = `${fromWei(usdtBalance)} USDT`;
+                addLog(`🏦 Retirando TODOS os fundos...`, 'info');
                 
-                // Saldo principal (BNB)
-                const bnbBalance = await web3.eth.getBalance(userAccount);
-                elements.mainBalance.textContent = `${fromWei(bnbBalance)} BNB`;
+                await mainContract.methods.withdrawAllFunds().send({ from: userAccount });
                 
-                // Atualizar display de saldos
-                elements.balancesDisplay.innerHTML = '';
+                addLog(`✅ Todos os fundos retirados com sucesso!`, 'success');
                 
-                for (const [tokenName, tokenAddress] of Object.entries(TOKENS)) {
-                    const balance = await contract.methods.getContractBalance(tokenAddress).call();
-                    const balanceElement = document.createElement('div');
-                    balanceElement.className = 'balance-item';
-                    balanceElement.innerHTML = `
-                        <strong>${tokenName}</strong>: ${fromWei(balance)} tokens
-                    `;
-                    elements.balancesDisplay.appendChild(balanceElement);
-                }
-                
-                elements.balanceStats.textContent = `Atualizado: ${new Date().toLocaleTimeString()}`;
+                await updateAllInfo();
                 
             } catch (error) {
-                addLog(`❌ Erro ao atualizar saldos: ${error.message}`, 'error');
+                addLog(`❌ Erro ao retirar todos os fundos: ${error.message}`, 'error');
             }
         }
 
         async function updateAllInfo() {
-            await updateAllBalances();
-            await loadAuthorizedWallets();
+            if (!web3 || !nftContract || !mainContract) return;
+            
+            try {
+                // Verificar configuração primeiro
+                await verifySetup();
+                
+                // Stats do contrato principal
+                const [totalConsolidated, totalOps, contractUSDT] = await mainContract.methods.getStats().call();
+                
+                elements.totalConsolidated.textContent = `${fromWei(totalConsolidated)} USDT`;
+                elements.totalOperations.textContent = totalOps;
+                elements.contractBalance.textContent = `${fromWei(contractUSDT)} USDT`;
+                
+                // Info do NFT
+                const totalNFTs = await nftContract.methods.totalAuthorizations().call();
+                elements.totalNFTs.textContent = totalNFTs;
+                
+                // Info da carteira
+                if (userAccount) {
+                    const bnbBalance = await web3.eth.getBalance(userAccount);
+                    const nftBalance = await nftContract.methods.balanceOf(userAccount).call();
+                    elements.walletInfo.innerHTML = `
+                        BNB: ${fromWei(bnbBalance).substring(0, 8)} | NFTs: ${nftBalance}
+                    `;
+                }
+                
+                await loadAuthorizedWallets();
+                
+            } catch (error) {
+                console.error('Erro ao atualizar info:', error);
+                addLog(`⚠️ Erro ao atualizar informações: ${error.message}`, 'warning');
+            }
         }
 
         function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
             const logEntry = document.createElement('div');
             logEntry.className = `log-entry log-${type}`;
-            logEntry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
             elements.logs.appendChild(logEntry);
             elements.logs.scrollTop = elements.logs.scrollHeight;
         }
 
-        // Funções globais para botões
-        window.removeWallet = async function(walletAddress) {
+        // Funções globais
+        window.revokeAuthorization = async function(walletAddress) {
             try {
-                addLog(`🗑️ Removendo carteira...`, 'info');
-                await contract.methods.removeWallet(walletAddress).send({ from: userAccount });
-                addLog(`✅ Carteira removida com sucesso`, 'success');
+                addLog(`🗑️ Revogando autorização...`, 'info');
+                await nftContract.methods.revokeAuthorization(walletAddress).send({ from: userAccount });
+                addLog(`✅ Autorização revogada com sucesso`, 'success');
                 await loadAuthorizedWallets();
             } catch (error) {
-                addLog(`❌ Erro ao remover carteira: ${error.message}`, 'error');
+                addLog(`❌ Erro ao revogar autorização: ${error.message}`, 'error');
             }
         };
 
-        // Listeners para eventos do contrato
-        if (contract) {
-            contract.events.WalletAuthorized({}, (error, event) => {
-                if (!error) addLog(`👛 Nova carteira autorizada: ${event.returnValues.nickname}`, 'success');
-            });
-            
-            contract.events.TokensConsolidated({}, (error, event) => {
-                if (!error) addLog(`💰 Tokens consolidados: ${fromWei(event.returnValues.amount)}`, 'success');
-            });
-        }
+        // Atualizar periodicamente
+        setInterval(() => {
+            if (userAccount) updateAllInfo();
+        }, 30000);
     </script>
 </body>
 </html>
