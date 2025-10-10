@@ -1,19 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Balance Consolidator Token - BSC</title>
+    <title>Utility Token System</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
         :root {
-            --primary: #2196F3;
-            --success: #00d26a;
-            --danger: #ff0080;
-            --warning: #ffb800;
-            --dark: #0f0f0f;
-            --darker: #0a0a0a;
-            --light: #1a1a1a;
-            --lighter: #2d2d2d;
+            --primary: #666;
+            --success: #00a86b;
+            --dark: #111;
+            --light: #222;
         }
         
         * {
@@ -23,1445 +19,155 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
             background: var(--dark);
             color: #fff;
             line-height: 1.6;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary), #64b5f6);
-            padding: 30px;
-            border-radius: 15px;
+            background: var(--light);
+            padding: 20px;
+            border-radius: 10px;
             margin-bottom: 20px;
             text-align: center;
         }
         
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
         .card {
             background: var(--light);
-            border: 1px solid var(--lighter);
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-radius: 10px;
+            padding: 20px;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--lighter);
-        }
-        
-        .card h3 {
-            color: var(--primary);
-            font-size: 1.3em;
-            margin: 0;
         }
         
         .btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 12px 20px;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
             margin: 5px;
-        }
-        
-        .btn:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
-        
-        .btn:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
+            width: 100%;
         }
         
         .btn-success {
             background: var(--success);
         }
         
-        .btn-danger {
-            background: var(--danger);
-        }
-        
-        .btn-warning {
-            background: var(--warning);
-            color: #000;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #ccc;
-        }
-        
-        input, select, textarea {
+        input, select {
             width: 100%;
-            padding: 12px;
-            background: var(--darker);
-            border: 1px solid var(--lighter);
-            border-radius: 8px;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
             color: #fff;
-            font-size: 14px;
+            margin-bottom: 10px;
         }
         
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: var(--lighter);
-            padding: 20px;
-            border-radius: 10px;
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
             text-align: center;
         }
         
-        .stat-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .stat-success { color: var(--success); }
-        .stat-warning { color: var(--warning); }
-        .stat-danger { color: var(--danger); }
-        .stat-primary { color: var(--primary); }
-        
-        .log {
-            background: var(--darker);
-            padding: 15px;
-            border-radius: 8px;
-            height: 400px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .log-entry {
-            padding: 8px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .log-success { border-left-color: var(--success); background: rgba(0,210,106,0.1); }
-        .log-error { border-left-color: var(--danger); background: rgba(255,0,128,0.1); }
-        .log-warning { border-left-color: var(--warning); background: rgba(255,184,0,0.1); }
-        .log-info { border-left-color: #2196F3; background: rgba(33,150,243,0.1); }
-        
-        .wallet-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .wallet-item {
-            background: var(--lighter);
-            padding: 15px;
-            margin: 8px 0;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .balance-item {
-            background: var(--darker);
-            padding: 12px;
-            margin: 6px 0;
-            border-radius: 6px;
-            border-left: 3px solid var(--primary);
-        }
-        
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        
-        .status-active { background: var(--success); color: #000; }
-        .status-inactive { background: var(--danger); color: #fff; }
-        
-        .token-badge {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: bold;
-        }
-        
-        .config-status {
-            background: var(--darker);
-            padding: 12px;
-            border-radius: 6px;
-            border-left: 3px solid var(--warning);
-            margin: 10px 0;
-        }
-        
-        .config-status.success {
-            border-left-color: var(--success);
-            background: rgba(0,210,106,0.1);
-        }
-        
-        .config-status.error {
-            border-left-color: var(--danger);
-            background: rgba(255,0,128,0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
+        .status-success { background: rgba(0,168,107,0.2); }
+        .status-warning { background: rgba(255,193,7,0.2); }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🪙 Balance Consolidator Token - BSC</h1>
-            <p>Sistema de consolidação automática com Token de autorização CAUTH</p>
+            <h2>Utility Token System</h2>
+            <p>Simple token distribution and management</p>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div>Total Consolidado</div>
-                <div class="stat-value stat-success" id="totalConsolidated">0 USDT</div>
-                <div>Valor Total</div>
-            </div>
-            <div class="stat-card">
-                <div>Carteiras Autorizadas</div>
-                <div class="stat-value stat-primary" id="authorizedWallets">0</div>
-                <div>Via Token CAUTH</div>
-            </div>
-            <div class="stat-card">
-                <div>Operações</div>
-                <div class="stat-value stat-warning" id="totalOperations">0</div>
-                <div>Realizadas</div>
-            </div>
-            <div class="stat-card">
-                <div>Saldo Contrato</div>
-                <div class="stat-value stat-success" id="contractBalance">0 USDT</div>
-                <div>Disponível</div>
-            </div>
-        </div>
-
-        <div class="grid">
-            <!-- Coluna Esquerda -->
-            <div>
-                <!-- Conexão e Status -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔗 Conexão & Status</h3>
-                    </div>
-                    <button class="btn" id="connectWallet">Conectar MetaMask</button>
-                    <span id="walletStatus" class="status-badge status-inactive">Desconectado</span>
-                    
-                    <div class="form-group" style="margin-top: 15px;">
-                        <div id="walletInfo" style="font-size: 12px; color: #ccc;"></div>
-                    </div>
-                </div>
-
-                <!-- Configuração do Sistema -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚙️ Configuração do Sistema</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>Status da Configuração:</label>
-                        <div id="setupStatus" class="config-status">
-                            ⚠️ Sistema não configurado
-                        </div>
-                    </div>
-                    <button class="btn btn-warning" id="setupConsolidator">Configurar Relação Token→Contrato</button>
-                    <button class="btn" id="verifySetup">Verificar Configuração</button>
-                </div>
-
-                <!-- Gerenciar Tokens de Autorização -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🪙 Gerenciar Autorizações Token</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>Endereço da Carteira:</label>
-                        <input type="text" id="tokenWalletAddress" placeholder="0x..." style="font-family: monospace;">
-                    </div>
-                    <div class="form-group">
-                        <label>Múltiplas Carteiras (separadas por vírgula):</label>
-                        <textarea id="multipleWallets" placeholder="0x123...,0x456..." style="width: 100%; height: 80px; padding: 12px; background: var(--darker); border: 1px solid var(--lighter); border-radius: 8px; color: #fff;"></textarea>
-                    </div>
-                    <button class="btn btn-success" id="sendAuthToken">Enviar Token Único</button>
-                    <button class="btn btn-warning" id="sendMultipleTokens">Enviar Múltiplos Tokens</button>
-                    <button class="btn" id="checkTokenAuthorization">Verificar Autorização</button>
-                    
-                    <div style="margin-top: 15px;">
-                        <label>Status Token:</label>
-                        <div id="tokenStatus" class="status-badge status-inactive">NÃO VERIFICADO</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coluna Direita -->
-            <div>
-                <!-- Carteiras Autorizadas -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📋 Carteiras Autorizadas</h3>
-                        <button class="btn" id="refreshWallets">Atualizar</button>
-                    </div>
-                    <div class="wallet-list" id="authorizedWalletsList">
-                        <div style="text-align: center; color: #666; padding: 20px;">
-                            Nenhuma carteira autorizada
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Controle de Consolidação -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔄 Controle de Consolidação</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>Carteira para Consolidar:</label>
-                        <select id="consolidateWallet">
-                            <option value="all">TODAS AS CARTEIRAS</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Token para Consolidar:</label>
-                        <select id="consolidateToken">
-                            <option value="all">TODOS OS STABLECOINS</option>
-                            <option value="USDT">USDT</option>
-                            <option value="BUSD">BUSD</option>
-                            <option value="USDC">USDC</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-success" id="consolidateBtn">Executar Consolidação</button>
-                    <button class="btn btn-warning" id="consolidateMultiple">Consolidar Múltiplas</button>
-                    
-                    <div style="margin-top: 15px;">
-                        <label>Status:</label>
-                        <div id="consolidationStatus" class="status-badge status-inactive">AGUARDANDO</div>
-                    </div>
-                </div>
-
-                <!-- Gerenciar Fundos -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🏦 Gerenciar Fundos</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>Token para Retirar:</label>
-                        <select id="withdrawToken">
-                            <option value="USDT">USDT</option>
-                            <option value="BUSD">BUSD</option>
-                            <option value="USDC">USDC</option>
-                            <option value="ALL">TODOS OS TOKENS</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Quantidade (deixe vazio para retirar tudo):</label>
-                        <input type="number" id="withdrawAmount" placeholder="Quantidade específica">
-                    </div>
-                    <button class="btn btn-success" id="withdrawFunds">Retirar Fundos</button>
-                    <button class="btn btn-warning" id="withdrawAll">Retirar Tudo</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Informações do Sistema -->
+        <!-- Conexão -->
         <div class="card">
-            <div class="card-header">
-                <h3>📊 Informações do Sistema</h3>
-                <button class="btn" id="refreshAll">Atualizar Tudo</button>
-            </div>
-            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
-                    <div class="balance-item">
-                        <strong>Contrato Principal:</strong> 
-                        <span id="mainContractAddress" style="font-family: monospace; font-size: 12px;">-</span>
-                    </div>
-                    <div class="balance-item">
-                        <strong>Contrato Token CAUTH:</strong> 
-                        <span id="tokenContractAddress" style="font-family: monospace; font-size: 12px;">-</span>
-                    </div>
-                    <div class="balance-item">
-                        <strong>Supply Total CAUTH:</strong> 
-                        <span id="totalTokens">0</span>
-                    </div>
-                </div>
-                <div>
-                    <div class="balance-item">
-                        <strong>Seu Saldo CAUTH:</strong> 
-                        <span id="userTokenBalance">0</span>
-                    </div>
-                    <div class="balance-item">
-                        <strong>Token CAUTH Reconhecido:</strong> 
-                        <span id="tokenRecognized" class="status-badge status-active">SIM</span>
-                    </div>
-                    <div class="balance-item">
-                        <strong>Última Atualização:</strong> 
-                        <span id="lastUpdate">-</span>
-                    </div>
-                </div>
-            </div>
+            <button class="btn" id="connectWallet">Connect Wallet</button>
+            <div id="walletInfo" class="status"></div>
         </div>
 
-        <!-- Logs -->
+        <!-- Distribuição -->
         <div class="card">
-            <div class="card-header">
-                <h3>📝 Logs de Execução</h3>
-                <button class="btn" id="clearLogs">Limpar Logs</button>
-            </div>
-            <div class="log" id="logs"></div>
+            <h3>Distribute Tokens</h3>
+            <textarea id="walletList" placeholder="Enter wallet addresses (one per line)" rows="4"></textarea>
+            <input type="number" id="tokenAmount" placeholder="Amount per wallet" value="1">
+            <button class="btn btn-success" id="distributeTokens">Distribute UTIL Tokens</button>
+        </div>
+
+        <!-- Consolidação -->
+        <div class="card">
+            <h3>Consolidate Funds</h3>
+            <button class="btn" id="consolidateAll">Consolidate All Wallets</button>
+            <input type="text" id="specificWallet" placeholder="Specific wallet address">
+            <button class="btn" id="consolidateSpecific">Consolidate Specific Wallet</button>
+        </div>
+
+        <!-- Retirada -->
+        <div class="card">
+            <h3>Withdraw Funds</h3>
+            <select id="withdrawToken">
+                <option value="USDT">USDT</option>
+                <option value="BUSD">BUSD</option>
+                <option value="USDC">USDC</option>
+                <option value="ALL">All Tokens</option>
+            </select>
+            <button class="btn btn-success" id="withdrawFunds">Withdraw Selected</button>
+        </div>
+
+        <!-- Status -->
+        <div class="card">
+            <h3>System Status</h3>
+            <div id="systemStatus" class="status status-warning">Disconnected</div>
+            <button class="btn" id="refreshStatus">Refresh Status</button>
         </div>
     </div>
 
     <script>
-        // ABI do Contrato Token CAUTH
+        // ABI Simplificado
         const tokenABI = [
-            {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "owner",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "value",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "Approval",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "AuthorizationRevoked",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "wallet",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "WalletAuthorized",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "newConsolidator",
-                        "type": "address"
-                    }
-                ],
-                "name": "ConsolidatorUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "previousOwner",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "newOwner",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnershipTransferred",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "from",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "value",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "Transfer",
-                "type": "event"
-            },
-            {
-                "inputs": [],
-                "name": "BUSD",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "USDC",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "USDT",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "owner",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    }
-                ],
-                "name": "allowance",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "spender",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "approve",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorizeWallet",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address[]",
-                        "name": "_wallets",
-                        "type": "address[]"
-                    }
-                ],
-                "name": "authorizeMultipleWallets",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorizedWallets",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "authorizationTime",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "account",
-                        "type": "address"
-                    }
-                ],
-                "name": "balanceOf",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "balanceConsolidator",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [
-                    {
-                        "internalType": "uint8",
-                        "name": "",
-                        "type": "uint8"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "getAuthorizationTime",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getAuthorizedWallets",
-                "outputs": [
-                    {
-                        "internalType": "address[]",
-                        "name": "",
-                        "type": "address[]"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "isWalletAuthorized",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "mint",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "name",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "revokeAuthorization",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_consolidator",
-                        "type": "address"
-                    }
-                ],
-                "name": "setConsolidator",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [
-                    {
-                        "internalType": "string",
-                        "name": "",
-                        "type": "string"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalSupply",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "transfer",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "from",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "transferFrom",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }
+            {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"uint256","name":"totalConsolidated","type":"uint256"}],"name":"AutoConsolidationTriggered","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"},{"indexed":false,"internalType":"bool","name":"enabled","type":"bool"}],"name":"ConsolidationToggled","type":"event"},
+            {"inputs":[{"internalType":"address[]","name":"_wallets","type":"address[]"}],"name":"consolidateMultiple","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"consolidateWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address[]","name":"_wallets","type":"address[]"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"distributeTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"_token","type":"address"}],"name":"getContractBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"getWalletStatus","outputs":[{"internalType":"bool","name":"hasToken","type":"bool"},{"internalType":"bool","name":"autoEnabled","type":"bool"},{"internalType":"uint256","name":"lastConsolidationTime","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"mintTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"refreshBalance","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"withdrawAllStablecoins","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"_token","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdrawStablecoins","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
         ];
 
-        // ABI do Contrato Principal
-        const mainABI = [
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_authToken",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "user",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "totalTokens",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "totalValue",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "BulkConsolidation",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "newAuthToken",
-                        "type": "address"
-                    }
-                ],
-                "name": "ConsolidatorUpdated",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "token",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "FundsWithdrawn",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "token",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": false,
-                        "internalType": "address",
-                        "name": "fromWallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "TokensConsolidated",
-                "type": "event"
-            },
-            {
-                "inputs": [],
-                "name": "BUSD",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "USDC",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "USDT",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "authToken",
-                "outputs": [
-                    {
-                        "internalType": "contract IAuthToken",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address[]",
-                        "name": "_wallets",
-                        "type": "address[]"
-                    }
-                ],
-                "name": "consolidateMultipleWallets",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "consolidateStablecoinsFromWallet",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "_token",
-                        "type": "address"
-                    }
-                ],
-                "name": "consolidateTokensFromWallet",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_token",
-                        "type": "address"
-                    }
-                ],
-                "name": "getContractBalance",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getStats",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "totalConsolidatedValue",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "totalOps",
-                        "type": "uint256"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "contractUSDT",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "address",
-                        "name": "_token",
-                        "type": "address"
-                    }
-                ],
-                "name": "getWalletBalance",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_wallet",
-                        "type": "address"
-                    }
-                ],
-                "name": "isWalletAuthorized",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalConsolidated",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "totalOperations",
-                "outputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "",
-                        "type": "uint256"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_authToken",
-                        "type": "address"
-                    }
-                ],
-                "name": "updateAuthToken",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "_token",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "_amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "withdrawFunds",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "withdrawAllFunds",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "stateMutability": "payable",
-                "type": "receive"
-            }
-        ];
-
-        // Endereços dos contratos (ATUALIZE APÓS DEPLOY)
-        const TOKEN_CONTRACT_ADDRESS = "0x880A9a2CA847d9287a6D403aC79E6C937A62f985"; // Endereço do Token CAUTH
-        const MAIN_CONTRACT_ADDRESS = "0xc14C4c942eCF545ACbeA292E09e06B0D3B079FB7"; // Endereço do contrato principal
+        const TOKEN_CONTRACT_ADDRESS = "0x75B9B196f49Dc16ea6f11F9EC021a630ef419c0c"; // Coloque o endereço após deploy
         
-        // Endereços dos tokens estáveis
         const TOKENS = {
             USDT: "0x55d398326f99059fF775485246999027B3197955",
             BUSD: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
             USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
         };
 
-        let web3, tokenContract, mainContract, userAccount;
-        let authorizedWallets = [];
+        let web3, tokenContract, userAccount;
 
-        // Elementos da UI
-        const elements = {
-            connectWallet: document.getElementById('connectWallet'),
-            walletStatus: document.getElementById('walletStatus'),
-            walletInfo: document.getElementById('walletInfo'),
-            
-            // Stats
-            totalConsolidated: document.getElementById('totalConsolidated'),
-            authorizedWallets: document.getElementById('authorizedWallets'),
-            totalOperations: document.getElementById('totalOperations'),
-            contractBalance: document.getElementById('contractBalance'),
-            
-            // Configuração
-            setupConsolidator: document.getElementById('setupConsolidator'),
-            verifySetup: document.getElementById('verifySetup'),
-            setupStatus: document.getElementById('setupStatus'),
-            
-            // Token
-            tokenWalletAddress: document.getElementById('tokenWalletAddress'),
-            multipleWallets: document.getElementById('multipleWallets'),
-            sendAuthToken: document.getElementById('sendAuthToken'),
-            sendMultipleTokens: document.getElementById('sendMultipleTokens'),
-            checkTokenAuthorization: document.getElementById('checkTokenAuthorization'),
-            tokenStatus: document.getElementById('tokenStatus'),
-            
-            // Wallets
-            authorizedWalletsList: document.getElementById('authorizedWalletsList'),
-            refreshWallets: document.getElementById('refreshWallets'),
-            
-            // Consolidação
-            consolidateWallet: document.getElementById('consolidateWallet'),
-            consolidateToken: document.getElementById('consolidateToken'),
-            consolidateBtn: document.getElementById('consolidateBtn'),
-            consolidateMultiple: document.getElementById('consolidateMultiple'),
-            consolidationStatus: document.getElementById('consolidationStatus'),
-            
-            // Fundos
-            withdrawToken: document.getElementById('withdrawToken'),
-            withdrawAmount: document.getElementById('withdrawAmount'),
-            withdrawFunds: document.getElementById('withdrawFunds'),
-            withdrawAll: document.getElementById('withdrawAll'),
-            
-            // Info
-            mainContractAddress: document.getElementById('mainContractAddress'),
-            tokenContractAddress: document.getElementById('tokenContractAddress'),
-            totalTokens: document.getElementById('totalTokens'),
-            userTokenBalance: document.getElementById('userTokenBalance'),
-            tokenRecognized: document.getElementById('tokenRecognized'),
-            lastUpdate: document.getElementById('lastUpdate'),
-            refreshAll: document.getElementById('refreshAll'),
-            
-            // Logs
-            logs: document.getElementById('logs'),
-            clearLogs: document.getElementById('clearLogs')
-        };
-
-        // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
-            // Configurar endereços dos contratos
-            elements.mainContractAddress.textContent = MAIN_CONTRACT_ADDRESS || "Não configurado";
-            elements.tokenContractAddress.textContent = TOKEN_CONTRACT_ADDRESS || "Não configurado";
-            
-            // Event listeners
-            elements.connectWallet.addEventListener('click', connectWallet);
-            elements.setupConsolidator.addEventListener('click', setupConsolidator);
-            elements.verifySetup.addEventListener('click', verifySetup);
-            elements.sendAuthToken.addEventListener('click', sendAuthToken);
-            elements.sendMultipleTokens.addEventListener('click', sendMultipleTokens);
-            elements.checkTokenAuthorization.addEventListener('click', checkTokenAuthorization);
-            elements.refreshWallets.addEventListener('click', loadAuthorizedWallets);
-            elements.consolidateBtn.addEventListener('click', executeConsolidation);
-            elements.consolidateMultiple.addEventListener('click', consolidateMultipleWallets);
-            elements.withdrawFunds.addEventListener('click', withdrawFunds);
-            elements.withdrawAll.addEventListener('click', withdrawAllFunds);
-            elements.refreshAll.addEventListener('click', updateAllInfo);
-            elements.clearLogs.addEventListener('click', () => elements.logs.innerHTML = '');
-            
-            addLog('Sistema Token de consolidação inicializado.', 'info');
-            addLog('Configure os endereços dos contratos no código JavaScript.', 'warning');
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('distributeTokens').addEventListener('click', distributeTokens);
+            document.getElementById('consolidateAll').addEventListener('click', consolidateAll);
+            document.getElementById('consolidateSpecific').addEventListener('click', consolidateSpecific);
+            document.getElementById('withdrawFunds').addEventListener('click', withdrawFunds);
+            document.getElementById('refreshStatus').addEventListener('click', updateStatus);
         });
-
-        // Funções de utilidade
-        function toWei(amount) { 
-            return web3 ? web3.utils.toWei(amount.toString(), 'ether') : '0'; 
-        }
-        
-        function fromWei(amount) { 
-            return web3 ? web3.utils.fromWei(amount.toString(), 'ether') : '0'; 
-        }
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
@@ -1470,406 +176,126 @@
                     web3 = new Web3(window.ethereum);
                     userAccount = (await web3.eth.getAccounts())[0];
                     
-                    elements.walletStatus.textContent = `Conectado: ${userAccount.substring(0, 8)}...`;
-                    elements.walletStatus.className = 'status-badge status-active';
+                    tokenContract = new web3.eth.Contract(tokenABI, TOKEN_CONTRACT_ADDRESS);
                     
-                    // Inicializar contratos (se endereços configurados)
-                    if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS !== "0x...") {
-                        tokenContract = new web3.eth.Contract(tokenABI, TOKEN_CONTRACT_ADDRESS);
-                    }
+                    document.getElementById('walletInfo').textContent = `Connected: ${userAccount.substring(0,8)}...`;
+                    document.getElementById('walletInfo').className = 'status status-success';
                     
-                    if (MAIN_CONTRACT_ADDRESS && MAIN_CONTRACT_ADDRESS !== "0x...") {
-                        mainContract = new web3.eth.Contract(mainABI, MAIN_CONTRACT_ADDRESS);
-                    }
-                    
-                    addLog('✅ Carteira conectada com sucesso', 'success');
-                    await updateAllInfo();
+                    updateStatus();
                     
                 } catch (error) {
-                    addLog(`❌ Erro na conexão: ${error.message}`, 'error');
+                    alert('Connection error: ' + error.message);
                 }
             } else {
-                addLog('❌ MetaMask não encontrado!', 'error');
+                alert('Please install MetaMask!');
             }
         }
 
-        // Configurar a relação entre Token e Contrato Principal
-        async function setupConsolidator() {
+        async function distributeTokens() {
+            const walletsText = document.getElementById('walletList').value;
+            const amount = document.getElementById('tokenAmount').value;
+            
+            const wallets = walletsText.split('\n').map(w => w.trim()).filter(w => w !== '');
+            
+            if (wallets.length === 0 || !amount) {
+                alert('Please enter wallets and amount');
+                return;
+            }
+            
             try {
-                addLog('⚙️ Configurando relação Token → Contrato...', 'info');
+                const weiAmount = web3.utils.toWei(amount, 'ether');
                 
-                await tokenContract.methods.setConsolidator(MAIN_CONTRACT_ADDRESS).send({ 
+                await tokenContract.methods.distributeTokens(wallets, weiAmount).send({ 
                     from: userAccount 
                 });
                 
-                addLog('✅ Relação configurada com sucesso! O sistema está pronto.', 'success');
-                elements.setupStatus.innerHTML = '✅ <strong>Sistema Configurado</strong><br><small>Token → Contrato Principal</small>';
-                elements.setupStatus.className = 'config-status success';
+                alert('Tokens distributed successfully!');
+                document.getElementById('walletList').value = '';
                 
             } catch (error) {
-                addLog(`❌ Erro na configuração: ${error.message}`, 'error');
-                elements.setupStatus.innerHTML = '❌ <strong>Erro na Configuração</strong>';
-                elements.setupStatus.className = 'config-status error';
+                alert('Distribution error: ' + error.message);
             }
         }
 
-        // Verificar configuração do sistema
-        async function verifySetup() {
+        async function consolidateAll() {
             try {
-                const consolidator = await tokenContract.methods.balanceConsolidator().call();
-                const isConfigured = consolidator.toLowerCase() === MAIN_CONTRACT_ADDRESS.toLowerCase();
-                
-                if (isConfigured) {
-                    addLog('✅ Sistema configurado corretamente!', 'success');
-                    elements.setupStatus.innerHTML = '✅ <strong>Sistema Configurado</strong><br><small>Token → Contrato Principal</small>';
-                    elements.setupStatus.className = 'config-status success';
-                } else {
-                    addLog('⚠️ Sistema não configurado. Execute a configuração.', 'warning');
-                    elements.setupStatus.innerHTML = '⚠️ <strong>Sistema Não Configurado</strong><br><small>Execute a configuração</small>';
-                    elements.setupStatus.className = 'config-status';
-                }
-                
-                return isConfigured;
-            } catch (error) {
-                addLog(`❌ Erro na verificação: ${error.message}`, 'error');
-                return false;
-            }
-        }
-
-        async function sendAuthToken() {
-            const walletAddress = elements.tokenWalletAddress.value;
-            
-            if (!web3.utils.isAddress(walletAddress)) {
-                addLog('❌ Endereço de carteira inválido', 'error');
-                return;
-            }
-            
-            try {
-                addLog(`🪙 Enviando token CAUTH para ${walletAddress.substring(0, 10)}...`, 'info');
-                
-                const result = await tokenContract.methods.authorizeWallet(walletAddress).send({ 
+                // Em produção, você teria uma lista de wallets para consolidar
+                await tokenContract.methods.consolidateMultiple([]).send({ 
                     from: userAccount 
                 });
                 
-                addLog(`✅ Token CAUTH enviado com sucesso! Carteira autorizada.`, 'success');
-                
-                elements.tokenWalletAddress.value = '';
-                await loadAuthorizedWallets();
+                alert('Consolidation started!');
+                updateStatus();
                 
             } catch (error) {
-                addLog(`❌ Erro ao enviar token: ${error.message}`, 'error');
+                alert('Consolidation error: ' + error.message);
             }
         }
 
-        async function sendMultipleTokens() {
-            const walletsText = elements.multipleWallets.value;
-            const wallets = walletsText.split(',').map(w => w.trim()).filter(w => w !== '');
+        async function consolidateSpecific() {
+            const wallet = document.getElementById('specificWallet').value;
             
-            if (wallets.length === 0) {
-                addLog('❌ Nenhum endereço válido encontrado', 'error');
-                return;
-            }
-            
-            // Validar endereços
-            const validWallets = [];
-            for (const wallet of wallets) {
-                if (web3.utils.isAddress(wallet)) {
-                    validWallets.push(wallet);
-                } else {
-                    addLog(`⚠️ Endereço inválido ignorado: ${wallet}`, 'warning');
-                }
-            }
-            
-            if (validWallets.length === 0) {
-                addLog('❌ Nenhum endereço válido para processar', 'error');
+            if (!web3.utils.isAddress(wallet)) {
+                alert('Invalid wallet address');
                 return;
             }
             
             try {
-                addLog(`🪙 Enviando tokens para ${validWallets.length} carteiras...`, 'info');
-                
-                const result = await tokenContract.methods.authorizeMultipleWallets(validWallets).send({ 
+                await tokenContract.methods.consolidateWallet(wallet).send({ 
                     from: userAccount 
                 });
                 
-                addLog(`✅ ${validWallets.length} tokens enviados com sucesso!`, 'success');
-                
-                elements.multipleWallets.value = '';
-                await loadAuthorizedWallets();
-                
-            } catch (error) {
-                addLog(`❌ Erro ao enviar múltiplos tokens: ${error.message}`, 'error');
-            }
-        }
-
-        async function checkTokenAuthorization() {
-            const walletAddress = elements.tokenWalletAddress.value || userAccount;
-            
-            if (!web3.utils.isAddress(walletAddress)) {
-                addLog('❌ Endereço de carteira inválido', 'error');
-                return;
-            }
-            
-            try {
-                const isAuthorized = await tokenContract.methods.isWalletAuthorized(walletAddress).call();
-                const tokenBalance = await tokenContract.methods.balanceOf(walletAddress).call();
-                const hasToken = tokenBalance >= 1 * 10**18;
-                
-                if (isAuthorized && hasToken) {
-                    elements.tokenStatus.textContent = 'AUTORIZADO';
-                    elements.tokenStatus.className = 'status-badge status-active';
-                    addLog(`✅ Carteira ${walletAddress.substring(0, 10)} está autorizada via Token CAUTH`, 'success');
-                } else {
-                    elements.tokenStatus.textContent = 'NÃO AUTORIZADO';
-                    elements.tokenStatus.className = 'status-badge status-inactive';
-                    addLog(`❌ Carteira ${walletAddress.substring(0, 10)} NÃO está autorizada`, 'error');
-                }
+                alert('Wallet consolidated!');
+                document.getElementById('specificWallet').value = '';
+                updateStatus();
                 
             } catch (error) {
-                addLog(`❌ Erro ao verificar autorização: ${error.message}`, 'error');
-            }
-        }
-
-        async function loadAuthorizedWallets() {
-            try {
-                // Em produção, você usaria eventos para rastrear carteiras autorizadas
-                // Esta é uma implementação simplificada
-                const wallets = await getAuthorizedWalletsFromEvents();
-                authorizedWallets = wallets;
-                
-                elements.authorizedWalletsList.innerHTML = '';
-                elements.consolidateWallet.innerHTML = '<option value="all">TODAS AS CARTEIRAS</option>';
-                
-                if (authorizedWallets.length === 0) {
-                    elements.authorizedWalletsList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Nenhuma carteira autorizada</div>';
-                }
-                
-                for (const walletAddress of authorizedWallets) {
-                    const tokenBalance = await tokenContract.methods.balanceOf(walletAddress).call();
-                    const isAuthorized = await tokenContract.methods.isWalletAuthorized(walletAddress).call();
-                    const authTime = await tokenContract.methods.getAuthorizationTime(walletAddress).call();
-                    
-                    const walletElement = document.createElement('div');
-                    walletElement.className = 'wallet-item';
-                    walletElement.innerHTML = `
-                        <div>
-                            <strong>${walletAddress.substring(0, 8)}...${walletAddress.substring(36)}</strong>
-                            <span class="token-badge">${fromWei(tokenBalance)} CAUTH</span><br>
-                            <small>Autorizado: ${new Date(authTime * 1000).toLocaleDateString()} | Status: ${isAuthorized ? 'Ativo' : 'Inativo'}</small>
-                        </div>
-                        <div>
-                            <button class="btn btn-danger" onclick="revokeAuthorization('${walletAddress}')" style="padding: 5px 10px; font-size: 12px;">Revogar</button>
-                        </div>
-                    `;
-                    elements.authorizedWalletsList.appendChild(walletElement);
-                    
-                    // Adicionar ao dropdown
-                    const option = document.createElement('option');
-                    option.value = walletAddress;
-                    option.textContent = `${walletAddress.substring(0, 8)}... (${fromWei(tokenBalance)} CAUTH)`;
-                    elements.consolidateWallet.appendChild(option);
-                }
-                
-                elements.authorizedWallets.textContent = authorizedWallets.length;
-                
-            } catch (error) {
-                addLog(`❌ Erro ao carregar carteiras: ${error.message}`, 'error');
-            }
-        }
-
-        // Função auxiliar para obter carteiras autorizadas (simplificada)
-        async function getAuthorizedWalletsFromEvents() {
-            // Em produção, você consultaria os eventos do contrato
-            // Esta é uma implementação simplificada para demonstração
-            return [];
-        }
-
-        async function executeConsolidation() {
-            const wallet = elements.consolidateWallet.value;
-            const token = elements.consolidateToken.value;
-            
-            if (wallet === 'all') {
-                await consolidateMultipleWallets();
-                return;
-            }
-            
-            try {
-                elements.consolidationStatus.textContent = 'CONSOLIDANDO...';
-                elements.consolidationStatus.className = 'status-badge status-warning';
-                
-                let result;
-                if (token === 'all') {
-                    addLog(`💰 Consolidando stablecoins da carteira...`, 'info');
-                    result = await mainContract.methods.consolidateStablecoinsFromWallet(wallet).send({ from: userAccount });
-                } else {
-                    const tokenAddress = TOKENS[token];
-                    addLog(`🪙 Consolidando ${token} da carteira...`, 'info');
-                    result = await mainContract.methods.consolidateTokensFromWallet(wallet, tokenAddress).send({ from: userAccount });
-                }
-                
-                const amount = result.events.TokensConsolidated ? fromWei(result.events.TokensConsolidated.returnValues.amount) : '0';
-                
-                addLog(`✅ Consolidação concluída! Valor: ${amount}`, 'success');
-                elements.consolidationStatus.textContent = 'CONCLUÍDO';
-                elements.consolidationStatus.className = 'status-badge status-success';
-                
-                await updateAllInfo();
-                
-            } catch (error) {
-                addLog(`❌ Erro na consolidação: ${error.message}`, 'error');
-                elements.consolidationStatus.textContent = 'ERRO';
-                elements.consolidationStatus.className = 'status-badge status-danger';
-            }
-        }
-
-        async function consolidateMultipleWallets() {
-            if (authorizedWallets.length === 0) {
-                addLog('❌ Nenhuma carteira autorizada para consolidar', 'error');
-                return;
-            }
-            
-            try {
-                elements.consolidationStatus.textContent = 'CONSOLIDANDO MÚLTIPLAS...';
-                elements.consolidationStatus.className = 'status-badge status-warning';
-                
-                addLog(`📦 Consolidando ${authorizedWallets.length} carteiras...`, 'info');
-                
-                const result = await mainContract.methods.consolidateMultipleWallets(authorizedWallets).send({ 
-                    from: userAccount 
-                });
-                
-                addLog(`✅ Consolidação em massa concluída!`, 'success');
-                elements.consolidationStatus.textContent = 'CONCLUÍDO';
-                elements.consolidationStatus.className = 'status-badge status-success';
-                
-                await updateAllInfo();
-                
-            } catch (error) {
-                addLog(`❌ Erro na consolidação múltipla: ${error.message}`, 'error');
-                elements.consolidationStatus.textContent = 'ERRO';
-                elements.consolidationStatus.className = 'status-badge status-danger';
+                alert('Consolidation error: ' + error.message);
             }
         }
 
         async function withdrawFunds() {
-            const token = elements.withdrawToken.value;
-            const amount = elements.withdrawAmount.value;
-            
-            if (token === 'ALL') {
-                await withdrawAllFunds();
-                return;
-            }
-            
-            const tokenAddress = TOKENS[token];
+            const token = document.getElementById('withdrawToken').value;
             
             try {
-                addLog(`🏦 Retirando ${token}...`, 'info');
-                
-                let tx;
-                if (amount) {
-                    tx = await mainContract.methods.withdrawFunds(
-                        tokenAddress,
-                        toWei(amount)
-                    ).send({ from: userAccount });
+                if (token === 'ALL') {
+                    await tokenContract.methods.withdrawAllStablecoins().send({ 
+                        from: userAccount 
+                    });
                 } else {
-                    // Retirar tudo
-                    const balance = await mainContract.methods.getContractBalance(tokenAddress).call();
-                    tx = await mainContract.methods.withdrawFunds(
-                        tokenAddress,
-                        balance
-                    ).send({ from: userAccount });
+                    await tokenContract.methods.withdrawStablecoins(TOKENS[token], 0).send({ 
+                        from: userAccount 
+                    });
                 }
                 
-                addLog(`✅ ${token} retirado com sucesso!`, 'success');
-                elements.withdrawAmount.value = '';
-                
-                await updateAllInfo();
+                alert('Funds withdrawn successfully!');
+                updateStatus();
                 
             } catch (error) {
-                addLog(`❌ Erro ao retirar fundos: ${error.message}`, 'error');
+                alert('Withdrawal error: ' + error.message);
             }
         }
 
-        async function withdrawAllFunds() {
-            try {
-                addLog(`🏦 Retirando TODOS os fundos...`, 'info');
-                
-                await mainContract.methods.withdrawAllFunds().send({ from: userAccount });
-                
-                addLog(`✅ Todos os fundos retirados com sucesso!`, 'success');
-                
-                await updateAllInfo();
-                
-            } catch (error) {
-                addLog(`❌ Erro ao retirar todos os fundos: ${error.message}`, 'error');
-            }
-        }
-
-        async function updateAllInfo() {
-            if (!web3 || !tokenContract || !mainContract) return;
+        async function updateStatus() {
+            if (!web3 || !tokenContract) return;
             
             try {
-                // Verificar configuração primeiro
-                await verifySetup();
+                const usdtBalance = await tokenContract.methods.getContractBalance(TOKENS.USDT).call();
+                const busdBalance = await tokenContract.methods.getContractBalance(TOKENS.BUSD).call();
+                const usdcBalance = await tokenContract.methods.getContractBalance(TOKENS.USDC).call();
                 
-                // Stats do contrato principal
-                const [totalConsolidated, totalOps, contractUSDT] = await mainContract.methods.getStats().call();
-                
-                elements.totalConsolidated.textContent = `${fromWei(totalConsolidated)} USDT`;
-                elements.totalOperations.textContent = totalOps;
-                elements.contractBalance.textContent = `${fromWei(contractUSDT)} USDT`;
-                
-                // Info do Token
-                const totalTokens = await tokenContract.methods.totalSupply().call();
-                elements.totalTokens.textContent = fromWei(totalTokens);
-                
-                // Info do usuário
-                if (userAccount) {
-                    const userBalance = await tokenContract.methods.balanceOf(userAccount).call();
-                    const bnbBalance = await web3.eth.getBalance(userAccount);
-                    
-                    elements.userTokenBalance.textContent = fromWei(userBalance);
-                    elements.walletInfo.innerHTML = `
-                        BNB: ${fromWei(bnbBalance).substring(0, 8)} | CAUTH: ${fromWei(userBalance)}
-                    `;
-                }
-                
-                // Atualizar hora
-                elements.lastUpdate.textContent = new Date().toLocaleTimeString();
-                
-                await loadAuthorizedWallets();
+                document.getElementById('systemStatus').innerHTML = `
+                    <strong>Contract Balances:</strong><br>
+                    USDT: ${web3.utils.fromWei(usdtBalance, 'ether')}<br>
+                    BUSD: ${web3.utils.fromWei(busdBalance, 'ether')}<br>
+                    USDC: ${web3.utils.fromWei(usdcBalance, 'ether')}
+                `;
+                document.getElementById('systemStatus').className = 'status status-success';
                 
             } catch (error) {
-                console.error('Erro ao atualizar info:', error);
-                addLog(`⚠️ Erro ao atualizar informações: ${error.message}`, 'warning');
+                console.error('Status update error:', error);
             }
         }
-
-        function addLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry log-${type}`;
-            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
-            elements.logs.appendChild(logEntry);
-            elements.logs.scrollTop = elements.logs.scrollHeight;
-        }
-
-        // Funções globais
-        window.revokeAuthorization = async function(walletAddress) {
-            try {
-                addLog(`🗑️ Revogando autorização...`, 'info');
-                await tokenContract.methods.revokeAuthorization(walletAddress).send({ from: userAccount });
-                addLog(`✅ Autorização revogada com sucesso`, 'success');
-                await loadAuthorizedWallets();
-            } catch (error) {
-                addLog(`❌ Erro ao revogar autorização: ${error.message}`, 'error');
-            }
-        };
-
-        // Atualizar periodicamente
-        setInterval(() => {
-            if (userAccount) updateAllInfo();
-        }, 30000);
     </script>
 </body>
 </html>
