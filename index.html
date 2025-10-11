@@ -264,7 +264,7 @@
     </div>
 
     <script>
-        // ABI do Contrato - COLE AQUI O ABI COMPLETO DO SEU CONTRATO
+        // ABI COMPLETO E ATUALIZADO DO CONTRATO
         const CONTRACT_ABI = [
     {
         "inputs": [],
@@ -294,6 +294,31 @@
             }
         ],
         "name": "ArbitrageAttempt",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "enabled",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "interval",
+                "type": "uint256"
+            }
+        ],
+        "name": "AutoModeUpdated",
         "type": "event"
     },
     {
@@ -423,6 +448,18 @@
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId"
+            }
+        ],
+        "name": "executeAutoArbitrage",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "FLASH_LOAN_AMOUNT",
         "outputs": [
@@ -439,11 +476,28 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "token",
-                "type": "address"
+                "name": "token"
             }
         ],
         "name": "getContractBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": ""
+            }
+        ],
+        "name": "lastAutoAttempt",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -484,8 +538,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "name": ""
             }
         ],
         "name": "nfts",
@@ -518,6 +571,16 @@
             {
                 "internalType": "uint256",
                 "name": "lastTradeTime",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "autoMode",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "autoInterval",
                 "type": "uint256"
             }
         ],
@@ -584,6 +647,28 @@
                 "internalType": "uint256",
                 "name": "tokenId",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "enabled",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "interval",
+                "type": "uint256"
+            }
+        ],
+        "name": "setAutoMode",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId"
             }
         ],
         "name": "startArbitrage",
@@ -631,8 +716,7 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "",
-                "type": "address"
+                "name": ""
             }
         ],
         "name": "userNFT",
@@ -650,8 +734,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
+                "name": "amount"
             }
         ],
         "name": "withdrawBNB",
@@ -663,8 +746,7 @@
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
+                "name": "tokenId"
             }
         ],
         "name": "withdrawProfit",
@@ -696,8 +778,8 @@
     }
 ];
 
-        // ENDEREÇO DO CONTRATO - COLE AQUI O ENDEREÇO DO SEU CONTRATO DEPLOYADO
-        const CONTRACT_ADDRESS = "0x4F845cFb773e9aEb3c54FcFE1d55a4EaBF4770a8";
+        // ENDEREÇO DO CONTRATO
+        const CONTRACT_ADDRESS = "0x0439E0c372eDfFaf12f142D213BC6C116feb0c4d";
 
         class AutoArbitrageApp {
             constructor() {
@@ -705,8 +787,8 @@
                 this.accounts = [];
                 this.contract = null;
                 this.userNFTId = null;
-                this.autoModeInterval = null;
-                this.isAutoModeRunning = false;
+                this.trueAutoModeInterval = null;
+                this.isTrueAutoModeRunning = false;
                 
                 this.init();
             }
@@ -728,7 +810,6 @@
                         this.updateWalletInfo();
                         await this.loadContract();
                         
-                        // Verificar se usuário já tem NFT
                         await this.checkUserNFT();
                         
                         this.updateStatus('Carteira conectada com sucesso!', 'success');
@@ -753,8 +834,8 @@
                 document.getElementById('mintNFT').addEventListener('click', () => this.mintNFT());
                 document.getElementById('loadNFT').addEventListener('click', () => this.checkUserNFT());
                 document.getElementById('singleArbitrage').addEventListener('click', () => this.executeSingleArbitrage());
-                document.getElementById('startAutoArbitrage').addEventListener('click', () => this.startAutoMode());
-                document.getElementById('stopArbitrage').addEventListener('click', () => this.stopAutoMode());
+                document.getElementById('startAutoArbitrage').addEventListener('click', () => this.setupTrueAutoMode());
+                document.getElementById('stopArbitrage').addEventListener('click', () => this.stopTrueAutoMode());
                 document.getElementById('withdrawProfit').addEventListener('click', () => this.withdrawProfit());
                 document.getElementById('toggleNFT').addEventListener('click', () => this.toggleNFT());
                 document.getElementById('depositBNB').addEventListener('click', () => this.depositBNB());
@@ -844,7 +925,6 @@
                     
                     document.getElementById('nftInfo').style.display = 'block';
                     
-                    // Atualizar botão toggle
                     const toggleBtn = document.getElementById('toggleNFT');
                     toggleBtn.textContent = nftInfo.isActive ? 'Desativar NFT' : 'Ativar NFT';
                     toggleBtn.className = nftInfo.isActive ? 'btn btn-danger' : 'btn btn-success';
@@ -871,7 +951,6 @@
                     
                     this.addToLog('⚡ Arbitragem executada! Verificando resultado...');
                     
-                    // Aguardar e atualizar informações
                     setTimeout(() => {
                         this.loadNFTInfo();
                         this.addToLog('📊 Resultado da arbitragem verificado');
@@ -883,62 +962,116 @@
                 }
             }
             
-            async startAutoMode() {
-                if (this.isAutoModeRunning) return;
-                
-                if (!this.userNFTId) {
-                    this.updateStatus('Você precisa de um NFT para o modo automático', 'error');
-                    return;
+            async setupTrueAutoMode() {
+                try {
+                    const nftId = this.userNFTId;
+                    const intervalSeconds = parseInt(document.getElementById('intervalTime').value);
+                    
+                    if (!nftId) {
+                        this.updateStatus('Você precisa de um NFT para o modo automático', 'error');
+                        return;
+                    }
+                    
+                    this.updateStatus('Configurando auto-mod...', 'info');
+                    
+                    // 1. Configurar auto-mod no contrato
+                    await this.contract.methods.setAutoMode(
+                        nftId, 
+                        true, 
+                        intervalSeconds
+                    ).send({
+                        from: this.accounts[0],
+                        gas: 150000
+                    });
+                    
+                    this.updateStatus('✅ Auto-mod configurado no contrato!', 'success');
+                    this.addToLog('🔄 Auto-mod configurado - aguardando execuções...');
+                    
+                    // 2. Iniciar serviço de polling
+                    this.startTrueAutoMode(nftId, intervalSeconds);
+                    
+                } catch (error) {
+                    this.updateStatus('Erro ao configurar auto-mod: ' + error.message, 'error');
+                }
+            }
+            
+            startTrueAutoMode(nftId, intervalSeconds) {
+                if (this.trueAutoModeInterval) {
+                    clearInterval(this.trueAutoModeInterval);
                 }
                 
-                const interval = parseInt(document.getElementById('intervalTime').value) * 1000;
-                
-                this.isAutoModeRunning = true;
+                this.isTrueAutoModeRunning = true;
                 document.getElementById('autoLoading').style.display = 'inline-block';
                 document.getElementById('startAutoArbitrage').disabled = true;
                 
-                this.updateStatus('Modo automático iniciado!', 'success');
-                this.addToLog('🔄 MODO AUTOMÁTICO INICIADO');
+                let checkCount = 0;
                 
-                let attemptCount = 0;
-                
-                this.autoModeInterval = setInterval(async () => {
-                    attemptCount++;
-                    this.addToLog(`🔄 Tentativa automática #${attemptCount}`);
+                this.trueAutoModeInterval = setInterval(async () => {
+                    checkCount++;
+                    this.addToLog(`🔍 Verificando oportunidade #${checkCount}...`);
                     
                     try {
-                        await this.contract.methods.startArbitrage(this.userNFTId).send({
-                            from: this.accounts[0],
-                            gas: 500000
-                        });
+                        // Verificar condições sem gastar gas (call)
+                        const nftInfo = await this.contract.methods.nfts(nftId).call();
+                        const lastAttempt = await this.contract.methods.lastAutoAttempt(nftId).call();
+                        const currentTime = Math.floor(Date.now() / 1000);
                         
-                        this.addToLog('✅ Arbitragem executada com sucesso');
+                        if (nftInfo.autoMode && nftInfo.isActive) {
+                            const timeSinceLastAttempt = currentTime - lastAttempt;
+                            
+                            if (timeSinceLastAttempt >= parseInt(nftInfo.autoInterval)) {
+                                this.addToLog('🎯 Oportunidade detectada! Executando arbitragem...');
+                                
+                                // Executar arbitragem automática
+                                await this.contract.methods.executeAutoArbitrage(nftId).send({
+                                    from: this.accounts[0],
+                                    gas: 500000
+                                });
+                                
+                                this.addToLog('✅ Arbitragem automática executada!');
+                                await this.loadNFTInfo();
+                            } else {
+                                const waitTime = parseInt(nftInfo.autoInterval) - timeSinceLastAttempt;
+                                this.addToLog(`⏳ Aguardando ${waitTime}s para próxima tentativa...`);
+                            }
+                        } else {
+                            this.addToLog('❌ Auto-mod desativado no contrato');
+                            this.stopTrueAutoMode();
+                        }
                         
-                        // Atualizar stats
-                        await this.loadNFTInfo();
+                        // Atualizar próximo horário
+                        const nextCheck = new Date(Date.now() + 10000);
+                        document.getElementById('nextAttempt').textContent = nextCheck.toLocaleTimeString();
                         
                     } catch (error) {
-                        this.addToLog('❌ Arbitragem falhou (esperado)');
+                        if (error.message.includes('revert') || error.message.includes('execution reverted')) {
+                            this.addToLog('❌ Condições não atendidas para arbitragem');
+                        } else {
+                            this.addToLog('❌ Erro na verificação: ' + error.message);
+                        }
                     }
-                    
-                    // Atualizar próximo horário
-                    const nextTime = new Date(Date.now() + interval);
-                    document.getElementById('nextAttempt').textContent = nextTime.toLocaleTimeString();
-                    
-                }, interval);
+                }, 10000); // Verifica a cada 10 segundos
             }
             
-            stopAutoMode() {
-                if (this.autoModeInterval) {
-                    clearInterval(this.autoModeInterval);
-                    this.autoModeInterval = null;
+            stopTrueAutoMode() {
+                if (this.trueAutoModeInterval) {
+                    clearInterval(this.trueAutoModeInterval);
+                    this.trueAutoModeInterval = null;
                 }
                 
-                this.isAutoModeRunning = false;
+                this.isTrueAutoModeRunning = false;
                 document.getElementById('autoLoading').style.display = 'none';
                 document.getElementById('startAutoArbitrage').disabled = false;
                 
-                this.updateStatus('Modo automático parado', 'info');
+                // Desativar auto-mod no contrato
+                if (this.userNFTId) {
+                    this.contract.methods.setAutoMode(this.userNFTId, false, 0).send({
+                        from: this.accounts[0],
+                        gas: 100000
+                    }).catch(() => {}); // Ignora erros se já estiver desativado
+                }
+                
+                this.updateStatus('🛑 Auto-mod parado', 'info');
                 this.addToLog('🛑 MODO AUTOMÁTICO PARADO');
             }
             
