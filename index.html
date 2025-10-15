@@ -3,1177 +3,1134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Arbitragem Automática - BSC</title>
+    <title>Liquidity Optimizer - PancakeSwap V3</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Arial', sans-serif; 
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: white; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 20px; 
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 40px;
             padding: 20px;
-            background: rgba(255,255,255,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
             border-radius: 15px;
-            backdrop-filter: blur(10px);
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .card { 
-            background: rgba(255,255,255,0.1); 
-            padding: 25px; 
-            border-radius: 15px; 
-            margin-bottom: 25px;
-            border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
         }
-        .btn { 
-            background: linear-gradient(45deg, #f0b90b, #d4a306);
-            color: black; 
-            padding: 12px 24px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            margin: 8px;
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
             font-weight: bold;
             transition: all 0.3s ease;
+            margin: 5px;
         }
-        .btn:hover { 
-            background: linear-gradient(45deg, #d4a306, #b38f05);
+
+        .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(240, 185, 11, 0.4);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        .btn:disabled { 
-            background: #666; 
+
+        .button:disabled {
+            background: #ccc;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
         }
-        .btn-danger {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+
+        .input-group {
+            margin-bottom: 15px;
         }
-        .btn-success {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
-        }
-        .input-group { 
-            margin: 15px 0; 
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px;
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            color: #f0b90b;
+            color: #555;
         }
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #444; 
-            background: rgba(0,0,0,0.3); 
-            color: white; 
+
+        .input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 16px;
+            transition: border-color 0.3s ease;
         }
-        .status { 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin: 15px 0; 
-            border-left: 5px solid;
+
+        .input:focus {
+            outline: none;
+            border-color: #667eea;
         }
-        .success { 
-            background: rgba(46, 204, 113, 0.2); 
-            border-left-color: #2ecc71;
-        }
-        .error { 
-            background: rgba(231, 76, 60, 0.2); 
-            border-left-color: #e74c3c;
-        }
-        .info { 
-            background: rgba(52, 152, 219, 0.2); 
-            border-left-color: #3498db;
-        }
-        .warning { 
-            background: rgba(241, 196, 15, 0.2); 
-            border-left-color: #f1c40f;
-        }
-        .grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 25px; 
-        }
-        @media (max-width: 768px) { 
-            .grid { grid-template-columns: 1fr; } 
-        }
-        .nft-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .stat-card {
-            background: rgba(0,0,0,0.3);
+
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
             padding: 15px;
-            border-radius: 10px;
-            text-align: center;
+            margin-bottom: 15px;
         }
-        .stat-value {
-            font-size: 24px;
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
             font-weight: bold;
-            color: #f0b90b;
+            color: #555;
         }
-        .auto-mode {
-            background: rgba(46, 204, 113, 0.1);
-            border: 2px solid #2ecc71;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
+
+        .info-value {
+            color: #333;
+            font-weight: bold;
         }
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #f0b90b;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
+
+        .owner-panel {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .danger {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .connect-section {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .big-button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .section-title {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Cabeçalho -->
         <div class="header">
-            <h1>🚀 NFT Arbitragem Automática - BSC</h1>
-            <p>NFT que executa automaticamente arbitragens com Flash Loans</p>
+            <h1>🎯 Liquidity Optimizer</h1>
+            <p>Otimize seus rendimentos na PancakeSwap V3 com estratégias avançadas</p>
         </div>
 
-        <div class="grid">
-            <!-- Conexão Wallet -->
-            <div class="card">
-                <h3>🔗 Conexão Wallet</h3>
-                <div class="input-group">
-                    <button class="btn" id="connectWallet">Conectar MetaMask</button>
-                </div>
-                <div id="walletInfo" style="display: none;">
-                    <p><strong>Conectado:</strong> <span id="walletAddress"></span></p>
-                    <p><strong>Saldo BNB:</strong> <span id="bnbBalance"></span></p>
-                    <p><strong>Rede:</strong> <span id="networkInfo"></span></p>
-                </div>
-            </div>
+        <!-- Seção de Conexão -->
+        <div id="connectSection" class="card connect-section">
+            <h2>Conectar Carteira</h2>
+            <p>Conecte sua MetaMask para começar a investir</p>
+            <button class="button big-button" onclick="connectWallet()">🔗 Conectar MetaMask</button>
+        </div>
 
-            <!-- Gerenciar NFT -->
+        <!-- Aplicação Principal -->
+        <div id="appSection" class="hidden">
+            <!-- Informações do Usuário -->
             <div class="card">
-                <h3>🎨 Meu NFT de Arbitragem</h3>
-                <div class="input-group">
-                    <button class="btn" id="mintNFT">Criar Novo NFT</button>
-                    <button class="btn" id="loadNFT">Carregar Meu NFT</button>
-                </div>
-                <div id="nftInfo" style="display: none;">
-                    <div class="nft-stats">
-                        <div class="stat-card">
-                            <div>💰 Lucro Total</div>
-                            <div class="stat-value" id="totalProfit">0 USDT</div>
+                <h2>👤 Meu Investimento</h2>
+                <div class="grid">
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Carteira:</span>
+                            <span class="info-value" id="walletAddress"></span>
                         </div>
-                        <div class="stat-card">
-                            <div>✅ Trades Sucedidos</div>
-                            <div class="stat-value" id="successfulTrades">0</div>
+                        <div class="info-row">
+                            <span class="info-label">Saldo USDT:</span>
+                            <span class="info-value" id="usdtBalance">0</span>
                         </div>
-                        <div class="stat-card">
-                            <div>❌ Trades Falhos</div>
-                            <div class="stat-value" id="failedTrades">0</div>
+                        <div class="info-row">
+                            <span class="info-label">Meu Investimento:</span>
+                            <span class="info-value" id="myInvestment">0 USDT</span>
                         </div>
-                        <div class="stat-card">
-                            <div>⚡ Status</div>
-                            <div class="stat-value" id="nftStatus">Inativo</div>
+                        <div class="info-row">
+                            <span class="info-label">Minhas Shares:</span>
+                            <span class="info-value" id="myShares">0</span>
                         </div>
                     </div>
                     
-                    <div class="input-group">
-                        <button class="btn btn-success" id="withdrawProfit">Retirar Lucros</button>
-                        <button class="btn" id="toggleNFT">Ativar NFT</button>
+                    <div>
+                        <h3 class="section-title">💰 Depositar USDT</h3>
+                        <div class="input-group">
+                            <label>Quantidade USDT:</label>
+                            <input type="number" id="depositAmount" class="input" placeholder="Ex: 100" min="1">
+                        </div>
+                        <button class="button" onclick="deposit()" id="depositButton">📥 Depositar</button>
+
+                        <h3 class="section-title" style="margin-top: 20px;">💸 Retirar</h3>
+                        <div class="input-group">
+                            <label>Quantidade para retirar:</label>
+                            <input type="number" id="withdrawAmount" class="input" placeholder="Ex: 50" min="1">
+                        </div>
+                        <button class="button" onclick="withdraw()" id="withdrawButton">📤 Retirar</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Controle de Arbitragem -->
-            <div class="card">
-                <h3>⚡ Controle de Arbitragem</h3>
-                <div class="input-group">
-                    <button class="btn btn-success" id="singleArbitrage">Executar Uma Arbitragem</button>
-                    <button class="btn btn-danger" id="stopArbitrage">Parar Auto-Modo</button>
-                </div>
+            <!-- Painel do Owner -->
+            <div id="ownerPanel" class="card owner-panel hidden">
+                <h2>🎛️ Painel de Controle (Owner)</h2>
                 
-                <div class="auto-mode">
-                    <h4>🔄 Modo Automático</h4>
-                    <div class="input-group">
-                        <label>Intervalo entre tentativas (segundos):</label>
-                        <input type="number" id="intervalTime" value="30" min="10">
+                <div class="grid">
+                    <div class="info-panel">
+                        <h3 class="section-title">📊 Informações da Posição</h3>
+                        <div class="info-row">
+                            <span class="info-label">TokenId:</span>
+                            <span class="info-value" id="currentTokenId">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Range Atual:</span>
+                            <span class="info-value" id="currentRange">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Liquidez Total:</span>
+                            <span class="info-value" id="totalLiquidity">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Taxas USDT:</span>
+                            <span class="info-value" id="feesUSDT">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Taxas USDC:</span>
+                            <span class="info-value" id="feesUSDC">0</span>
+                        </div>
                     </div>
-                    <button class="btn btn-success" id="startAutoArbitrage">
-                        <span id="autoLoading" style="display: none;" class="loading"></span>
-                        Iniciar Auto-Modo
-                    </button>
-                    <p><small>O NFT tentará arbitragens automaticamente enquanto estiver ativo</small></p>
+
+                    <div>
+                        <h3 class="section-title">🔧 Controles de Range</h3>
+                        <div class="input-group">
+                            <label>Ticks para expandir:</label>
+                            <input type="number" id="rangeExpansion" class="input" value="50" min="1">
+                        </div>
+                        <div class="control-group">
+                            <button class="button" onclick="ajustRangeTokenACustom()">⏫ Expandir Para Cima</button>
+                            <button class="button" onclick="ajustRangeTokenBCustom()">⏬ Expandir Para Baixo</button>
+                        </div>
+
+                        <h3 class="section-title">🔄 Rebalanceamento</h3>
+                        <div class="input-group">
+                            <label>Novo Tick Lower:</label>
+                            <input type="number" id="newTickLower" class="input" value="-200">
+                        </div>
+                        <div class="input-group">
+                            <label>Novo Tick Upper:</label>
+                            <input type="number" id="newTickUpper" class="input" value="200">
+                        </div>
+                        <button class="button" onclick="rebalancearRange()">🔄 Rebalancear Range</button>
+                        
+                        <button class="button" onclick="coletarTaxas()" style="margin-top: 10px;">💸 Coletar Todas as Taxas</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Estatísticas em Tempo Real -->
+            <!-- Informações do Pool -->
             <div class="card">
-                <h3>📊 Estatísticas em Tempo Real</h3>
-                <div id="liveStats">
-                    <p>🔄 <strong>Última Tentativa:</strong> <span id="lastAttempt">Nenhuma</span></p>
-                    <p>⏰ <strong>Próxima Tentativa:</strong> <span id="nextAttempt">-</span></p>
-                    <p>💸 <strong>Taxa BNB Disponível:</strong> <span id="bnbForFees">0 BNB</span></p>
-                </div>
-                <div class="input-group">
-                    <button class="btn" id="depositBNB">Depositar BNB para Taxas</button>
-                    <input type="number" id="bnbAmount" placeholder="Quantidade BNB" step="0.001" min="0.001">
-                </div>
-            </div>
-
-            <!-- Log de Atividades -->
-            <div class="card">
-                <h3>📝 Log de Atividades</h3>
-                <div id="activityLog" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    <p>🔵 Sistema inicializado. Conecte sua carteira para começar.</p>
-                </div>
-                <button class="btn" id="clearLog">Limpar Log</button>
-            </div>
-
-            <!-- Informações do Contrato -->
-            <div class="card">
-                <h3>🔧 Informações do Sistema</h3>
-                <div id="contractInfo">
-                    <p><strong>💰 Empréstimo Flash:</strong> 1,000 USDT</p>
-                    <p><strong>🎯 Estratégia:</strong> USDT → BUSD → USDT</p>
-                    <p><strong>⚡ Protocolo:</strong> PancakeSwap Flash Loans</p>
-                    <p><strong>📈 Lucro Mínimo:</strong> 1 USDT por trade</p>
+                <h2>📊 Estatísticas do Pool</h2>
+                <div class="grid">
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Total Investido:</span>
+                            <span class="info-value" id="totalInvested">0 USDT</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total de Shares:</span>
+                            <span class="info-value" id="totalShares">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tick Atual do Pool:</span>
+                            <span class="info-value" id="currentPoolTick">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Posição Ativa:</span>
+                            <span class="info-value" id="positionActive">Não</span>
+                        </div>
+                    </div>
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Rede:</span>
+                            <span class="info-value">BSC Mainnet</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Pool:</span>
+                            <span class="info-value">USDT/USDC 0.01%</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Contrato:</span>
+                            <span class="info-value" id="contractAddress">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value success" id="connectionStatus">Conectado</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ABI COMPLETO E ATUALIZADO DO CONTRATO
+        // ========== CONFIGURAÇÕES ==========
+        const CONTRACT_ADDRESS = "0xd4118361B7aDff43d7Aa7A42daC7957A52291f91"; // ← COLOCAR O ENDEREÇO DO CONTRATO DEPLOYADO
+        const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+        
+        // ABI COMPLETA DO CONTRATO
         const CONTRACT_ABI = [
-    {
-        "inputs": [],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
             {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
             },
             {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "success",
-                "type": "bool"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Deposited",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "profit",
-                "type": "uint256"
-            }
-        ],
-        "name": "ArbitrageAttempt",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint128",
+                        "name": "liquidity",
+                        "type": "uint128"
+                    }
+                ],
+                "name": "LiquidityAdded",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "enabled",
-                "type": "bool"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "novoTickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "novoTickUpper",
+                        "type": "int24"
+                    }
+                ],
+                "name": "RangeAjustado",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "interval",
-                "type": "uint256"
-            }
-        ],
-        "name": "AutoModeUpdated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "novoTokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "tickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "tickUpper",
+                        "type": "int24"
+                    }
+                ],
+                "name": "TokenIdManipulado",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Withdrawn",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "profit",
-                "type": "uint256"
-            }
-        ],
-        "name": "FlashLoanExecuted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "expansao",
+                        "type": "int24"
+                    }
+                ],
+                "name": "ajustRangeTokenA",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "indexed": true,
-                "internalType": "address",
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "expansao",
+                        "type": "int24"
+                    }
+                ],
+                "name": "ajustRangeTokenB",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "coletarTaxas",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "tickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "tickUpper",
+                        "type": "int24"
+                    }
+                ],
+                "name": "criarNovoTokenId",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "depositUSDT",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    }
+                ],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getCurrentTick",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "tick",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getInformacoesPosicao",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "tickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "tickUpper",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "liquidity",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "feesUSDT",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "feesUSDC",
+                        "type": "uint128"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getRangeAtual",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "tickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "tickUpper",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getUserBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "POSITION_MANAGER",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "POOL",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDC",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "USDT",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "novoTickLower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "novoTickUpper",
+                        "type": "int24"
+                    }
+                ],
+                "name": "rebalancearComNovoRange",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tokenIdAtual",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalLiquidity",
+                "outputs": [
+                    {
+                        "internalType": "uint128",
+                        "name": "",
+                        "type": "uint128"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalShares",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "shareAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
                 "name": "owner",
-                "type": "address"
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
-                "indexed": true,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "NFTMinted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "owner",
-                "type": "address"
+                "inputs": [],
+                "name": "posicaoAtiva",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "ProfitWithdrawn",
-        "type": "event"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "loanAmount",
-                "type": "uint256"
-            }
-        ],
-        "name": "_executeArbitrage",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
+                "inputs": [],
+                "name": "tickLowerAtual",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
-                "internalType": "bool",
-                "name": "status",
-                "type": "bool"
-            }
-        ],
-        "name": "authorize",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "authorized",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "_value",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "depositBNB",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId"
-            }
-        ],
-        "name": "executeAutoArbitrage",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "FLASH_LOAN_AMOUNT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "token"
-            }
-        ],
-        "name": "getContractBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": ""
-            }
-        ],
-        "name": "lastAutoAttempt",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "MIN_PROFIT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "mintNFT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": ""
-            }
-        ],
-        "name": "nfts",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "owner",
-                "type": "address"
+                "inputs": [],
+                "name": "tickUpperAtual",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
-                "internalType": "uint256",
-                "name": "totalProfit",
-                "type": "uint256"
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userDeposits",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
-                "internalType": "uint256",
-                "name": "successfulTrades",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "failedTrades",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "isActive",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "lastTradeTime",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "autoMode",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "autoInterval",
-                "type": "uint256"
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userShares",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "nftCounter",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "sender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount0",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount1",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "data",
-                "type": "bytes"
-            }
-        ],
-        "name": "pancakeCall",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "enabled",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "interval",
-                "type": "uint256"
-            }
-        ],
-        "name": "setAutoMode",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId"
-            }
-        ],
-        "name": "startArbitrage",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "startFlashLoanArbitrage",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "active",
-                "type": "bool"
-            }
-        ],
-        "name": "toggleNFT",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": ""
-            }
-        ],
-        "name": "userNFT",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount"
-            }
-        ],
-        "name": "withdrawBNB",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId"
-            }
-        ],
-        "name": "withdrawProfit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "withdrawToken",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "stateMutability": "payable",
-        "type": "receive"
-    }
-];
+        ];
 
-        // ENDEREÇO DO CONTRATO
-        const CONTRACT_ADDRESS = "0xCF179A24237B194F65929E35Ae620081f4A6b290";
+        const USDT_ABI = [
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "_spender", "type": "address"},
+                    {"name": "_value", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "_to", "type": "address"},
+                    {"name": "_value", "type": "uint256"}
+                ],
+                "name": "transfer",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            }
+        ];
 
-        class AutoArbitrageApp {
-            constructor() {
-                this.web3 = null;
-                this.accounts = [];
-                this.contract = null;
-                this.userNFTId = null;
-                this.trueAutoModeInterval = null;
-                this.isTrueAutoModeRunning = false;
-                
-                this.init();
-            }
-            
-            async init() {
-                await this.connectWeb3();
-                this.setupEventListeners();
-                this.updateStatus('Sistema inicializado. Conecte sua carteira.', 'info');
-            }
-            
-            async connectWeb3() {
-                if (window.ethereum) {
-                    this.web3 = new Web3(window.ethereum);
-                    try {
-                        this.accounts = await window.ethereum.request({ 
-                            method: 'eth_requestAccounts' 
-                        });
-                        
-                        this.updateWalletInfo();
-                        await this.loadContract();
-                        
-                        await this.checkUserNFT();
-                        
-                        this.updateStatus('Carteira conectada com sucesso!', 'success');
-                        
-                    } catch (error) {
-                        this.updateStatus('Erro ao conectar carteira: ' + error.message, 'error');
-                    }
-                } else {
-                    this.updateStatus('Por favor, instale o MetaMask!', 'error');
-                }
-            }
-            
-            async loadContract() {
-                this.contract = new this.web3.eth.Contract(
-                    CONTRACT_ABI,
-                    CONTRACT_ADDRESS
-                );
-            }
-            
-            setupEventListeners() {
-                document.getElementById('connectWallet').addEventListener('click', () => this.connectWeb3());
-                document.getElementById('mintNFT').addEventListener('click', () => this.mintNFT());
-                document.getElementById('loadNFT').addEventListener('click', () => this.checkUserNFT());
-                document.getElementById('singleArbitrage').addEventListener('click', () => this.executeSingleArbitrage());
-                document.getElementById('startAutoArbitrage').addEventListener('click', () => this.setupTrueAutoMode());
-                document.getElementById('stopArbitrage').addEventListener('click', () => this.stopTrueAutoMode());
-                document.getElementById('withdrawProfit').addEventListener('click', () => this.withdrawProfit());
-                document.getElementById('toggleNFT').addEventListener('click', () => this.toggleNFT());
-                document.getElementById('depositBNB').addEventListener('click', () => this.depositBNB());
-                document.getElementById('clearLog').addEventListener('click', () => this.clearLog());
-            }
-            
-            updateWalletInfo() {
-                if (this.accounts.length > 0) {
-                    const address = this.accounts[0];
-                    const shortAddress = address.substring(0, 6) + '...' + address.substring(38);
-                    
-                    document.getElementById('walletAddress').textContent = shortAddress;
-                    document.getElementById('walletInfo').style.display = 'block';
-                    
-                    this.getBNBBalance();
-                    this.getNetworkInfo();
-                }
-            }
-            
-            async getBNBBalance() {
-                if (this.accounts.length > 0) {
-                    const balance = await this.web3.eth.getBalance(this.accounts[0]);
-                    const balanceEth = this.web3.utils.fromWei(balance, 'ether');
-                    document.getElementById('bnbBalance').textContent = balanceEth + ' BNB';
-                    document.getElementById('bnbForFees').textContent = balanceEth + ' BNB';
-                }
-            }
-            
-            async getNetworkInfo() {
-                const networkId = await this.web3.eth.net.getId();
-                let networkName = 'Desconhecida';
-                
-                if (networkId === 56) networkName = 'BSC Mainnet';
-                else if (networkId === 97) networkName = 'BSC Testnet';
-                else networkName = `Rede ${networkId}`;
-                
-                document.getElementById('networkInfo').textContent = networkName;
-            }
-            
-            async mintNFT() {
+        // ========== VARIÁVEIS GLOBAIS ==========
+        let web3;
+        let account;
+        let contract;
+        let isOwner = false;
+
+        // ========== FUNÇÕES PRINCIPAIS ==========
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
                 try {
-                    this.updateStatus('Criando NFT...', 'info');
+                    document.getElementById('depositButton').disabled = true;
+                    document.getElementById('depositButton').textContent = 'Conectando...';
                     
-                    const result = await this.contract.methods.mintNFT().send({
-                        from: this.accounts[0],
-                        gas: 300000
-                    });
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    web3 = new Web3(window.ethereum);
+                    const accounts = await web3.eth.getAccounts();
+                    account = accounts[0];
                     
-                    this.updateStatus('NFT criado com sucesso!', 'success');
-                    this.addToLog('✅ Novo NFT de arbitragem criado');
+                    // Mostrar aplicação
+                    document.getElementById('connectSection').classList.add('hidden');
+                    document.getElementById('appSection').classList.remove('hidden');
+                    document.getElementById('walletAddress').textContent = `${account.substring(0, 6)}...${account.substring(38)}`;
                     
-                    await this.checkUserNFT();
+                    // Inicializar contrato
+                    contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                    document.getElementById('contractAddress').textContent = `${CONTRACT_ADDRESS.substring(0, 6)}...${CONTRACT_ADDRESS.substring(38)}`;
                     
-                } catch (error) {
-                    this.updateStatus('Erro ao criar NFT: ' + error.message, 'error');
-                }
-            }
-            
-            async checkUserNFT() {
-                try {
-                    if (!this.accounts.length) return;
+                    // Verificar se é owner
+                    const contractOwner = await contract.methods.owner().call();
+                    isOwner = (account.toLowerCase() === contractOwner.toLowerCase());
                     
-                    const nftId = await this.contract.methods.userNFT(this.accounts[0]).call();
-                    
-                    if (nftId > 0) {
-                        this.userNFTId = nftId;
-                        await this.loadNFTInfo();
-                    } else {
-                        document.getElementById('nftInfo').style.display = 'none';
-                        this.updateStatus('Você não possui um NFT. Crie um para começar.', 'warning');
+                    if (isOwner) {
+                        document.getElementById('ownerPanel').classList.remove('hidden');
                     }
                     
-                } catch (error) {
-                    console.error('Erro ao verificar NFT:', error);
-                }
-            }
-            
-            async loadNFTInfo() {
-                try {
-                    const nftInfo = await this.contract.methods.nfts(this.userNFTId).call();
+                    await updateAllData();
                     
-                    document.getElementById('totalProfit').textContent = 
-                        this.web3.utils.fromWei(nftInfo.totalProfit, 'ether') + ' USDT';
-                    document.getElementById('successfulTrades').textContent = nftInfo.successfulTrades;
-                    document.getElementById('failedTrades').textContent = nftInfo.failedTrades;
-                    document.getElementById('nftStatus').textContent = nftInfo.isActive ? 'Ativo' : 'Inativo';
+                    document.getElementById('depositButton').disabled = false;
+                    document.getElementById('depositButton').textContent = '📥 Depositar';
                     
-                    document.getElementById('nftInfo').style.display = 'block';
-                    
-                    const toggleBtn = document.getElementById('toggleNFT');
-                    toggleBtn.textContent = nftInfo.isActive ? 'Desativar NFT' : 'Ativar NFT';
-                    toggleBtn.className = nftInfo.isActive ? 'btn btn-danger' : 'btn btn-success';
+                    // Atualizar a cada 30 segundos
+                    setInterval(updateAllData, 30000);
                     
                 } catch (error) {
-                    console.error('Erro ao carregar NFT info:', error);
+                    console.error("Erro ao conectar:", error);
+                    alert("Erro ao conectar: " + error.message);
+                    document.getElementById('depositButton').disabled = false;
+                    document.getElementById('depositButton').textContent = '📥 Depositar';
                 }
-            }
-            
-            async executeSingleArbitrage() {
-                try {
-                    if (!this.userNFTId) {
-                        this.updateStatus('Você precisa de um NFT para executar arbitragens', 'error');
-                        return;
-                    }
-                    
-                    this.updateStatus('Executando arbitragem...', 'info');
-                    this.addToLog('🔄 Iniciando arbitragem única...');
-                    
-                    const result = await this.contract.methods.startArbitrage(this.userNFTId).send({
-                        from: this.accounts[0],
-                        gas: 500000
-                    });
-                    
-                    this.addToLog('⚡ Arbitragem executada! Verificando resultado...');
-                    
-                    setTimeout(() => {
-                        this.loadNFTInfo();
-                        this.addToLog('📊 Resultado da arbitragem verificado');
-                    }, 5000);
-                    
-                } catch (error) {
-                    this.updateStatus('Erro na arbitragem: ' + error.message, 'error');
-                    this.addToLog('❌ Arbitragem falhou: ' + error.message);
-                }
-            }
-            
-            async setupTrueAutoMode() {
-                try {
-                    const nftId = this.userNFTId;
-                    const intervalSeconds = parseInt(document.getElementById('intervalTime').value);
-                    
-                    if (!nftId) {
-                        this.updateStatus('Você precisa de um NFT para o modo automático', 'error');
-                        return;
-                    }
-                    
-                    this.updateStatus('Configurando auto-mod...', 'info');
-                    
-                    // 1. Configurar auto-mod no contrato
-                    await this.contract.methods.setAutoMode(
-                        nftId, 
-                        true, 
-                        intervalSeconds
-                    ).send({
-                        from: this.accounts[0],
-                        gas: 150000
-                    });
-                    
-                    this.updateStatus('✅ Auto-mod configurado no contrato!', 'success');
-                    this.addToLog('🔄 Auto-mod configurado - aguardando execuções...');
-                    
-                    // 2. Iniciar serviço de polling
-                    this.startTrueAutoMode(nftId, intervalSeconds);
-                    
-                } catch (error) {
-                    this.updateStatus('Erro ao configurar auto-mod: ' + error.message, 'error');
-                }
-            }
-            
-            startTrueAutoMode(nftId, intervalSeconds) {
-                if (this.trueAutoModeInterval) {
-                    clearInterval(this.trueAutoModeInterval);
-                }
-                
-                this.isTrueAutoModeRunning = true;
-                document.getElementById('autoLoading').style.display = 'inline-block';
-                document.getElementById('startAutoArbitrage').disabled = true;
-                
-                let checkCount = 0;
-                
-                this.trueAutoModeInterval = setInterval(async () => {
-                    checkCount++;
-                    this.addToLog(`🔍 Verificando oportunidade #${checkCount}...`);
-                    
-                    try {
-                        // Verificar condições sem gastar gas (call)
-                        const nftInfo = await this.contract.methods.nfts(nftId).call();
-                        const lastAttempt = await this.contract.methods.lastAutoAttempt(nftId).call();
-                        const currentTime = Math.floor(Date.now() / 1000);
-                        
-                        if (nftInfo.autoMode && nftInfo.isActive) {
-                            const timeSinceLastAttempt = currentTime - lastAttempt;
-                            
-                            if (timeSinceLastAttempt >= parseInt(nftInfo.autoInterval)) {
-                                this.addToLog('🎯 Oportunidade detectada! Executando arbitragem...');
-                                
-                                // Executar arbitragem automática
-                                await this.contract.methods.executeAutoArbitrage(nftId).send({
-                                    from: this.accounts[0],
-                                    gas: 500000
-                                });
-                                
-                                this.addToLog('✅ Arbitragem automática executada!');
-                                await this.loadNFTInfo();
-                            } else {
-                                const waitTime = parseInt(nftInfo.autoInterval) - timeSinceLastAttempt;
-                                this.addToLog(`⏳ Aguardando ${waitTime}s para próxima tentativa...`);
-                            }
-                        } else {
-                            this.addToLog('❌ Auto-mod desativado no contrato');
-                            this.stopTrueAutoMode();
-                        }
-                        
-                        // Atualizar próximo horário
-                        const nextCheck = new Date(Date.now() + 10000);
-                        document.getElementById('nextAttempt').textContent = nextCheck.toLocaleTimeString();
-                        
-                    } catch (error) {
-                        if (error.message.includes('revert') || error.message.includes('execution reverted')) {
-                            this.addToLog('❌ Condições não atendidas para arbitragem');
-                        } else {
-                            this.addToLog('❌ Erro na verificação: ' + error.message);
-                        }
-                    }
-                }, 10000); // Verifica a cada 10 segundos
-            }
-            
-            stopTrueAutoMode() {
-                if (this.trueAutoModeInterval) {
-                    clearInterval(this.trueAutoModeInterval);
-                    this.trueAutoModeInterval = null;
-                }
-                
-                this.isTrueAutoModeRunning = false;
-                document.getElementById('autoLoading').style.display = 'none';
-                document.getElementById('startAutoArbitrage').disabled = false;
-                
-                // Desativar auto-mod no contrato
-                if (this.userNFTId) {
-                    this.contract.methods.setAutoMode(this.userNFTId, false, 0).send({
-                        from: this.accounts[0],
-                        gas: 100000
-                    }).catch(() => {}); // Ignora erros se já estiver desativado
-                }
-                
-                this.updateStatus('🛑 Auto-mod parado', 'info');
-                this.addToLog('🛑 MODO AUTOMÁTICO PARADO');
-            }
-            
-            async withdrawProfit() {
-                try {
-                    if (!this.userNFTId) {
-                        this.updateStatus('Você precisa de um NFT', 'error');
-                        return;
-                    }
-                    
-                    this.updateStatus('Retirando lucros...', 'info');
-                    
-                    const result = await this.contract.methods.withdrawProfit(this.userNFTId).send({
-                        from: this.accounts[0],
-                        gas: 200000
-                    });
-                    
-                    this.updateStatus('Lucros retirados com sucesso!', 'success');
-                    this.addToLog('💰 Lucros retirados da conta');
-                    
-                    await this.loadNFTInfo();
-                    
-                } catch (error) {
-                    this.updateStatus('Erro ao retirar lucros: ' + error.message, 'error');
-                }
-            }
-            
-            async toggleNFT() {
-                try {
-                    if (!this.userNFTId) return;
-                    
-                    const nftInfo = await this.contract.methods.nfts(this.userNFTId).call();
-                    const newStatus = !nftInfo.isActive;
-                    
-                    await this.contract.methods.toggleNFT(this.userNFTId, newStatus).send({
-                        from: this.accounts[0],
-                        gas: 100000
-                    });
-                    
-                    this.updateStatus(`NFT ${newStatus ? 'ativado' : 'desativado'}`, 'success');
-                    this.addToLog(`⚡ NFT ${newStatus ? 'ativado' : 'desativado'}`);
-                    
-                    await this.loadNFTInfo();
-                    
-                } catch (error) {
-                    this.updateStatus('Erro ao alterar status do NFT: ' + error.message, 'error');
-                }
-            }
-            
-            async depositBNB() {
-                try {
-                    const amount = document.getElementById('bnbAmount').value;
-                    
-                    if (!amount || amount <= 0) {
-                        this.updateStatus('Digite uma quantidade válida', 'error');
-                        return;
-                    }
-                    
-                    const amountWei = this.web3.utils.toWei(amount, 'ether');
-                    
-                    await this.contract.methods.depositBNB().send({
-                        from: this.accounts[0],
-                        value: amountWei,
-                        gas: 100000
-                    });
-                    
-                    this.updateStatus(`Depositado ${amount} BNB para taxas`, 'success');
-                    this.addToLog(`💰 Depositado ${amount} BNB para taxas de gas`);
-                    
-                    document.getElementById('bnbAmount').value = '';
-                    await this.getBNBBalance();
-                    
-                } catch (error) {
-                    this.updateStatus('Erro no depósito: ' + error.message, 'error');
-                }
-            }
-            
-            updateStatus(message, type) {
-                const statusDiv = document.getElementById('activityLog');
-                const timestamp = new Date().toLocaleTimeString();
-                
-                statusDiv.innerHTML += `<p><strong>[${timestamp}]</strong> <span class="${type}">${message}</span></p>`;
-                statusDiv.scrollTop = statusDiv.scrollHeight;
-            }
-            
-            addToLog(message) {
-                const logDiv = document.getElementById('activityLog');
-                const timestamp = new Date().toLocaleTimeString();
-                
-                logDiv.innerHTML += `<p><strong>[${timestamp}]</strong> ${message}</p>`;
-                logDiv.scrollTop = logDiv.scrollHeight;
-            }
-            
-            clearLog() {
-                document.getElementById('activityLog').innerHTML = 
-                    '<p>🔵 Log limpo. Sistema funcionando.</p>';
+            } else {
+                alert("Por favor instale o MetaMask!");
             }
         }
-        
-        // Inicializar aplicação
-        window.addEventListener('load', () => {
-            window.app = new AutoArbitrageApp();
+
+        async function updateAllData() {
+            await updateBalances();
+            await updatePoolInfo();
+            if (isOwner) {
+                await updateOwnerInfo();
+            }
+        }
+
+        async function updateBalances() {
+            if (!web3 || !account) return;
+            
+            try {
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
+                const usdtBalance = await usdtContract.methods.balanceOf(account).call();
+                document.getElementById('usdtBalance').textContent = (usdtBalance / 1e18).toFixed(2);
+                
+                const userInvestment = await contract.methods.getUserBalance(account).call();
+                document.getElementById('myInvestment').textContent = (userInvestment / 1e18).toFixed(2) + ' USDT';
+                
+                const userShares = await contract.methods.userShares(account).call();
+                document.getElementById('myShares').textContent = (userShares / 1e18).toFixed(4);
+                
+            } catch (error) {
+                console.error("Erro ao atualizar saldos:", error);
+            }
+        }
+
+        async function updatePoolInfo() {
+            if (!web3) return;
+            
+            try {
+                const totalShares = await contract.methods.totalShares().call();
+                document.getElementById('totalShares').textContent = (totalShares / 1e18).toFixed(2);
+                
+                const totalInvested = totalShares; // Simplificado
+                document.getElementById('totalInvested').textContent = (totalInvested / 1e18).toFixed(2) + ' USDT';
+                
+                const currentTick = await contract.methods.getCurrentTick().call();
+                document.getElementById('currentPoolTick').textContent = currentTick;
+                
+                const posicaoAtiva = await contract.methods.posicaoAtiva().call();
+                document.getElementById('positionActive').textContent = posicaoAtiva ? 'Sim' : 'Não';
+                document.getElementById('positionActive').className = posicaoAtiva ? 'success' : 'warning';
+                
+            } catch (error) {
+                console.error("Erro ao atualizar info do pool:", error);
+            }
+        }
+
+        async function updateOwnerInfo() {
+            if (!web3 || !isOwner) return;
+            
+            try {
+                const tokenId = await contract.methods.tokenIdAtual().call();
+                document.getElementById('currentTokenId').textContent = tokenId !== '0' ? tokenId : 'Não criado';
+                
+                const range = await contract.methods.getRangeAtual().call();
+                document.getElementById('currentRange').textContent = `${range[0]} a ${range[1]} ticks`;
+                
+                const totalLiquidity = await contract.methods.totalLiquidity().call();
+                document.getElementById('totalLiquidity').textContent = totalLiquidity;
+                
+                const posicaoInfo = await contract.methods.getInformacoesPosicao().call();
+                document.getElementById('feesUSDT').textContent = posicaoInfo[4] || '0';
+                document.getElementById('feesUSDC').textContent = posicaoInfo[5] || '0';
+                
+            } catch (error) {
+                console.error("Erro ao atualizar info do owner:", error);
+            }
+        }
+
+        // ========== FUNÇÕES DE INVESTIMENTO ==========
+        async function deposit() {
+            const amount = document.getElementById('depositAmount').value;
+            if (!amount || amount <= 0) {
+                alert("Por favor digite um valor válido");
+                return;
+            }
+            
+            try {
+                const amountWei = web3.utils.toWei(amount.toString(), 'ether');
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
+                
+                // Aprovar USDT
+                document.getElementById('depositButton').disabled = true;
+                document.getElementById('depositButton').textContent = 'Aprovando...';
+                
+                await usdtContract.methods.approve(CONTRACT_ADDRESS, amountWei).send({ from: account });
+                
+                // Fazer depósito
+                document.getElementById('depositButton').textContent = 'Depositando...';
+                await contract.methods.depositUSDT(amountWei).send({ from: account });
+                
+                alert("✅ Depósito realizado com sucesso!");
+                await updateAllData();
+                
+            } catch (error) {
+                console.error("Erro no depósito:", error);
+                alert("❌ Erro no depósito: " + error.message);
+            } finally {
+                document.getElementById('depositButton').disabled = false;
+                document.getElementById('depositButton').textContent = '📥 Depositar';
+                document.getElementById('depositAmount').value = '';
+            }
+        }
+
+        async function withdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            if (!amount || amount <= 0) {
+                alert("Por favor digite um valor válido");
+                return;
+            }
+            
+            try {
+                const amountWei = web3.utils.toWei(amount.toString(), 'ether');
+                document.getElementById('withdrawButton').disabled = true;
+                document.getElementById('withdrawButton').textContent = 'Processando...';
+                
+                await contract.methods.withdraw(amountWei).send({ from: account });
+                
+                alert("✅ Saque realizado com sucesso!");
+                await updateAllData();
+                
+            } catch (error) {
+                console.error("Erro no saque:", error);
+                alert("❌ Erro no saque: " + error.message);
+            } finally {
+                document.getElementById('withdrawButton').disabled = false;
+                document.getElementById('withdrawButton').textContent = '📤 Retirar';
+                document.getElementById('withdrawAmount').value = '';
+            }
+        }
+
+        // ========== FUNÇÕES DE CONTROLE DO OWNER ==========
+        async function ajustRangeTokenACustom() {
+            const expansao = parseInt(document.getElementById('rangeExpansion').value);
+            await ajustRangeTokenA(expansao);
+        }
+
+        async function ajustRangeTokenBCustom() {
+            const expansao = parseInt(document.getElementById('rangeExpansion').value);
+            await ajustRangeTokenB(expansao);
+        }
+
+        async function ajustRangeTokenA(expansao) {
+            try {
+                await contract.methods.ajustRangeTokenA(expansao).send({ from: account });
+                alert("✅ Range expandido para cima!");
+                await updateOwnerInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("❌ Erro: " + error.message);
+            }
+        }
+
+        async function ajustRangeTokenB(expansao) {
+            try {
+                await contract.methods.ajustRangeTokenB(expansao).send({ from: account });
+                alert("✅ Range expandido para baixo!");
+                await updateOwnerInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("❌ Erro: " + error.message);
+            }
+        }
+
+        async function rebalancearRange() {
+            const tickLower = parseInt(document.getElementById('newTickLower').value);
+            const tickUpper = parseInt(document.getElementById('newTickUpper').value);
+            
+            try {
+                await contract.methods.rebalancearComNovoRange(tickLower, tickUpper).send({ from: account });
+                alert("✅ Range rebalanceado com sucesso!");
+                await updateOwnerInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("❌ Erro: " + error.message);
+            }
+        }
+
+        async function coletarTaxas() {
+            try {
+                await contract.methods.coletarTaxas().send({ from: account });
+                alert("✅ Taxas coletadas com sucesso!");
+                await updateOwnerInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("❌ Erro: " + error.message);
+            }
+        }
+
+        // ========== INICIALIZAÇÃO ==========
+        window.addEventListener('load', function() {
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('MetaMask detectado!');
+            } else {
+                alert('MetaMask não detectado. Por favor instale a extensão.');
+            }
         });
     </script>
 </body>
