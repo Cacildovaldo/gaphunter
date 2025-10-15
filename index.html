@@ -251,6 +251,12 @@
             background: #e8f4fd;
             border-left: 4px solid #3498db;
         }
+
+        .small-text {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -267,7 +273,7 @@
             <p>Conecte sua MetaMask na rede Binance Smart Chain</p>
             <button class="button big-button" onclick="connectWallet()">Conectar MetaMask</button>
             <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
-                <p>✅ Contrato: 0xCF91A2429A0947084257A3202C2e3F0de4166c68</p>
+                <p>✅ Contrato: 0x93912D03E34F0167323889291c93B19a67aF8BF2</p>
                 <p>✅ Pool: USDT/USDC 0.01%</p>
                 <p>✅ Rede: BSC Mainnet</p>
             </div>
@@ -289,8 +295,8 @@
                     <span class="info-value" id="walletAddress"></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">NFT Position:</span>
-                    <span class="info-value" id="nftPosition">Não criada</span>
+                    <span class="info-label">Contrato:</span>
+                    <span class="info-value">0x93912D03E34F0167323889291c93B19a67aF8BF2</span>
                 </div>
             </div>
 
@@ -301,19 +307,19 @@
                     <div class="info-panel">
                         <div class="info-row">
                             <span class="info-label">Saldo USDT:</span>
-                            <span class="info-value" id="usdtBalance">0</span>
+                            <span class="info-value" id="usdtBalance">0.0000</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Meu Investimento:</span>
-                            <span class="info-value" id="myInvestment">0 USDT</span>
+                            <span class="info-value" id="myInvestment">0.0000 USDT</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Minhas Shares:</span>
-                            <span class="info-value" id="myShares">0</span>
+                            <span class="info-value" id="myShares">0.0000</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Lucro Estimado:</span>
-                            <span class="info-value" id="estimatedProfit">0 USDT</span>
+                            <span class="info-value success" id="estimatedProfit">0.0000 USDT</span>
                         </div>
                     </div>
                     
@@ -321,14 +327,16 @@
                         <h3 class="section-title">💰 Depositar USDT</h3>
                         <div class="input-group">
                             <label>Quantidade USDT:</label>
-                            <input type="number" id="depositAmount" class="input" placeholder="Ex: 100" min="1" step="1">
+                            <input type="number" id="depositAmount" class="input" placeholder="Ex: 10.50" min="0.01" step="0.01" value="1.00">
+                            <div class="small-text">Mínimo: 0.01 USDT | Suporte a centavos</div>
                         </div>
                         <button class="button" onclick="deposit()" id="depositButton">📥 Depositar</button>
 
                         <h3 class="section-title" style="margin-top: 20px;">💸 Retirar</h3>
                         <div class="input-group">
                             <label>Quantidade para retirar:</label>
-                            <input type="number" id="withdrawAmount" class="input" placeholder="Ex: 50" min="1" step="1">
+                            <input type="number" id="withdrawAmount" class="input" placeholder="Ex: 5.25" min="0.01" step="0.01" value="1.00">
+                            <div class="small-text">Receberá +1.5% de lucro</div>
                         </div>
                         <button class="button button-success" onclick="withdraw()" id="withdrawButton">📤 Retirar com Lucro</button>
                     </div>
@@ -342,15 +350,15 @@
                     <div class="info-panel">
                         <div class="info-row">
                             <span class="info-label">Total Investido:</span>
-                            <span class="info-value" id="totalShares">0 USDT</span>
+                            <span class="info-value" id="totalShares">0.0000 USDT</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Saldo do Contrato:</span>
-                            <span class="info-value" id="contractBalance">0 USDT</span>
+                            <span class="info-value" id="contractBalance">0.0000 USDT</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Tick Atual:</span>
-                            <span class="info-value" id="currentTick">0</span>
+                            <span class="info-label">Total Depositado:</span>
+                            <span class="info-value" id="totalDeposited">0.0000 USDT</span>
                         </div>
                     </div>
                     <div class="info-panel">
@@ -388,6 +396,10 @@
                         
                         <h3 class="section-title" style="margin-top: 20px;">🔄 Rebalancear</h3>
                         <button class="button button-warning" onclick="rebalanceToCurrentPrice()">🎯 Rebalancear para Preço Atual</button>
+
+                        <h3 class="section-title" style="margin-top: 20px;">💰 Administração</h3>
+                        <button class="button" onclick="addProfits()" style="margin-bottom: 10px;">➕ Adicionar Lucros</button>
+                        <button class="button" onclick="approveUSDT()">✅ Aprovar USDT</button>
                     </div>
                     
                     <div class="info-panel">
@@ -399,6 +411,10 @@
                         <div class="info-row">
                             <span class="info-label">Range Atual:</span>
                             <span class="info-value" id="ownerRange">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Modo Teste:</span>
+                            <span class="info-value" id="testingMode">-</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Taxas Estimadas/Dia:</span>
@@ -417,421 +433,462 @@
         // ========== CONFIGURAÇÕES ==========
         const CONTRACT_ADDRESS = "0x93912D03E34F0167323889291c93B19a67aF8BF2";
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+        const USDT_DECIMALS = 18;
         
-        // ABI DO NOVO CONTRATO
+        // ABI DO CONTRATO ATUALIZADA
         const CONTRACT_ABI = [
-    {
-        "inputs": [],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
             {
-                "indexed": false,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "Deposited",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "PositionCreated",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "int24",
-                "name": "newLower",
-                "type": "int24"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Deposited",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "int24",
-                "name": "newUpper",
-                "type": "int24"
-            }
-        ],
-        "name": "RangeAdjusted",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PositionCreated",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "newLower",
+                        "type": "int24"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "int24",
+                        "name": "newUpper",
+                        "type": "int24"
+                    }
+                ],
+                "name": "RangeAdjusted",
+                "type": "event"
             },
             {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "profit",
-                "type": "uint256"
-            }
-        ],
-        "name": "Withdrawn",
-        "type": "event"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "addProfits",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "int24",
-                "name": "expansion",
-                "type": "int24"
-            }
-        ],
-        "name": "adjustRangeDown",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "int24",
-                "name": "expansion",
-                "type": "int24"
-            }
-        ],
-        "name": "adjustRangeUp",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "approveUSDT",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "calculateUserProfit",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "depositUSDT",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "emergencyWithdraw",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "estimateDailyFees",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getContractBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getCurrentRange",
-        "outputs": [
-            {
-                "internalType": "int24",
-                "name": "lower",
-                "type": "int24"
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "profit",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Withdrawn",
+                "type": "event"
             },
             {
-                "internalType": "int24",
-                "name": "upper",
-                "type": "int24"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "addProfits",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "getUserBalance",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "expansion",
+                        "type": "int24"
+                    }
+                ],
+                "name": "adjustRangeDown",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "rebalanceToCurrentPrice",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
+                "inputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "expansion",
+                        "type": "int24"
+                    }
+                ],
+                "name": "adjustRangeUp",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "bool",
-                "name": "mode",
-                "type": "bool"
-            }
-        ],
-        "name": "setTestingMode",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
+                "inputs": [],
+                "name": "approveUSDT",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "withdraw",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "POSITION_MANAGER",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    }
+                ],
+                "name": "calculateUserProfit",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "USDC",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "depositUSDT",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "USDT",
-        "outputs": [
+                "inputs": [],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
+                "inputs": [],
+                "name": "estimateDailyFees",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "testingMode",
-        "outputs": [
+                "inputs": [],
+                "name": "getContractBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "nftPositionId",
-        "outputs": [
+                "inputs": [],
+                "name": "getCurrentRange",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "lower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "upper",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "tickLower",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getUserBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "int24",
-                "name": "",
-                "type": "int24"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "tickUpper",
-        "outputs": [
+                "inputs": [],
+                "name": "rebalanceToCurrentPrice",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "int24",
-                "name": "",
-                "type": "int24"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalShares",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "mode",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setTestingMode",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalDeposited",
-        "outputs": [
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
+                "inputs": [],
+                "name": "POSITION_MANAGER",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "userShares",
-        "outputs": [
+                "inputs": [],
+                "name": "USDC",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
             {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "inputs": [],
+                "name": "USDT",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "testingMode",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "nftPositionId",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tickLower",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tickUpper",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalShares",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalDeposited",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userShares",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-];
+        ];
+
+        const USDT_ABI = [
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "_spender", "type": "address"},
+                    {"name": "_value", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    {"name": "_owner", "type": "address"},
+                    {"name": "_spender", "type": "address"}
+                ],
+                "name": "allowance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {"name": "_to", "type": "address"},
+                    {"name": "_value", "type": "uint256"}
+                ],
+                "name": "transfer",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            }
+        ];
 
         // ========== VARIÁVEIS GLOBAIS ==========
         let web3;
@@ -922,6 +979,15 @@
             }
         }
 
+        // ========== FUNÇÕES DE CONVERSÃO ==========
+        function toWei(amount) {
+            return web3.utils.toWei(amount.toString(), 'ether');
+        }
+
+        function fromWei(amount) {
+            return web3.utils.fromWei(amount.toString(), 'ether');
+        }
+
         async function updateAllData() {
             await updateBalances();
             await updatePoolInfo();
@@ -936,15 +1002,15 @@
             try {
                 const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
                 const usdtBalance = await usdtContract.methods.balanceOf(account).call();
-                document.getElementById('usdtBalance').textContent = (usdtBalance / 1e18).toFixed(4);
+                document.getElementById('usdtBalance').textContent = parseFloat(fromWei(usdtBalance)).toFixed(4);
                 
                 const userShares = await contract.methods.userShares(account).call();
-                document.getElementById('myShares').textContent = (userShares / 1e18).toFixed(4);
-                document.getElementById('myInvestment').textContent = (userShares / 1e18).toFixed(4) + ' USDT';
+                document.getElementById('myShares').textContent = parseFloat(fromWei(userShares)).toFixed(4);
+                document.getElementById('myInvestment').textContent = parseFloat(fromWei(userShares)).toFixed(4) + ' USDT';
                 
-                // Estimativa de lucro (1.5% sobre o investimento)
-                const estimatedProfit = (userShares * 15) / 1000;
-                document.getElementById('estimatedProfit').textContent = (estimatedProfit / 1e18).toFixed(4) + ' USDT';
+                // Calcular lucro estimado
+                const estimatedProfit = await contract.methods.calculateUserProfit(account).call();
+                document.getElementById('estimatedProfit').textContent = parseFloat(fromWei(estimatedProfit)).toFixed(4) + ' USDT';
                 
             } catch (error) {
                 console.error("Erro ao atualizar saldos:", error);
@@ -956,19 +1022,16 @@
             
             try {
                 const totalShares = await contract.methods.totalShares().call();
-                document.getElementById('totalShares').textContent = (totalShares / 1e18).toFixed(4) + ' USDT';
+                document.getElementById('totalShares').textContent = parseFloat(fromWei(totalShares)).toFixed(4) + ' USDT';
                 
                 const contractBalance = await contract.methods.getContractBalance().call();
-                document.getElementById('contractBalance').textContent = (contractBalance / 1e18).toFixed(4) + ' USDT';
+                document.getElementById('contractBalance').textContent = parseFloat(fromWei(contractBalance)).toFixed(4) + ' USDT';
                 
-                const currentTick = await contract.methods.getCurrentTick().call();
-                document.getElementById('currentTick').textContent = currentTick;
+                const totalDeposited = await contract.methods.totalDeposited().call();
+                document.getElementById('totalDeposited').textContent = parseFloat(fromWei(totalDeposited)).toFixed(4) + ' USDT';
                 
                 const range = await contract.methods.getCurrentRange().call();
                 document.getElementById('currentRange').textContent = `${range[0]} a ${range[1]}`;
-                
-                const nftPositionId = await contract.methods.nftPositionId().call();
-                document.getElementById('nftPosition').textContent = nftPositionId !== '0' ? nftPositionId : 'Não criada';
                 
             } catch (error) {
                 console.error("Erro ao atualizar info do pool:", error);
@@ -985,8 +1048,11 @@
                 const range = await contract.methods.getCurrentRange().call();
                 document.getElementById('ownerRange').textContent = `${range[0]} a ${range[1]}`;
                 
+                const testingMode = await contract.methods.testingMode().call();
+                document.getElementById('testingMode').textContent = testingMode ? 'Ativo' : 'Inativo';
+                
                 const estimatedFees = await contract.methods.estimateDailyFees().call();
-                document.getElementById('estimatedFees').textContent = (estimatedFees / 1e18).toFixed(6) + ' USDT';
+                document.getElementById('estimatedFees').textContent = parseFloat(fromWei(estimatedFees)).toFixed(6) + ' USDT';
                 
             } catch (error) {
                 console.error("Erro ao atualizar info do owner:", error);
@@ -996,26 +1062,26 @@
         // ========== FUNÇÕES DE INVESTIMENTO ==========
         async function deposit() {
             const amount = document.getElementById('depositAmount').value;
-            if (!amount || amount <= 0) {
-                alert("Por favor digite um valor válido");
+            if (!amount || parseFloat(amount) < 0.01) {
+                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
                 return;
             }
             
             try {
-                const amountWei = web3.utils.toWei(amount.toString(), 'ether');
+                const amountWei = toWei(amount);
                 
                 document.getElementById('depositButton').disabled = true;
-                document.getElementById('depositButton').textContent = 'Verificando...';
-                showTransactionStatus('Verificando aprovação...', 'pending');
+                document.getElementById('depositButton').textContent = 'Processando...';
+                showTransactionStatus('Iniciando depósito...', 'pending');
                 
-                // Verificar e aprovar USDT
+                // Verificar aprovação primeiro
                 const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
                 const currentAllowance = await usdtContract.methods.allowance(account, CONTRACT_ADDRESS).call();
                 
                 if (BigInt(currentAllowance) < BigInt(amountWei)) {
-                    showTransactionStatus('Aprovando USDT...', 'pending');
+                    showTransactionStatus('Aprovando USDT... (Confirme na MetaMask)', 'pending');
                     
-                    await usdtContract.methods.approve(CONTRACT_ADDRESS, amountWei).send({ 
+                    await usdtContract.methods.approve(CONTRACT_ADDRESS, toWei('1000000')).send({ 
                         from: account,
                         gas: 80000
                     });
@@ -1025,12 +1091,11 @@
                 }
                 
                 // Fazer depósito
-                showTransactionStatus('Depositando na pool...', 'pending');
-                document.getElementById('depositButton').textContent = 'Depositando...';
+                showTransactionStatus('Depositando... (Confirme na MetaMask)', 'pending');
                 
                 await contract.methods.depositUSDT(amountWei).send({ 
                     from: account,
-                    gas: 400000
+                    gas: 300000
                 });
                 
                 showTransactionStatus('✅ Depósito realizado com sucesso!', 'success');
@@ -1038,11 +1103,18 @@
                 
             } catch (error) {
                 console.error("Erro no depósito:", error);
-                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+                let errorMsg = '❌ Erro na transação';
+                if (error.message.includes('user rejected')) {
+                    errorMsg = '❌ Transação cancelada pelo usuário';
+                } else if (error.message.includes('insufficient')) {
+                    errorMsg = '❌ Saldo insuficiente';
+                } else if (error.message.includes('allowance')) {
+                    errorMsg = '❌ Problema na aprovação do USDT';
+                }
+                showTransactionStatus(errorMsg, 'error');
             } finally {
                 document.getElementById('depositButton').disabled = false;
                 document.getElementById('depositButton').textContent = '📥 Depositar';
-                document.getElementById('depositAmount').value = '';
                 
                 setTimeout(() => {
                     hideTransactionStatus();
@@ -1052,27 +1124,27 @@
 
         async function withdraw() {
             const amount = document.getElementById('withdrawAmount').value;
-            if (!amount || amount <= 0) {
-                alert("Por favor digite um valor válido");
+            if (!amount || parseFloat(amount) < 0.01) {
+                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
                 return;
             }
             
             try {
-                const amountWei = web3.utils.toWei(amount.toString(), 'ether');
+                const amountWei = toWei(amount);
                 document.getElementById('withdrawButton').disabled = true;
                 document.getElementById('withdrawButton').textContent = 'Processando...';
-                showTransactionStatus('Processando saque com lucro...', 'pending');
+                showTransactionStatus('Processando saque...', 'pending');
                 
                 // Verificar se o usuário tem shares suficientes
                 const userShares = await contract.methods.userShares(account).call();
                 if (BigInt(userShares) < BigInt(amountWei)) {
-                    showTransactionStatus('❌ Shares insuficientes', 'error');
+                    showTransactionStatus('❌ Shares insuficientes para saque', 'error');
                     return;
                 }
                 
                 await contract.methods.withdraw(amountWei).send({ 
                     from: account,
-                    gas: 300000
+                    gas: 250000
                 });
                 
                 showTransactionStatus('✅ Saque realizado com lucro!', 'success');
@@ -1080,11 +1152,18 @@
                 
             } catch (error) {
                 console.error("Erro no saque:", error);
-                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+                let errorMsg = '❌ Erro na transação';
+                if (error.message.includes('user rejected')) {
+                    errorMsg = '❌ Transação cancelada pelo usuário';
+                } else if (error.message.includes('shares')) {
+                    errorMsg = '❌ Shares insuficientes';
+                } else if (error.message.includes('balance')) {
+                    errorMsg = '❌ Saldo insuficiente no contrato';
+                }
+                showTransactionStatus(errorMsg, 'error');
             } finally {
                 document.getElementById('withdrawButton').disabled = false;
                 document.getElementById('withdrawButton').textContent = '📤 Retirar com Lucro';
-                document.getElementById('withdrawAmount').value = '';
                 
                 setTimeout(() => {
                     hideTransactionStatus();
@@ -1098,7 +1177,7 @@
             
             try {
                 showTransactionStatus('Expandindo range para cima...', 'pending');
-                await contract.methods.adjustRangeUp(expansion).send({ from: account, gas: 250000 });
+                await contract.methods.adjustRangeUp(expansion).send({ from: account, gas: 200000 });
                 showTransactionStatus('✅ Range expandido para cima!', 'success');
                 await updateOwnerInfo();
                 await updatePoolInfo();
@@ -1115,7 +1194,7 @@
             
             try {
                 showTransactionStatus('Expandindo range para baixo...', 'pending');
-                await contract.methods.adjustRangeDown(expansion).send({ from: account, gas: 250000 });
+                await contract.methods.adjustRangeDown(expansion).send({ from: account, gas: 200000 });
                 showTransactionStatus('✅ Range expandido para baixo!', 'success');
                 await updateOwnerInfo();
                 await updatePoolInfo();
@@ -1130,13 +1209,48 @@
         async function rebalanceToCurrentPrice() {
             try {
                 showTransactionStatus('Rebalanceando para preço atual...', 'pending');
-                await contract.methods.rebalanceToCurrentPrice().send({ from: account, gas: 300000 });
+                await contract.methods.rebalanceToCurrentPrice().send({ from: account, gas: 250000 });
                 showTransactionStatus('✅ Rebalanceamento concluído!', 'success');
                 await updateOwnerInfo();
                 await updatePoolInfo();
             } catch (error) {
                 console.error("Erro:", error);
                 showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function addProfits() {
+            const amount = prompt("Quantos USDT deseja adicionar como lucros?", "10");
+            if (!amount || parseFloat(amount) <= 0) return;
+            
+            try {
+                const amountWei = toWei(amount);
+                showTransactionStatus('Adicionando lucros...', 'pending');
+                
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
+                await usdtContract.methods.approve(CONTRACT_ADDRESS, amountWei).send({ from: account });
+                await contract.methods.addProfits(amountWei).send({ from: account, gas: 200000 });
+                
+                showTransactionStatus('✅ Lucros adicionados com sucesso!', 'success');
+                await updateAllData();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro ao adicionar lucros', 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function approveUSDT() {
+            try {
+                showTransactionStatus('Aprovando USDT...', 'pending');
+                await contract.methods.approveUSDT().send({ from: account, gas: 100000 });
+                showTransactionStatus('✅ USDT aprovado com sucesso!', 'success');
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro na aprovação', 'error');
             } finally {
                 setTimeout(hideTransactionStatus, 5000);
             }
