@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquidity Optimizer - PancakeSwap V3</title>
+    <title>Pool Manager - PancakeSwap V3</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <style>
         * {
@@ -98,12 +98,12 @@
             transform: none;
         }
 
-        .button-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        }
-
         .button-success {
             background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+        }
+
+        .button-warning {
+            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
         }
 
         .input-group {
@@ -168,17 +168,14 @@
 
         .success {
             color: #28a745;
-            font-weight: bold;
         }
 
         .warning {
             color: #ffc107;
-            font-weight: bold;
         }
 
         .danger {
             color: #dc3545;
-            font-weight: bold;
         }
 
         .connect-section {
@@ -224,11 +221,6 @@
             background: #dc3545;
         }
 
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
         .transaction-status {
             padding: 10px;
             border-radius: 5px;
@@ -255,17 +247,9 @@
             border: 1px solid #f5c6cb;
         }
 
-        .token-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .token-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+        .pool-info {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
         }
     </style>
 </head>
@@ -273,19 +257,19 @@
     <div class="container">
         <!-- Cabeçalho -->
         <div class="header">
-            <h1>🎯 Liquidity Optimizer</h1>
-            <p>Otimize seus rendimentos na PancakeSwap V3 com estratégias avançadas de NFT</p>
+            <h1>🎯 Pool Manager - PancakeSwap V3</h1>
+            <p>Gerencie sua liquidez e maximize taxas na pool USDT/USDC</p>
         </div>
 
         <!-- Seção de Conexão -->
         <div id="connectSection" class="card connect-section">
             <h2>🔗 Conectar Carteira</h2>
-            <p>Conecte sua MetaMask na rede Binance Smart Chain para começar</p>
+            <p>Conecte sua MetaMask na rede Binance Smart Chain</p>
             <button class="button big-button" onclick="connectWallet()">Conectar MetaMask</button>
             <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                <p>✅ Contrato: 0xCF91A2429A0947084257A3202C2e3F0de4166c68</p>
+                <p>✅ Pool: USDT/USDC 0.01%</p>
                 <p>✅ Rede: BSC Mainnet</p>
-                <p>✅ Tokens: USDT/USDC</p>
-                <p>✅ Pool: PancakeSwap V3 0.01%</p>
             </div>
         </div>
 
@@ -305,12 +289,8 @@
                     <span class="info-value" id="walletAddress"></span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Rede:</span>
-                    <span class="info-value">BSC Mainnet</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Contrato:</span>
-                    <span class="info-value" id="contractAddress"></span>
+                    <span class="info-label">NFT Position:</span>
+                    <span class="info-value" id="nftPosition">Não criada</span>
                 </div>
             </div>
 
@@ -319,21 +299,21 @@
                 <h2>👤 Meu Investimento</h2>
                 <div class="grid">
                     <div class="info-panel">
-                        <div class="token-info">
-                            <div class="token-icon" style="background: #26a17b;"></div>
-                            <strong>Saldo USDT</strong>
-                        </div>
                         <div class="info-row">
-                            <span class="info-label">Na Carteira:</span>
+                            <span class="info-label">Saldo USDT:</span>
                             <span class="info-value" id="usdtBalance">0</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Investido:</span>
+                            <span class="info-label">Meu Investimento:</span>
                             <span class="info-value" id="myInvestment">0 USDT</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Shares:</span>
+                            <span class="info-label">Minhas Shares:</span>
                             <span class="info-value" id="myShares">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Lucro Estimado:</span>
+                            <span class="info-value" id="estimatedProfit">0 USDT</span>
                         </div>
                     </div>
                     
@@ -341,100 +321,88 @@
                         <h3 class="section-title">💰 Depositar USDT</h3>
                         <div class="input-group">
                             <label>Quantidade USDT:</label>
-                            <input type="number" id="depositAmount" class="input" placeholder="Ex: 100" min="0.1" step="0.1">
+                            <input type="number" id="depositAmount" class="input" placeholder="Ex: 100" min="1" step="1">
                         </div>
                         <button class="button" onclick="deposit()" id="depositButton">📥 Depositar</button>
 
                         <h3 class="section-title" style="margin-top: 20px;">💸 Retirar</h3>
                         <div class="input-group">
                             <label>Quantidade para retirar:</label>
-                            <input type="number" id="withdrawAmount" class="input" placeholder="Ex: 50" min="0.1" step="0.1">
+                            <input type="number" id="withdrawAmount" class="input" placeholder="Ex: 50" min="1" step="1">
                         </div>
-                        <button class="button" onclick="withdraw()" id="withdrawButton">📤 Retirar</button>
+                        <button class="button button-success" onclick="withdraw()" id="withdrawButton">📤 Retirar com Lucro</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações da Pool -->
+            <div class="card pool-info">
+                <h2>📊 Pool USDT/USDC</h2>
+                <div class="grid">
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Total Investido:</span>
+                            <span class="info-value" id="totalShares">0 USDT</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Saldo do Contrato:</span>
+                            <span class="info-value" id="contractBalance">0 USDT</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tick Atual:</span>
+                            <span class="info-value" id="currentTick">0</span>
+                        </div>
+                    </div>
+                    <div class="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Range Atual:</span>
+                            <span class="info-value" id="currentRange">-150 a +150</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Taxa da Pool:</span>
+                            <span class="info-value">0.01%</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Position Manager:</span>
+                            <span class="info-value">PancakeSwap V3</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Painel do Owner -->
             <div id="ownerPanel" class="card owner-panel hidden">
-                <h2>🎛️ Painel de Controle (Owner)</h2>
+                <h2>🎛️ Controle de Range (Owner)</h2>
                 
                 <div class="grid">
+                    <div>
+                        <h3 class="section-title">🔧 Ajustar Range</h3>
+                        <div class="input-group">
+                            <label>Ticks para expandir:</label>
+                            <input type="number" id="rangeExpansion" class="input" value="50" min="1" max="500">
+                        </div>
+                        <div class="control-group">
+                            <button class="button" onclick="adjustRangeUp()">⏫ Expandir Para Cima</button>
+                            <button class="button" onclick="adjustRangeDown()">⏬ Expandir Para Baixo</button>
+                        </div>
+                        
+                        <h3 class="section-title" style="margin-top: 20px;">🔄 Rebalancear</h3>
+                        <button class="button button-warning" onclick="rebalanceToCurrentPrice()">🎯 Rebalancear para Preço Atual</button>
+                    </div>
+                    
                     <div class="info-panel">
-                        <h3 class="section-title">📊 Informações da Posição</h3>
+                        <h3 class="section-title">📈 Informações da Posição</h3>
                         <div class="info-row">
-                            <span class="info-label">TokenId:</span>
-                            <span class="info-value" id="currentTokenId">-</span>
+                            <span class="info-label">NFT ID:</span>
+                            <span class="info-value" id="nftId">-</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Range Atual:</span>
-                            <span class="info-value" id="currentRange">-200 a +200</span>
+                            <span class="info-value" id="ownerRange">-</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Posição Ativa:</span>
-                            <span class="info-value" id="positionActive">Não</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Tick Atual:</span>
-                            <span class="info-value" id="currentPoolTick">0</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="section-title">🔧 Controles de Range</h3>
-                        <div class="input-group">
-                            <label>Ticks para expandir:</label>
-                            <input type="number" id="rangeExpansion" class="input" value="50" min="1" max="1000">
-                        </div>
-                        <div class="control-group">
-                            <button class="button" onclick="ajustRangeTokenACustom()">⏫ Expandir Para Cima</button>
-                            <button class="button" onclick="ajustRangeTokenBCustom()">⏬ Expandir Para Baixo</button>
-                        </div>
-
-                        <h3 class="section-title">🔄 Rebalanceamento</h3>
-                        <div class="input-group">
-                            <label>Novo Tick Lower:</label>
-                            <input type="number" id="newTickLower" class="input" value="-200">
-                        </div>
-                        <div class="input-group">
-                            <label>Novo Tick Upper:</label>
-                            <input type="number" id="newTickUpper" class="input" value="200">
-                        </div>
-                        <button class="button" onclick="rebalancearRange()">🔄 Rebalancear Range</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Informações do Pool -->
-            <div class="card">
-                <h2>📊 Estatísticas do Pool</h2>
-                <div class="grid">
-                    <div class="info-panel">
-                        <div class="info-row">
-                            <span class="info-label">Total Investido:</span>
-                            <span class="info-value" id="totalInvested">0 USDT</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Total de Shares:</span>
-                            <span class="info-value" id="totalShares">0</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Saldo do Contrato:</span>
-                            <span class="info-value" id="contractBalance">0 USDT</span>
-                        </div>
-                    </div>
-                    <div class="info-panel">
-                        <div class="info-row">
-                            <span class="info-label">Pool:</span>
-                            <span class="info-value">USDT/USDC 0.01%</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Position Manager:</span>
-                            <span class="info-value">PancakeSwap V3</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Estratégia:</span>
-                            <span class="info-value">Range Dinâmico ±2%</span>
+                            <span class="info-label">Taxas Estimadas/Dia:</span>
+                            <span class="info-value" id="estimatedFees">-</span>
                         </div>
                     </div>
                 </div>
@@ -447,10 +415,10 @@
 
     <script>
         // ========== CONFIGURAÇÕES ==========
-        const CONTRACT_ADDRESS = "0xd4118361B7aDff43d7Aa7A42daC7957A52291f91";
+        const CONTRACT_ADDRESS = "0xCF91A2429A0947084257A3202C2e3F0de4166c68";
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
         
-        // ABI COMPLETA DO CONTRATO
+        // ABI DO NOVO CONTRATO
         const CONTRACT_ABI = [
             {
                 "inputs": [],
@@ -481,18 +449,24 @@
                 "inputs": [
                     {
                         "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
                         "internalType": "int24",
-                        "name": "novoTickLower",
+                        "name": "tickLower",
                         "type": "int24"
                     },
                     {
                         "indexed": false,
                         "internalType": "int24",
-                        "name": "novoTickUpper",
+                        "name": "tickUpper",
                         "type": "int24"
                     }
                 ],
-                "name": "RangeAjustado",
+                "name": "PositionCreated",
                 "type": "event"
             },
             {
@@ -500,29 +474,29 @@
                 "inputs": [
                     {
                         "indexed": false,
-                        "internalType": "address",
-                        "name": "user",
-                        "type": "address"
+                        "internalType": "int24",
+                        "name": "newTickLower",
+                        "type": "int24"
                     },
                     {
                         "indexed": false,
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
+                        "internalType": "int24",
+                        "name": "newTickUpper",
+                        "type": "int24"
                     }
                 ],
-                "name": "Withdrawn",
+                "name": "RangeAdjusted",
                 "type": "event"
             },
             {
                 "inputs": [
                     {
                         "internalType": "int24",
-                        "name": "expansao",
+                        "name": "expansion",
                         "type": "int24"
                     }
                 ],
-                "name": "ajustRangeTokenA",
+                "name": "adjustRangeDown",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -531,11 +505,11 @@
                 "inputs": [
                     {
                         "internalType": "int24",
-                        "name": "expansao",
+                        "name": "expansion",
                         "type": "int24"
                     }
                 ],
-                "name": "ajustRangeTokenB",
+                "name": "adjustRangeUp",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -555,9 +529,15 @@
             },
             {
                 "inputs": [],
-                "name": "emergencyWithdraw",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "name": "estimateDailyFees",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "estimatedFees",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -575,16 +555,16 @@
             },
             {
                 "inputs": [],
-                "name": "getRangeAtual",
+                "name": "getCurrentRange",
                 "outputs": [
                     {
                         "internalType": "int24",
-                        "name": "tickLower",
+                        "name": "lower",
                         "type": "int24"
                     },
                     {
                         "internalType": "int24",
-                        "name": "tickUpper",
+                        "name": "upper",
                         "type": "int24"
                     }
                 ],
@@ -592,19 +572,49 @@
                 "type": "function"
             },
             {
-                "inputs": [
+                "inputs": [],
+                "name": "getCurrentTick",
+                "outputs": [
                     {
-                        "internalType": "address",
-                        "name": "user",
-                        "type": "address"
+                        "internalType": "int24",
+                        "name": "currentTick",
+                        "type": "int24"
                     }
                 ],
-                "name": "getUserBalance",
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getPositionInfo",
                 "outputs": [
                     {
                         "internalType": "uint256",
-                        "name": "",
+                        "name": "tokenId",
                         "type": "uint256"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "lower",
+                        "type": "int24"
+                    },
+                    {
+                        "internalType": "int24",
+                        "name": "upper",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "POOL",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
                     }
                 ],
                 "stateMutability": "view",
@@ -651,6 +661,13 @@
             },
             {
                 "inputs": [],
+                "name": "rebalanceToCurrentPrice",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
                 "name": "owner",
                 "outputs": [
                     {
@@ -664,51 +681,38 @@
             },
             {
                 "inputs": [],
-                "name": "posicaoAtiva",
-                "outputs": [
-                    {
-                        "internalType": "bool",
-                        "name": "",
-                        "type": "bool"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "tickLowerAtual",
-                "outputs": [
-                    {
-                        "internalType": "int24",
-                        "name": "",
-                        "type": "int24"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "tickUpperAtual",
-                "outputs": [
-                    {
-                        "internalType": "int24",
-                        "name": "",
-                        "type": "int24"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "tokenIdAtual",
+                "name": "nftPositionId",
                 "outputs": [
                     {
                         "internalType": "uint256",
                         "name": "",
                         "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tickLower",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "tickUpper",
+                "outputs": [
+                    {
+                        "internalType": "int24",
+                        "name": "",
+                        "type": "int24"
                     }
                 ],
                 "stateMutability": "view",
@@ -730,20 +734,14 @@
             {
                 "inputs": [
                     {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "name": "userDeposits",
-                "outputs": [
-                    {
                         "internalType": "uint256",
-                        "name": "",
+                        "name": "amount",
                         "type": "uint256"
                     }
                 ],
-                "stateMutability": "view",
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -794,16 +792,6 @@
                 "name": "allowance",
                 "outputs": [{"name": "", "type": "uint256"}],
                 "type": "function"
-            },
-            {
-                "constant": false,
-                "inputs": [
-                    {"name": "_to", "type": "address"},
-                    {"name": "_value", "type": "uint256"}
-                ],
-                "name": "transfer",
-                "outputs": [{"name": "", "type": "bool"}],
-                "type": "function"
             }
         ];
 
@@ -835,7 +823,6 @@
                     document.getElementById('connectSection').classList.add('hidden');
                     document.getElementById('appSection').classList.remove('hidden');
                     document.getElementById('walletAddress').textContent = `${account.substring(0, 6)}...${account.substring(38)}`;
-                    document.getElementById('contractAddress').textContent = `${CONTRACT_ADDRESS.substring(0, 6)}...${CONTRACT_ADDRESS.substring(38)}`;
                     
                     // Inicializar contrato
                     contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
@@ -849,7 +836,7 @@
                             document.getElementById('ownerPanel').classList.remove('hidden');
                         }
                     } catch (error) {
-                        console.log('Não é owner ou contrato não implantado');
+                        console.log('Não é owner');
                     }
                     
                     await updateAllData();
@@ -875,10 +862,9 @@
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x38' }], // 56 em hexadecimal
+                    params: [{ chainId: '0x38' }],
                 });
             } catch (switchError) {
-                // Se a rede não estiver adicionada, adicione
                 if (switchError.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
@@ -914,11 +900,13 @@
                 const usdtBalance = await usdtContract.methods.balanceOf(account).call();
                 document.getElementById('usdtBalance').textContent = (usdtBalance / 1e18).toFixed(4);
                 
-                const userInvestment = await contract.methods.getUserBalance(account).call();
-                document.getElementById('myInvestment').textContent = (userInvestment / 1e18).toFixed(4) + ' USDT';
-                
                 const userShares = await contract.methods.userShares(account).call();
                 document.getElementById('myShares').textContent = (userShares / 1e18).toFixed(4);
+                document.getElementById('myInvestment').textContent = (userShares / 1e18).toFixed(4) + ' USDT';
+                
+                // Estimativa de lucro (1.5% sobre o investimento)
+                const estimatedProfit = (userShares * 15) / 1000;
+                document.getElementById('estimatedProfit').textContent = (estimatedProfit / 1e18).toFixed(4) + ' USDT';
                 
             } catch (error) {
                 console.error("Erro ao atualizar saldos:", error);
@@ -930,13 +918,19 @@
             
             try {
                 const totalShares = await contract.methods.totalShares().call();
-                document.getElementById('totalShares').textContent = (totalShares / 1e18).toFixed(4);
-                
-                const totalInvested = totalShares; // Simplificado
-                document.getElementById('totalInvested').textContent = (totalInvested / 1e18).toFixed(4) + ' USDT';
+                document.getElementById('totalShares').textContent = (totalShares / 1e18).toFixed(4) + ' USDT';
                 
                 const contractBalance = await contract.methods.getContractBalance().call();
                 document.getElementById('contractBalance').textContent = (contractBalance / 1e18).toFixed(4) + ' USDT';
+                
+                const currentTick = await contract.methods.getCurrentTick().call();
+                document.getElementById('currentTick').textContent = currentTick;
+                
+                const range = await contract.methods.getCurrentRange().call();
+                document.getElementById('currentRange').textContent = `${range[0]} a ${range[1]}`;
+                
+                const nftPositionId = await contract.methods.nftPositionId().call();
+                document.getElementById('nftPosition').textContent = nftPositionId !== '0' ? nftPositionId : 'Não criada';
                 
             } catch (error) {
                 console.error("Erro ao atualizar info do pool:", error);
@@ -947,15 +941,14 @@
             if (!web3 || !isOwner) return;
             
             try {
-                const tokenId = await contract.methods.tokenIdAtual().call();
-                document.getElementById('currentTokenId').textContent = tokenId !== '0' ? tokenId : 'Não criado';
+                const nftPositionId = await contract.methods.nftPositionId().call();
+                document.getElementById('nftId').textContent = nftPositionId !== '0' ? nftPositionId : 'Não criada';
                 
-                const range = await contract.methods.getRangeAtual().call();
-                document.getElementById('currentRange').textContent = `${range[0]} a ${range[1]} ticks`;
+                const range = await contract.methods.getCurrentRange().call();
+                document.getElementById('ownerRange').textContent = `${range[0]} a ${range[1]}`;
                 
-                const posicaoAtiva = await contract.methods.posicaoAtiva().call();
-                document.getElementById('positionActive').textContent = posicaoAtiva ? 'Sim' : 'Não';
-                document.getElementById('positionActive').className = posicaoAtiva ? 'success' : 'warning';
+                const estimatedFees = await contract.methods.estimateDailyFees().call();
+                document.getElementById('estimatedFees').textContent = (estimatedFees / 1e18).toFixed(6) + ' USDT';
                 
             } catch (error) {
                 console.error("Erro ao atualizar info do owner:", error);
@@ -966,7 +959,7 @@
         async function deposit() {
             const amount = document.getElementById('depositAmount').value;
             if (!amount || amount <= 0) {
-                alert("Por favor digite um valor válido (mínimo 0.1 USDT)");
+                alert("Por favor digite um valor válido");
                 return;
             }
             
@@ -975,43 +968,31 @@
                 
                 document.getElementById('depositButton').disabled = true;
                 document.getElementById('depositButton').textContent = 'Verificando...';
-                showTransactionStatus('Verificando saldo e aprovação...', 'pending');
-                
-                // Verificar saldo primeiro
-                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
-                const userBalance = await usdtContract.methods.balanceOf(account).call();
-                const userBalanceFormatted = web3.utils.fromWei(userBalance, 'ether');
-                
-                if (parseFloat(userBalanceFormatted) < parseFloat(amount)) {
-                    showTransactionStatus(`❌ Saldo insuficiente! Você tem ${userBalanceFormatted} USDT`, 'error');
-                    document.getElementById('depositButton').disabled = false;
-                    document.getElementById('depositButton').textContent = '📥 Depositar';
-                    return;
-                }
+                showTransactionStatus('Verificando aprovação...', 'pending');
                 
                 // Verificar e aprovar USDT
-                showTransactionStatus('Verificando aprovação do USDT...', 'pending');
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
                 const currentAllowance = await usdtContract.methods.allowance(account, CONTRACT_ADDRESS).call();
                 
                 if (BigInt(currentAllowance) < BigInt(amountWei)) {
-                    showTransactionStatus('Aprovando USDT... (Confirme na MetaMask)', 'pending');
+                    showTransactionStatus('Aprovando USDT...', 'pending');
                     
                     await usdtContract.methods.approve(CONTRACT_ADDRESS, amountWei).send({ 
                         from: account,
                         gas: 80000
                     });
                     
-                    showTransactionStatus('Aprovação confirmada! Processando depósito...', 'success');
+                    showTransactionStatus('Aprovação confirmada!', 'success');
                     await new Promise(resolve => setTimeout(resolve, 2000));
                 }
                 
                 // Fazer depósito
-                showTransactionStatus('Realizando depósito... (Confirme na MetaMask)', 'pending');
+                showTransactionStatus('Depositando na pool...', 'pending');
                 document.getElementById('depositButton').textContent = 'Depositando...';
                 
                 await contract.methods.depositUSDT(amountWei).send({ 
                     from: account,
-                    gas: 300000
+                    gas: 400000
                 });
                 
                 showTransactionStatus('✅ Depósito realizado com sucesso!', 'success');
@@ -1019,16 +1000,7 @@
                 
             } catch (error) {
                 console.error("Erro no depósito:", error);
-                
-                if (error.message.includes('user rejected')) {
-                    showTransactionStatus('❌ Transação cancelada pelo usuário', 'error');
-                } else if (error.message.includes('insufficient') || error.message.includes('saldo')) {
-                    showTransactionStatus('❌ Saldo insuficiente', 'error');
-                } else if (error.message.includes('allowance') || error.message.includes('approve')) {
-                    showTransactionStatus('❌ Erro na aprovação do USDT', 'error');
-                } else {
-                    showTransactionStatus('❌ Erro: ' + error.message, 'error');
-                }
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
             } finally {
                 document.getElementById('depositButton').disabled = false;
                 document.getElementById('depositButton').textContent = '📥 Depositar';
@@ -1051,36 +1023,29 @@
                 const amountWei = web3.utils.toWei(amount.toString(), 'ether');
                 document.getElementById('withdrawButton').disabled = true;
                 document.getElementById('withdrawButton').textContent = 'Processando...';
-                showTransactionStatus('Processando saque...', 'pending');
+                showTransactionStatus('Processando saque com lucro...', 'pending');
                 
                 // Verificar se o usuário tem shares suficientes
                 const userShares = await contract.methods.userShares(account).call();
                 if (BigInt(userShares) < BigInt(amountWei)) {
-                    showTransactionStatus('❌ Shares insuficientes para saque', 'error');
+                    showTransactionStatus('❌ Shares insuficientes', 'error');
                     return;
                 }
                 
                 await contract.methods.withdraw(amountWei).send({ 
                     from: account,
-                    gas: 250000
+                    gas: 300000
                 });
                 
-                showTransactionStatus('✅ Saque realizado com sucesso!', 'success');
+                showTransactionStatus('✅ Saque realizado com lucro!', 'success');
                 await updateAllData();
                 
             } catch (error) {
                 console.error("Erro no saque:", error);
-                
-                if (error.message.includes('user rejected')) {
-                    showTransactionStatus('❌ Transação cancelada pelo usuário', 'error');
-                } else if (error.message.includes('shares') || error.message.includes('Invalid shares')) {
-                    showTransactionStatus('❌ Shares insuficientes', 'error');
-                } else {
-                    showTransactionStatus('❌ Erro: ' + error.message, 'error');
-                }
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
             } finally {
                 document.getElementById('withdrawButton').disabled = false;
-                document.getElementById('withdrawButton').textContent = '📤 Retirar';
+                document.getElementById('withdrawButton').textContent = '📤 Retirar com Lucro';
                 document.getElementById('withdrawAmount').value = '';
                 
                 setTimeout(() => {
@@ -1090,53 +1055,47 @@
         }
 
         // ========== FUNÇÕES DE CONTROLE DO OWNER ==========
-        async function ajustRangeTokenACustom() {
-            const expansao = parseInt(document.getElementById('rangeExpansion').value);
-            await ajustRangeTokenA(expansao);
-        }
-
-        async function ajustRangeTokenBCustom() {
-            const expansao = parseInt(document.getElementById('rangeExpansion').value);
-            await ajustRangeTokenB(expansao);
-        }
-
-        async function ajustRangeTokenA(expansao) {
-            try {
-                showTransactionStatus('Ajustando range para cima...', 'pending');
-                await contract.methods.ajustRangeTokenA(expansao).send({ from: account, gas: 200000 });
-                showTransactionStatus('✅ Range expandido para cima!', 'success');
-                await updateOwnerInfo();
-            } catch (error) {
-                console.error("Erro:", error);
-                showTransactionStatus('❌ Erro: ' + error.message, 'error');
-            } finally {
-                setTimeout(hideTransactionStatus, 5000);
-            }
-        }
-
-        async function ajustRangeTokenB(expansao) {
-            try {
-                showTransactionStatus('Ajustando range para baixo...', 'pending');
-                await contract.methods.ajustRangeTokenB(expansao).send({ from: account, gas: 200000 });
-                showTransactionStatus('✅ Range expandido para baixo!', 'success');
-                await updateOwnerInfo();
-            } catch (error) {
-                console.error("Erro:", error);
-                showTransactionStatus('❌ Erro: ' + error.message, 'error');
-            } finally {
-                setTimeout(hideTransactionStatus, 5000);
-            }
-        }
-
-        async function rebalancearRange() {
-            const tickLower = parseInt(document.getElementById('newTickLower').value);
-            const tickUpper = parseInt(document.getElementById('newTickUpper').value);
+        async function adjustRangeUp() {
+            const expansion = parseInt(document.getElementById('rangeExpansion').value);
             
             try {
-                showTransactionStatus('Rebalanceando range...', 'pending');
-                await contract.methods.rebalancearComNovoRange(tickLower, tickUpper).send({ from: account, gas: 400000 });
-                showTransactionStatus('✅ Range rebalanceado com sucesso!', 'success');
+                showTransactionStatus('Expandindo range para cima...', 'pending');
+                await contract.methods.adjustRangeUp(expansion).send({ from: account, gas: 250000 });
+                showTransactionStatus('✅ Range expandido para cima!', 'success');
                 await updateOwnerInfo();
+                await updatePoolInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function adjustRangeDown() {
+            const expansion = parseInt(document.getElementById('rangeExpansion').value);
+            
+            try {
+                showTransactionStatus('Expandindo range para baixo...', 'pending');
+                await contract.methods.adjustRangeDown(expansion).send({ from: account, gas: 250000 });
+                showTransactionStatus('✅ Range expandido para baixo!', 'success');
+                await updateOwnerInfo();
+                await updatePoolInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function rebalanceToCurrentPrice() {
+            try {
+                showTransactionStatus('Rebalanceando para preço atual...', 'pending');
+                await contract.methods.rebalanceToCurrentPrice().send({ from: account, gas: 300000 });
+                showTransactionStatus('✅ Rebalanceamento concluído!', 'success');
+                await updateOwnerInfo();
+                await updatePoolInfo();
             } catch (error) {
                 console.error("Erro:", error);
                 showTransactionStatus('❌ Erro: ' + error.message, 'error');
@@ -1160,32 +1119,21 @@
         // ========== INICIALIZAÇÃO ==========
         window.addEventListener('load', function() {
             if (typeof window.ethereum !== 'undefined') {
-                console.log('MetaMask detectado!');
-                // Tentar conectar automaticamente se já estava conectado
                 ethereum.request({ method: 'eth_accounts' })
                     .then(accounts => {
                         if (accounts.length > 0) {
                             connectWallet();
                         }
                     });
-            } else {
-                alert('MetaMask não detectado. Por favor instale a extensão.');
             }
         });
 
-        // Listen for account changes
+        // Listeners para mudanças
         if (typeof window.ethereum !== 'undefined') {
             window.ethereum.on('accountsChanged', function(accounts) {
-                if (accounts.length === 0) {
-                    // User disconnected their wallet
-                    location.reload();
-                } else {
-                    account = accounts[0];
-                    location.reload();
-                }
+                location.reload();
             });
 
-            // Listen for chain changes
             window.ethereum.on('chainChanged', function(chainId) {
                 location.reload();
             });
