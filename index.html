@@ -274,6 +274,16 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #6c757d;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -334,6 +344,13 @@
                 </button>
                 
                 <div id="statusMessage" class="status" style="display: none;"></div>
+                
+                <div class="debug-info">
+                    <strong>Debug Info:</strong><br>
+                    Contrato LP: <span id="debugLpAddress">-</span><br>
+                    Token0: <span id="debugToken0">-</span><br>
+                    Token1: <span id="debugToken1">-</span>
+                </div>
             </div>
         </div>
         
@@ -346,7 +363,7 @@
                     <label for="lpAmount">Tokens LP para Remover</label>
                     <div class="token-input">
                         <input type="number" id="lpAmount" placeholder="0.0" min="0" step="0.001">
-                        <span class="token-symbol">Cake-LP</span>
+                        <span class="token-symbol" id="lpTokenSymbol">Cake-LP</span>
                     </div>
                     <div class="balance">Disponível: <span id="lpBalance">0.0</span></div>
                 </div>
@@ -389,6 +406,12 @@
                 </button>
                 
                 <div id="removeStatusMessage" class="status" style="display: none;"></div>
+                
+                <div class="debug-info">
+                    <strong>Debug Info Remoção:</strong><br>
+                    LP Balance: <span id="debugLpBalance">-</span><br>
+                    Allowance: <span id="debugAllowance">-</span>
+                </div>
             </div>
         </div>
         
@@ -420,7 +443,7 @@
         const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
         const ROUTER_ADDRESS = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // PancakeSwap Router
         
-        // ABI do contrato do Pool (LP Token)
+        // ABI do contrato do Pool (LP Token) - PancakeSwap Pair
         const LP_ABI = [
             {
                 "inputs": [],
@@ -440,9 +463,9 @@
                 "inputs": [],
                 "name": "getReserves",
                 "outputs": [
-                    {"internalType": "uint112", "name": "_reserve0", "type": "uint112"},
-                    {"internalType": "uint112", "name": "_reserve1", "type": "uint112"},
-                    {"internalType": "uint32", "name": "_blockTimestampLast", "type": "uint32"}
+                    {"internalType": "uint112", "name": "reserve0", "type": "uint112"},
+                    {"internalType": "uint112", "name": "reserve1", "type": "uint112"},
+                    {"internalType": "uint32", "name": "blockTimestampLast", "type": "uint32"}
                 ],
                 "stateMutability": "view",
                 "type": "function"
@@ -465,6 +488,26 @@
                 "inputs": [],
                 "name": "decimals",
                 "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "spender", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "owner", "type": "address"},
+                    {"internalType": "address", "name": "spender", "type": "address"}
+                ],
+                "name": "allowance",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             }
@@ -503,6 +546,13 @@
                 "inputs": [],
                 "name": "decimals",
                 "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
                 "stateMutability": "view",
                 "type": "function"
             }
@@ -547,6 +597,13 @@
                 ],
                 "stateMutability": "nonpayable",
                 "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "factory",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
             }
         ];
         
@@ -556,20 +613,17 @@
         let usdtContract;
         let usdcContract;
         let routerContract;
-        let slippage = 0.5; // Slippage padrão 0.5%
-        let slippageRemove = 0.5; // Slippage padrão para remoção
-        
+        let slippage = 0.5;
+        let slippageRemove = 0.5;
+        let lpDecimals = 18; // Padrão para tokens LP na PancakeSwap
+
         // Inicialização
         window.addEventListener('load', async () => {
-            // Verificar se MetaMask está instalado
             if (typeof window.ethereum !== 'undefined') {
                 web3 = new Web3(window.ethereum);
                 
                 try {
-                    // Solicitar acesso à conta
                     await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    
-                    // Obter a conta do usuário
                     const accounts = await web3.eth.getAccounts();
                     userAccount = accounts[0];
                     
@@ -579,6 +633,12 @@
                     usdcContract = new web3.eth.Contract(TOKEN_ABI, USDC_ADDRESS);
                     routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER_ADDRESS);
                     
+                    // Configurar debug info
+                    document.getElementById('debugLpAddress').textContent = LP_POOL_ADDRESS;
+                    
+                    // Carregar informações do pool
+                    await loadPoolInfo();
+                    
                     // Configurar eventos
                     setupEventListeners();
                     
@@ -586,7 +646,6 @@
                     await loadBalances();
                     await loadLiquidityInfo();
                     
-                    // Configurar listeners para mudanças de conta
                     window.ethereum.on('accountsChanged', (accounts) => {
                         userAccount = accounts[0];
                         loadBalances();
@@ -601,6 +660,27 @@
             }
         });
         
+        // Carregar informações do pool
+        async function loadPoolInfo() {
+            try {
+                const token0 = await lpContract.methods.token0().call();
+                const token1 = await lpContract.methods.token1().call();
+                
+                document.getElementById('debugToken0').textContent = token0;
+                document.getElementById('debugToken1').textContent = token1;
+                
+                // Verificar qual token é USDT e qual é USDC
+                const isToken0USDT = token0.toLowerCase() === USDT_ADDRESS.toLowerCase();
+                const isToken1USDC = token1.toLowerCase() === USDC_ADDRESS.toLowerCase();
+                
+                console.log('Token0:', token0, 'is USDT:', isToken0USDT);
+                console.log('Token1:', token1, 'is USDC:', isToken1USDC);
+                
+            } catch (error) {
+                console.error('Erro ao carregar informações do pool:', error);
+            }
+        }
+
         // Configurar event listeners
         function setupEventListeners() {
             // Tabs
@@ -614,7 +694,7 @@
                 });
             });
             
-            // Slippage settings - Adicionar
+            // Slippage settings
             document.querySelectorAll('[data-slippage]').forEach(option => {
                 option.addEventListener('click', () => {
                     document.querySelectorAll('[data-slippage]').forEach(o => o.classList.remove('active'));
@@ -666,16 +746,10 @@
                 });
             });
             
-            // Botão aprovar tokens
+            // Botões
             document.getElementById('approveBtn').addEventListener('click', approveTokens);
-            
-            // Botão adicionar liquidez
             document.getElementById('addLiquidityBtn').addEventListener('click', addLiquidity);
-            
-            // Botão aprovar tokens LP
             document.getElementById('approveLpBtn').addEventListener('click', approveLpTokens);
-            
-            // Botão remover liquidez
             document.getElementById('removeLiquidityBtn').addEventListener('click', removeLiquidity);
         }
         
@@ -688,7 +762,14 @@
                 
                 const usdtDecimals = await usdtContract.methods.decimals().call();
                 const usdcDecimals = await usdcContract.methods.decimals().call();
-                const lpDecimals = await lpContract.methods.decimals().call();
+                
+                // Tentar obter decimals do LP token
+                try {
+                    lpDecimals = await lpContract.methods.decimals().call();
+                } catch (e) {
+                    console.log('Usando decimals padrão para LP token');
+                    lpDecimals = 18;
+                }
                 
                 document.getElementById('usdtBalance').textContent = 
                     (usdtBalance / Math.pow(10, usdtDecimals)).toFixed(6);
@@ -697,6 +778,9 @@
                 document.getElementById('lpBalance').textContent = 
                     (lpBalance / Math.pow(10, lpDecimals)).toFixed(6);
                     
+                // Debug info
+                document.getElementById('debugLpBalance').textContent = lpBalance;
+                
             } catch (error) {
                 console.error('Erro ao carregar saldos:', error);
             }
@@ -709,7 +793,6 @@
                 const totalSupply = await lpContract.methods.totalSupply().call();
                 const reserves = await lpContract.methods.getReserves().call();
                 
-                const lpDecimals = await lpContract.methods.decimals().call();
                 const usdtDecimals = await usdtContract.methods.decimals().call();
                 const usdcDecimals = await usdcContract.methods.decimals().call();
                 
@@ -722,11 +805,11 @@
                     const poolShare = (lpBalance / totalSupply * 100).toFixed(4);
                     document.getElementById('poolShare').textContent = poolShare + '%';
                     
-                    // Calcular valor estimado (simplificado)
-                    const reserve0 = reserves._reserve0 / Math.pow(10, usdtDecimals);
-                    const reserve1 = reserves._reserve1 / Math.pow(10, usdcDecimals);
+                    // Calcular valor estimado
+                    const reserve0 = reserves.reserve0 / Math.pow(10, usdtDecimals);
+                    const reserve1 = reserves.reserve1 / Math.pow(10, usdcDecimals);
                     const share = lpBalanceFormatted / totalSupplyFormatted;
-                    const estimatedValue = (reserve0 * share * 2).toFixed(2); // Assumindo 1:1
+                    const estimatedValue = (reserve0 * share + reserve1 * share).toFixed(2);
                     document.getElementById('estimatedValue').textContent = '$' + estimatedValue;
                 } else {
                     document.getElementById('poolShare').textContent = '0%';
@@ -738,7 +821,7 @@
             }
         }
         
-        // Aprovar tokens para o router (para adicionar liquidez)
+        // Aprovar tokens para o router
         async function approveTokens() {
             const usdtAmount = document.getElementById('usdtAmount').value;
             const usdcAmount = document.getElementById('usdcAmount').value;
@@ -756,15 +839,15 @@
                 const usdcDecimals = await usdcContract.methods.decimals().call();
                 
                 // Converter valores para a unidade correta
-                const usdtAmountWei = BigInt(usdtAmount * Math.pow(10, usdtDecimals));
-                const usdcAmountWei = BigInt(usdcAmount * Math.pow(10, usdcDecimals));
+                const usdtAmountWei = web3.utils.toBN(usdtAmount * Math.pow(10, usdtDecimals));
+                const usdcAmountWei = web3.utils.toBN(usdcAmount * Math.pow(10, usdcDecimals));
                 
                 // Aprovar USDT
-                await usdtContract.methods.approve(ROUTER_ADDRESS, usdtAmountWei.toString())
+                const usdtApprove = await usdtContract.methods.approve(ROUTER_ADDRESS, usdtAmountWei.toString())
                     .send({ from: userAccount });
                 
                 // Aprovar USDC
-                await usdcContract.methods.approve(ROUTER_ADDRESS, usdcAmountWei.toString())
+                const usdcApprove = await usdcContract.methods.approve(ROUTER_ADDRESS, usdcAmountWei.toString())
                     .send({ from: userAccount });
                 
                 showStatus('Tokens aprovados com sucesso!', 'success');
@@ -790,18 +873,24 @@
                 const usdcDecimals = await usdcContract.methods.decimals().call();
                 
                 // Converter valores para a unidade correta
-                const usdtAmountWei = BigInt(usdtAmount * Math.pow(10, usdtDecimals));
-                const usdcAmountWei = BigInt(usdcAmount * Math.pow(10, usdcDecimals));
+                const usdtAmountWei = web3.utils.toBN(usdtAmount * Math.pow(10, usdtDecimals));
+                const usdcAmountWei = web3.utils.toBN(usdcAmount * Math.pow(10, usdcDecimals));
                 
                 // Calcular valores mínimos com slippage
-                const usdtMin = usdtAmountWei * BigInt(10000 - slippage * 100) / 10000n;
-                const usdcMin = usdcAmountWei * BigInt(10000 - slippage * 100) / 10000n;
+                const usdtMin = usdtAmountWei.mul(web3.utils.toBN(10000 - slippage * 100)).div(web3.utils.toBN(10000));
+                const usdcMin = usdcAmountWei.mul(web3.utils.toBN(10000 - slippage * 100)).div(web3.utils.toBN(10000));
                 
                 // Definir deadline (30 minutos a partir de agora)
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 30;
                 
+                console.log('Adicionando liquidez com parâmetros:');
+                console.log('USDT:', usdtAmountWei.toString());
+                console.log('USDC:', usdcAmountWei.toString());
+                console.log('USDT Min:', usdtMin.toString());
+                console.log('USDC Min:', usdcMin.toString());
+                
                 // Adicionar liquidez
-                await routerContract.methods.addLiquidity(
+                const result = await routerContract.methods.addLiquidity(
                     USDT_ADDRESS,
                     USDC_ADDRESS,
                     usdtAmountWei.toString(),
@@ -810,7 +899,9 @@
                     usdcMin.toString(),
                     userAccount,
                     deadline
-                ).send({ from: userAccount });
+                ).send({ from: userAccount, gas: 300000 });
+                
+                console.log('Resultado da adição:', result);
                 
                 showStatus('Liquidez adicionada com sucesso!', 'success');
                 
@@ -826,12 +917,13 @@
                 setButtonNormal('approveBtn', 'Aprovar Tokens');
                 
             } catch (error) {
+                console.error('Erro detalhado:', error);
                 showStatus('Erro ao adicionar liquidez: ' + error.message, 'error');
                 setButtonNormal('addLiquidityBtn', 'Adicionar Liquidez');
             }
         }
         
-        // Aprovar tokens LP para o router (para remover liquidez)
+        // Aprovar tokens LP para o router
         async function approveLpTokens() {
             const lpAmount = document.getElementById('lpAmount').value;
             
@@ -844,32 +936,44 @@
                 setButtonLoading('approveLpBtn', 'Aprovando...');
                 showRemoveStatus('Aprovando tokens LP...', 'info');
                 
-                const lpDecimals = await lpContract.methods.decimals().call();
-                const lpAmountWei = BigInt(lpAmount * Math.pow(10, lpDecimals));
+                const lpAmountWei = web3.utils.toBN(lpAmount * Math.pow(10, lpDecimals));
+                
+                console.log('Aprovando LP tokens:', lpAmountWei.toString());
                 
                 // Aprovar tokens LP
-                await lpContract.methods.approve(ROUTER_ADDRESS, lpAmountWei.toString())
-                    .send({ from: userAccount });
+                const approveTx = await lpContract.methods.approve(ROUTER_ADDRESS, lpAmountWei.toString())
+                    .send({ from: userAccount, gas: 100000 });
+                
+                console.log('Transação de aprovação:', approveTx);
+                
+                // Verificar allowance
+                const allowance = await lpContract.methods.allowance(userAccount, ROUTER_ADDRESS).call();
+                document.getElementById('debugAllowance').textContent = allowance;
                 
                 showRemoveStatus('Tokens LP aprovados com sucesso!', 'success');
                 document.getElementById('removeLiquidityBtn').disabled = false;
                 setButtonNormal('approveLpBtn', 'Tokens LP Aprovados');
                 
             } catch (error) {
+                console.error('Erro na aprovação:', error);
                 showRemoveStatus('Erro ao aprovar tokens LP: ' + error.message, 'error');
                 setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
             }
         }
         
-        // Remover liquidez
+        // Remover liquidez - CORRIGIDA
         async function removeLiquidity() {
             const lpAmount = document.getElementById('lpAmount').value;
+            
+            if (!lpAmount || lpAmount <= 0) {
+                showRemoveStatus('Por favor, insira uma quantidade válida de tokens LP.', 'error');
+                return;
+            }
             
             try {
                 setButtonLoading('removeLiquidityBtn', 'Removendo...');
                 showRemoveStatus('Removendo liquidez...', 'info');
                 
-                const lpDecimals = await lpContract.methods.decimals().call();
                 const usdtDecimals = await usdtContract.methods.decimals().call();
                 const usdcDecimals = await usdcContract.methods.decimals().call();
                 
@@ -877,22 +981,27 @@
                 const reserves = await lpContract.methods.getReserves().call();
                 const totalSupply = await lpContract.methods.totalSupply().call();
                 
-                const lpAmountWei = BigInt(lpAmount * Math.pow(10, lpDecimals));
+                const lpAmountWei = web3.utils.toBN(lpAmount * Math.pow(10, lpDecimals));
                 
                 // Calcular valores esperados
-                const share = Number(lpAmountWei) / Number(totalSupply);
-                const expectedUsdt = reserves._reserve0 * share;
-                const expectedUsdc = reserves._reserve1 * share;
+                const share = lpAmountWei / web3.utils.toBN(totalSupply);
+                const expectedUsdt = web3.utils.toBN(reserves.reserve0).mul(share).div(web3.utils.toBN(1e18));
+                const expectedUsdc = web3.utils.toBN(reserves.reserve1).mul(share).div(web3.utils.toBN(1e18));
                 
                 // Calcular valores mínimos com slippage
-                const usdtMin = BigInt(expectedUsdt) * BigInt(10000 - slippageRemove * 100) / 10000n;
-                const usdcMin = BigInt(expectedUsdc) * BigInt(10000 - slippageRemove * 100) / 10000n;
+                const usdtMin = expectedUsdt.mul(web3.utils.toBN(10000 - slippageRemove * 100)).div(web3.utils.toBN(10000));
+                const usdcMin = expectedUsdc.mul(web3.utils.toBN(10000 - slippageRemove * 100)).div(web3.utils.toBN(10000));
                 
                 // Definir deadline (30 minutos a partir de agora)
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 30;
                 
+                console.log('Removendo liquidez com parâmetros:');
+                console.log('LP Amount:', lpAmountWei.toString());
+                console.log('USDT Min:', usdtMin.toString());
+                console.log('USDC Min:', usdcMin.toString());
+                
                 // Remover liquidez
-                await routerContract.methods.removeLiquidity(
+                const result = await routerContract.methods.removeLiquidity(
                     USDT_ADDRESS,
                     USDC_ADDRESS,
                     lpAmountWei.toString(),
@@ -900,7 +1009,9 @@
                     usdcMin.toString(),
                     userAccount,
                     deadline
-                ).send({ from: userAccount });
+                ).send({ from: userAccount, gas: 300000 });
+                
+                console.log('Resultado da remoção:', result);
                 
                 showRemoveStatus('Liquidez removida com sucesso!', 'success');
                 
@@ -918,6 +1029,7 @@
                 setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
                 
             } catch (error) {
+                console.error('Erro detalhado na remoção:', error);
                 showRemoveStatus('Erro ao remover liquidez: ' + error.message, 'error');
                 setButtonNormal('removeLiquidityBtn', 'Remover Liquidez');
             }
@@ -930,7 +1042,6 @@
             statusElement.className = 'status ' + type;
             statusElement.style.display = 'block';
             
-            // Ocultar mensagem após 5 segundos (exceto para mensagens de info)
             if (type !== 'info') {
                 setTimeout(() => {
                     statusElement.style.display = 'none';
@@ -944,7 +1055,6 @@
             statusElement.className = 'status ' + type;
             statusElement.style.display = 'block';
             
-            // Ocultar mensagem após 5 segundos (exceto para mensagens de info)
             if (type !== 'info') {
                 setTimeout(() => {
                     statusElement.style.display = 'none';
