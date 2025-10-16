@@ -117,6 +117,9 @@
             width: 100%;
             transition: all 0.2s ease;
             margin-top: 8px;
+            text-decoration: none;
+            display: block;
+            text-align: center;
         }
         
         .btn:hover {
@@ -132,6 +135,10 @@
         
         .btn-warning {
             background-color: var(--warning);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
         }
         
         .status {
@@ -245,21 +252,6 @@
             text-align: center;
         }
         
-        .remove-options {
-            margin-top: 16px;
-        }
-        
-        .remove-option {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            cursor: pointer;
-        }
-        
-        .remove-option input {
-            margin-right: 8px;
-        }
-        
         .loading {
             display: inline-block;
             width: 20px;
@@ -275,24 +267,43 @@
             to { transform: rotate(360deg); }
         }
         
-        .receipt-amounts {
-            background: rgba(49, 208, 170, 0.1);
-            border: 1px solid var(--success);
+        .info-box {
+            background: rgba(118, 69, 217, 0.1);
+            border: 1px solid var(--secondary);
             border-radius: 12px;
             padding: 16px;
             margin-top: 16px;
         }
         
-        .receipt-title {
+        .info-title {
             font-weight: 600;
             margin-bottom: 8px;
-            color: var(--success);
+            color: var(--secondary);
         }
         
-        .receipt-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
+        .external-link {
+            background: var(--success);
+            margin-top: 10px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: 16px 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list li::before {
+            content: "✓ ";
+            color: var(--success);
+            font-weight: bold;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -309,8 +320,7 @@
         
         <div class="tabs">
             <div class="tab active" data-tab="add">Adicionar Liquidez</div>
-            <div class="tab" data-tab="remove">Remover Liquidez</div>
-        </div>
+                    </div>
         
         <!-- Tab: Adicionar Liquidez -->
         <div class="tab-content active" id="add-tab">
@@ -323,7 +333,7 @@
                         <input type="number" id="usdtAmount" placeholder="0.0" min="0" step="0.001">
                         <span class="token-symbol">USDT</span>
                     </div>
-                    <div class="balance">Saldo: <span id="usdtBalance">0.0</span></div>
+                    <div class="balance">Saldo na Carteira: <span id="usdtBalance">0.0</span></div>
                 </div>
                 
                 <div class="input-group">
@@ -332,7 +342,7 @@
                         <input type="number" id="usdcAmount" placeholder="0.0" min="0" step="0.001">
                         <span class="token-symbol">USDC</span>
                     </div>
-                    <div class="balance">Saldo: <span id="usdcBalance">0.0</span></div>
+                    <div class="balance">Saldo na Carteira: <span id="usdcBalance">0.0</span></div>
                 </div>
                 
                 <div class="input-group">
@@ -362,61 +372,56 @@
             <div class="card">
                 <h2 class="card-title">Remover Liquidez</h2>
                 
-                <div class="input-group">
-                    <label for="removePercentage">Porcentagem para Remover</label>
-                    <div class="remove-options">
-                        <div class="remove-option">
-                            <input type="radio" id="remove25" name="removeOption" value="25" checked>
-                            <label for="remove25">25%</label>
-                        </div>
-                        <div class="remove-option">
-                            <input type="radio" id="remove50" name="removeOption" value="50">
-                            <label for="remove50">50%</label>
-                        </div>
-                        <div class="remove-option">
-                            <input type="radio" id="remove75" name="removeOption" value="75">
-                            <label for="remove75">75%</label>
-                        </div>
-                        <div class="remove-option">
-                            <input type="radio" id="remove100" name="removeOption" value="100">
-                            <label for="remove100">100%</label>
-                        </div>
-                    </div>
+                <div class="info-box">
+                    <div class="info-title">Remover Liquidez via PancakeSwap Oficial</div>
+                    <p>Para visualizar e remover sua liquidez com todas as informações detalhadas, utilize o site oficial da PancakeSwap.</p>
+                    
+                    <ul class="feature-list">
+                        <li>Visualização completa do seu saldo em pool</li>
+                        <li>Gráficos de desempenho e taxas acumuladas</li>
+                        <li>Controle preciso sobre quantidades a remover</li>
+                        <li>Interface otimizada e testada</li>
+                    </ul>
+                    
+                    <a href="https://pancakeswap.finance/liquidity/positions?chain=bsc" target="_blank" class="btn external-link">
+                        🔗 Abrir PancakeSwap para Remover Liquidez
+                    </a>
                 </div>
-                
-                <div class="receipt-amounts">
-                    <div class="receipt-title">Você receberá:</div>
-                    <div class="receipt-item">
-                        <span>USDT:</span>
-                        <span id="receiptUsdt">0.0</span>
-                    </div>
-                    <div class="receipt-item">
-                        <span>USDC:</span>
-                        <span id="receiptUsdc">0.0</span>
-                    </div>
-                </div>
-                
-                <div class="input-group">
-                    <label>Tolerância de Slippage</label>
-                    <div class="slippage-settings">
-                        <div class="slippage-option active" data-slippage-remove="0.5">0.5%</div>
-                        <div class="slippage-option" data-slippage-remove="1">1%</div>
-                        <div class="slippage-option" data-slippage-remove="2">2%</div>
-                        <input type="number" class="slippage-input" id="customSlippageRemove" placeholder="0.5" min="0.1" max="100" step="0.1">
-                        <span>%</span>
-                    </div>
-                </div>
-                
-                <button id="approveLpBtn" class="btn">
-                    <span id="approveLpText">Aprovar Tokens LP</span>
-                </button>
-                
-                    <a href="https://pancakeswap.finance/liquidity/positions?chain=bsc"></a>Remover Liquidez</span>
-                
                 
                 <div id="removeStatusMessage" class="status" style="display: none;"></div>
             </div>
         </div>
+        
+        <div class="card">
+            <h2 class="card-title">Informações da Pool</h2>
+            
+            <div class="lp-info">
+                <div class="lp-item">
+                    <div class="lp-value" id="poolReserve0">-</div>
+                    <div class="lp-label">Reserva USDT</div>
+                </div>
+                <div class="lp-item">
+                    <div class="lp-value" id="poolReserve1">-</div>
+                    <div class="lp-label">Reserva USDC</div>
+                </div>
+                <div class="lp-item">
+                    <div class="lp-value" id="poolValue">-</div>
+                    <div class="lp-label">TVL Aprox.</div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-title">💡 Como funciona:</div>
+                <p><strong>Adicionar Liquidez:</strong> Use esta página para adicionar USDT e USDC ao pool.</p>
+                <p><strong>Remover Liquidez:</strong> Use o PancakeSwap oficial para visualizar e remover sua liquidez com interface completa.</p>
+                <p><strong>Taxas:</strong> Você acumula taxas proporcionalmente à sua participação no pool.</p>
+                
+                <a href="https://pancakeswap.finance/liquidity?chain=bsc" target="_blank" class="btn btn-secondary" style="margin-top: 15px;">
+                    📊 Ver Todas as Pools na PancakeSwap
+                </a>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script>
@@ -454,34 +459,10 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
-                "name": "balanceOf",
-                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
                 "inputs": [],
                 "name": "totalSupply",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "spender", "type": "address"},
-                    {"internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "approve",
-                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-                "stateMutability": "nonpayable",
                 "type": "function"
             }
         ];
@@ -535,24 +516,6 @@
                 ],
                 "stateMutability": "nonpayable",
                 "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "address", "name": "tokenA", "type": "address"},
-                    {"internalType": "address", "name": "tokenB", "type": "address"},
-                    {"internalType": "uint256", "name": "liquidity", "type": "uint256"},
-                    {"internalType": "uint256", "name": "amountAMin", "type": "uint256"},
-                    {"internalType": "uint256", "name": "amountBMin", "type": "uint256"},
-                    {"internalType": "address", "name": "to", "type": "address"},
-                    {"internalType": "uint256", "name": "deadline", "type": "uint256"}
-                ],
-                "name": "removeLiquidity",
-                "outputs": [
-                    {"internalType": "uint256", "name": "amountA", "type": "uint256"},
-                    {"internalType": "uint256", "name": "amountB", "type": "uint256"}
-                ],
-                "stateMutability": "nonpayable",
-                "type": "function"
             }
         ];
         
@@ -563,8 +526,6 @@
         let usdcContract;
         let routerContract;
         let slippage = 0.5;
-        let slippageRemove = 0.5;
-        let lpDecimals = 18;
         let usdtDecimals = 18;
         let usdcDecimals = 18;
 
@@ -615,10 +576,6 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
-                    
-                    if (tab.dataset.tab === 'remove') {
-                        calculateRemoveAmounts();
-                    }
                 });
             });
             
@@ -631,31 +588,21 @@
                 });
             });
             
-            document.querySelectorAll('[data-slippage-remove]').forEach(option => {
-                option.addEventListener('click', () => {
-                    document.querySelectorAll('[data-slippage-remove]').forEach(o => o.classList.remove('active'));
-                    option.classList.add('active');
-                    slippageRemove = parseFloat(option.dataset.slippageRemove);
-                    calculateRemoveAmounts();
-                });
-            });
-            
-            // Opções de remoção
-            document.querySelectorAll('input[name="removeOption"]').forEach(radio => {
-                radio.addEventListener('change', calculateRemoveAmounts);
+            document.getElementById('customSlippage').addEventListener('input', (e) => {
+                if (e.target.value) {
+                    document.querySelectorAll('[data-slippage]').forEach(o => o.classList.remove('active'));
+                    slippage = parseFloat(e.target.value);
+                }
             });
             
             // Botões
             document.getElementById('approveBtn').addEventListener('click', approveTokens);
             document.getElementById('addLiquidityBtn').addEventListener('click', addLiquidity);
-            document.getElementById('approveLpBtn').addEventListener('click', approveLpTokens);
-            document.getElementById('removeLiquidityBtn').addEventListener('click', removeLiquidity);
         }
         
         async function loadAllData() {
             await loadBalances();
-            await loadLiquidityInfo();
-            calculateRemoveAmounts();
+            await loadPoolInfo();
         }
         
         async function loadBalances() {
@@ -673,51 +620,24 @@
             }
         }
         
-        async function loadLiquidityInfo() {
+        async function loadPoolInfo() {
             try {
-                const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
-                const totalSupply = await lpContract.methods.totalSupply().call();
                 const reserves = await lpContract.methods.getReserves().call();
                 
-                const lpBalanceFormatted = lpBalance / Math.pow(10, lpDecimals);
-                const totalSupplyFormatted = totalSupply / Math.pow(10, lpDecimals);
+                const usdtReserve = (reserves.reserve0 / Math.pow(10, usdtDecimals)).toFixed(2);
+                const usdcReserve = (reserves.reserve1 / Math.pow(10, usdcDecimals)).toFixed(2);
+                const totalValue = (parseFloat(usdtReserve) + parseFloat(usdcReserve)).toFixed(2);
                 
-                document.getElementById('lpTokens').textContent = lpBalanceFormatted.toFixed(6);
-                
-                if (totalSupply > 0) {
-                    const poolShare = (lpBalance / totalSupply * 100).toFixed(4);
-                    document.getElementById('poolShare').textContent = poolShare + '%';
-                    
-                    // Calcular seus tokens no pool
-                    const userShare = lpBalance / totalSupply;
-                    const userUsdt = (reserves.reserve0 * userShare) / Math.pow(10, usdtDecimals);
-                    const userUsdc = (reserves.reserve1 * userShare) / Math.pow(10, usdcDecimals);
-                    
-                    document.getElementById('poolUsdt').textContent = userUsdt.toFixed(6);
-                    document.getElementById('poolUsdc').textContent = userUsdc.toFixed(6);
-                    
-                    const estimatedValue = (userUsdt + userUsdc).toFixed(2);
-                    document.getElementById('estimatedValue').textContent = '$' + estimatedValue;
-                }
+                document.getElementById('poolReserve0').textContent = usdtReserve;
+                document.getElementById('poolReserve1').textContent = usdcReserve;
+                document.getElementById('poolValue').textContent = '$' + totalValue;
                 
             } catch (error) {
-                console.error('Erro ao carregar liquidez:', error);
+                console.error('Erro ao carregar informações do pool:', error);
+                document.getElementById('poolReserve0').textContent = 'Erro';
+                document.getElementById('poolReserve1').textContent = 'Erro';
+                document.getElementById('poolValue').textContent = 'Erro';
             }
-        }
-        
-        function calculateRemoveAmounts() {
-            const selectedOption = document.querySelector('input[name="removeOption"]:checked');
-            if (!selectedOption) return;
-            
-            const percentage = parseInt(selectedOption.value) / 100;
-            const poolUsdt = parseFloat(document.getElementById('poolUsdt').textContent) || 0;
-            const poolUsdc = parseFloat(document.getElementById('poolUsdc').textContent) || 0;
-            
-            const receiveUsdt = (poolUsdt * percentage * (100 - slippageRemove) / 100).toFixed(6);
-            const receiveUsdc = (poolUsdc * percentage * (100 - slippageRemove) / 100).toFixed(6);
-            
-            document.getElementById('receiptUsdt').textContent = receiveUsdt;
-            document.getElementById('receiptUsdc').textContent = receiveUsdc;
         }
         
         async function approveTokens() {
@@ -778,7 +698,7 @@
                     deadline
                 ).send({ from: userAccount, gas: 300000 });
                 
-                showStatus('Liquidez adicionada!', 'success');
+                showStatus('Liquidez adicionada com sucesso!', 'success');
                 await loadAllData();
                 
                 document.getElementById('usdtAmount').value = '';
@@ -793,85 +713,8 @@
             }
         }
         
-        async function approveLpTokens() {
-            try {
-                setButtonLoading('approveLpBtn', 'Aprovando...');
-                showRemoveStatus('Aprovando tokens LP...', 'info');
-                
-                const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
-                const lpAmountWei = web3.utils.toBN(lpBalance);
-                
-                await lpContract.methods.approve(ROUTER_ADDRESS, lpAmountWei.toString())
-                    .send({ from: userAccount, gas: 100000 });
-                
-                showRemoveStatus('Tokens LP aprovados!', 'success');
-                document.getElementById('removeLiquidityBtn').disabled = false;
-                setButtonNormal('approveLpBtn', 'Tokens LP Aprovados');
-                
-            } catch (error) {
-                showRemoveStatus('Erro: ' + error.message, 'error');
-                setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
-            }
-        }
-        
-        async function removeLiquidity() {
-            try {
-                setButtonLoading('removeLiquidityBtn', 'Removendo...');
-                showRemoveStatus('Removendo liquidez...', 'info');
-                
-                const selectedOption = document.querySelector('input[name="removeOption"]:checked');
-                const percentage = parseInt(selectedOption.value) / 100;
-                
-                const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
-                const lpAmountWei = web3.utils.toBN(lpBalance).mul(web3.utils.toBN(percentage * 100)).div(web3.utils.toBN(100));
-                
-                const reserves = await lpContract.methods.getReserves().call();
-                const totalSupply = await lpContract.methods.totalSupply().call();
-                
-                const share = lpAmountWei / web3.utils.toBN(totalSupply);
-                const expectedUsdt = web3.utils.toBN(reserves.reserve0).mul(share).div(web3.utils.toBN(1e18));
-                const expectedUsdc = web3.utils.toBN(reserves.reserve1).mul(share).div(web3.utils.toBN(1e18));
-                
-                const usdtMin = expectedUsdt.mul(web3.utils.toBN(10000 - slippageRemove * 100)).div(web3.utils.toBN(10000));
-                const usdcMin = expectedUsdc.mul(web3.utils.toBN(10000 - slippageRemove * 100)).div(web3.utils.toBN(10000));
-                
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 30;
-                
-                await routerContract.methods.removeLiquidity(
-                    USDT_ADDRESS,
-                    USDC_ADDRESS,
-                    lpAmountWei.toString(),
-                    usdtMin.toString(),
-                    usdcMin.toString(),
-                    userAccount,
-                    deadline
-                ).send({ from: userAccount, gas: 300000 });
-                
-                showRemoveStatus('Liquidez removida! Você recebeu USDT e USDC.', 'success');
-                await loadAllData();
-                
-                document.getElementById('removeLiquidityBtn').disabled = true;
-                setButtonNormal('removeLiquidityBtn', 'Remover Liquidez');
-                setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
-                
-            } catch (error) {
-                showRemoveStatus('Erro: ' + error.message, 'error');
-                setButtonNormal('removeLiquidityBtn', 'Remover Liquidez');
-            }
-        }
-        
         function showStatus(message, type) {
             const statusElement = document.getElementById('statusMessage');
-            statusElement.textContent = message;
-            statusElement.className = 'status ' + type;
-            statusElement.style.display = 'block';
-            if (type !== 'info') {
-                setTimeout(() => statusElement.style.display = 'none', 5000);
-            }
-        }
-        
-        function showRemoveStatus(message, type) {
-            const statusElement = document.getElementById('removeStatusMessage');
             statusElement.textContent = message;
             statusElement.className = 'status ' + type;
             statusElement.style.display = 'block';
@@ -890,7 +733,7 @@
         function setButtonNormal(buttonId, text) {
             const button = document.getElementById(buttonId);
             const textElement = button.querySelector('span');
-            button.disabled = buttonId !== 'approveBtn' && buttonId !== 'approveLpBtn';
+            button.disabled = buttonId !== 'approveBtn';
             textElement.textContent = text;
         }
     </script>
