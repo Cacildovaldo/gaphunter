@@ -106,6 +106,10 @@
             background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
         }
 
+        .button-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
         .input-group {
             margin-bottom: 15px;
         }
@@ -164,6 +168,12 @@
             background: #fff3cd;
             border: 2px solid #ffeaa7;
             border-left: 4px solid #f39c12;
+        }
+
+        .rescue-panel {
+            background: #ffebee;
+            border: 2px solid #e74c3c;
+            border-left: 4px solid #c0392b;
         }
 
         .success {
@@ -339,6 +349,35 @@
                             <div class="small-text">Receberá +1.5% de lucro</div>
                         </div>
                         <button class="button button-success" onclick="withdraw()" id="withdrawButton">📤 Retirar com Lucro</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Painel de Resgate de Emergência -->
+            <div id="rescuePanel" class="card rescue-panel">
+                <h2>🚨 RESGATE DE EMERGÊNCIA</h2>
+                
+                <div class="info-panel">
+                    <div class="info-row">
+                        <span class="info-label">Seu Depósito no Contrato:</span>
+                        <span class="info-value" id="myDepositDisplay">0.0000 USDT</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Saldo Total do Contrato:</span>
+                        <span class="info-value" id="contractBalanceDisplay">0.0000 USDT</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Status do Resgate:</span>
+                        <span class="info-value" id="rescueStatus">Pronto para resgate</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 20px 0;">
+                    <button class="button button-danger" onclick="emergencyRescue()" id="rescueButton" style="font-size: 18px; padding: 15px 30px;">
+                        🚨 RESGATAR MEU USDT AGORA
+                    </button>
+                    <div class="small-text" style="margin-top: 10px;">
+                        Recupera TODO seu dinheiro do contrato (funciona mesmo com erro de saldo)
                     </div>
                 </div>
             </div>
@@ -991,6 +1030,7 @@
         async function updateAllData() {
             await updateBalances();
             await updatePoolInfo();
+            await updateRescueInfo();
             if (isOwner) {
                 await updateOwnerInfo();
             }
@@ -1038,6 +1078,21 @@
             }
         }
 
+        async function updateRescueInfo() {
+            if (!web3 || !account) return;
+            
+            try {
+                const userShares = await contract.methods.userShares(account).call();
+                const contractBalance = await contract.methods.getContractBalance().call();
+                
+                document.getElementById('myDepositDisplay').textContent = parseFloat(fromWei(userShares)).toFixed(4) + ' USDT';
+                document.getElementById('contractBalanceDisplay').textContent = parseFloat(fromWei(contractBalance)).toFixed(4) + ' USDT';
+                
+            } catch (error) {
+                console.error("Erro ao atualizar info de resgate:", error);
+            }
+        }
+
         async function updateOwnerInfo() {
             if (!web3 || !isOwner) return;
             
@@ -1059,159 +1114,7 @@
             }
         }
 
-        // ========== FUNÇÕES DE INVESTIMENTO ==========
-        async function deposit() {
-            const amount = document.getElementById('depositAmount').value;
-            if (!amount || parseFloat(amount) < 0.01) {
-                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
-                return;
-            }
-            
-            try {
-                const amountWei = toWei(amount);
-                
-                document.getElementById('depositButton').disabled = true;
-                document.getElementById('depositButton').textContent = 'Processando...';
-                showTransactionStatus('Iniciando depósito...', 'pending');
-                
-                // Verificar aprovação primeiro
-                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
-                const currentAllowance = await usdtContract.methods.allowance(account, CONTRACT_ADDRESS).call();
-                
-                if (BigInt(currentAllowance) < BigInt(amountWei)) {
-                    showTransactionStatus('Aprovando USDT... (Confirme na MetaMask)', 'pending');
-                    
-                    await usdtContract.methods.approve(CONTRACT_ADDRESS, toWei('1000000')).send({ 
-                        from: account,
-                        gas: 80000
-                    });
-                    
-                    showTransactionStatus('Aprovação confirmada!', 'success');
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-                
-                // Fazer depósito
-                showTransactionStatus('Depositando... (Confirme na MetaMask)', 'pending');
-                
-                await contract.methods.depositUSDT(amountWei).send({ 
-                    from: account,
-                    gas: 300000
-                });
-                
-                showTransactionStatus('✅ Depósito realizado com sucesso!', 'success');
-                await updateAllData();
-                
-            } catch (error) {
-                console.error("Erro no depósito:", error);
-                let errorMsg = '❌ Erro na transação';
-                if (error.message.includes('user rejected')) {
-                    errorMsg = '❌ Transação cancelada pelo usuário';
-                } else if (error.message.includes('insufficient')) {
-                    errorMsg = '❌ Saldo insuficiente';
-                } else if (error.message.includes('allowance')) {
-                    errorMsg = '❌ Problema na aprovação do USDT';
-                }
-                showTransactionStatus(errorMsg, 'error');
-            } finally {
-                document.getElementById('depositButton').disabled = false;
-                document.getElementById('depositButton').textContent = '📥 Depositar';
-                
-                setTimeout(() => {
-                    hideTransactionStatus();
-                }, 5000);
-            }
-        }
-
-        async function withdraw() {
-            const amount = document.getElementById('withdrawAmount').value;
-            if (!amount || parseFloat(amount) < 0.01) {
-                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
-                return;
-            }
-            
-            try {
-                const amountWei = toWei(amount);
-                document.getElementById('withdrawButton').disabled = true;
-                document.getElementById('withdrawButton').textContent = 'Processando...';
-                showTransactionStatus('Processando saque...', 'pending');
-                
-                // Verificar se o usuário tem shares suficientes
-                const userShares = await contract.methods.userShares(account).call();
-                if (BigInt(userShares) < BigInt(amountWei)) {
-                    showTransactionStatus('❌ Shares insuficientes para saque', 'error');
-                    return;
-                }
-                
-                await contract.methods.withdraw(amountWei).send({ 
-                    from: account,
-                    gas: 250000
-                });
-                
-                showTransactionStatus('✅ Saque realizado com lucro!', 'success');
-                await updateAllData();
-                
-            } catch (error) {
-                console.error("Erro no saque:", error);
-                let errorMsg = '❌ Erro na transação';
-                if (error.message.includes('user rejected')) {
-                    errorMsg = '❌ Transação cancelada pelo usuário';
-                } else if (error.message.includes('shares')) {
-                    errorMsg = '❌ Shares insuficientes';
-                } else if (error.message.includes('balance')) {
-                    errorMsg = '❌ Saldo insuficiente no contrato';
-                }
-                showTransactionStatus(errorMsg, 'error');
-            } finally {
-                document.getElementById('withdrawButton').disabled = false;
-                document.getElementById('withdrawButton').textContent = '📤 Retirar com Lucro';
-                
-                setTimeout(() => {
-                    hideTransactionStatus();
-                }, 5000);
-            }
-        }
-<!-- Substitua todo o painel do owner por isto: -->
-<div id="ownerPanel" class="card owner-panel">
-    <h2>🆘 RESGATE DE EMERGÊNCIA</h2>
-    
-    <div class="info-panel" style="background: #ffebee; border-left: 4px solid #f44336;">
-        <div class="info-row">
-            <span class="info-label">Seu Depósito:</span>
-            <span class="info-value" id="myDepositDisplay">0.0000 USDT</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Saldo do Contrato:</span>
-            <span class="info-value" id="contractBalanceDisplay">0.0000 USDT</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Status:</span>
-            <span class="info-value" id="rescueStatus">Pronto para resgate</span>
-        </div>
-    </div>
-
-    <div style="text-align: center; margin: 20px 0;">
-        <button class="button" onclick="emergencyRescue()" style="background: #f44336; font-size: 18px; padding: 15px 30px;">
-            🚨 RESGATAR MEU USDT AGORA
-        </button>
-        <div class="small-text" style="margin-top: 10px;">
-            Clique para recuperar TODO seu dinheiro do contrato
-        </div>
-    </div>
-
-    <div class="info-panel">
-        <h3 class="section-title">📊 Informações do Contrato</h3>
-        <div class="info-row">
-            <span class="info-label">NFT ID:</span>
-            <span class="info-value" id="nftId">-</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Range Atual:</span>
-            <span class="info-value" id="ownerRange">-</span>
-        </div>
-    </div>
-</div>
-        
-// ========== FUNÇÃO DE RESGATE DE EMERGÊNCIA ==========
+        // ========== FUNÇÃO DE RESGATE DE EMERGÊNCIA ==========
 async function emergencyRescue() {
     const button = document.querySelector('button[onclick="emergencyRescue()"]');
     const originalText = button.textContent;
@@ -1298,7 +1201,4 @@ const originalUpdateAllData = updateAllData;
 updateAllData = async function() {
     await originalUpdateAllData();
     await updateRescueInfo();
-};    
-</script>
-</body>
-</html>
+};
