@@ -294,6 +294,34 @@
             justify-content: space-between;
             margin-bottom: 4px;
         }
+        
+        .refresh-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .pool-info {
+            background: rgba(118, 69, 217, 0.1);
+            border: 1px solid var(--secondary);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .pool-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--secondary);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -323,7 +351,7 @@
                         <input type="number" id="usdtAmount" placeholder="0.0" min="0" step="0.001">
                         <span class="token-symbol">USDT</span>
                     </div>
-                    <div class="balance">Saldo: <span id="usdtBalance">0.0</span></div>
+                    <div class="balance">Saldo na Carteira: <span id="usdtBalance">0.0</span></div>
                 </div>
                 
                 <div class="input-group">
@@ -332,7 +360,7 @@
                         <input type="number" id="usdcAmount" placeholder="0.0" min="0" step="0.001">
                         <span class="token-symbol">USDC</span>
                     </div>
-                    <div class="balance">Saldo: <span id="usdcBalance">0.0</span></div>
+                    <div class="balance">Saldo na Carteira: <span id="usdcBalance">0.0</span></div>
                 </div>
                 
                 <div class="input-group">
@@ -419,7 +447,10 @@
         </div>
         
         <div class="card">
-            <h2 class="card-title">Minha Liquidez</h2>
+            <div class="pool-title">
+                <span>Minha Liquidez no Pool</span>
+                <button class="refresh-btn" id="refreshBtn">🔄 Atualizar</button>
+            </div>
             
             <div class="lp-info">
                 <div class="lp-item">
@@ -436,8 +467,8 @@
                 </div>
             </div>
             
-            <div class="receipt-amounts" style="margin-top: 20px; background: rgba(118, 69, 217, 0.1); border-color: var(--secondary);">
-                <div class="receipt-title" style="color: var(--secondary);">Seus Tokens no Pool:</div>
+            <div class="pool-info">
+                <div class="receipt-title">Seus Tokens no Pool:</div>
                 <div class="receipt-item">
                     <span>USDT no Pool:</span>
                     <span id="poolUsdt">0.0</span>
@@ -445,6 +476,10 @@
                 <div class="receipt-item">
                     <span>USDC no Pool:</span>
                     <span id="poolUsdc">0.0</span>
+                </div>
+                <div class="receipt-item">
+                    <span>Status:</span>
+                    <span id="poolStatus">Carregando...</span>
                 </div>
             </div>
         </div>
@@ -677,6 +712,9 @@
                 radio.addEventListener('change', calculateRemoveAmounts);
             });
             
+            // Botão atualizar
+            document.getElementById('refreshBtn').addEventListener('click', loadAllData);
+            
             // Botões
             document.getElementById('approveBtn').addEventListener('click', approveTokens);
             document.getElementById('addLiquidityBtn').addEventListener('click', addLiquidity);
@@ -685,9 +723,15 @@
         }
         
         async function loadAllData() {
+            document.getElementById('poolStatus').textContent = 'Carregando...';
+            document.getElementById('poolStatus').style.color = 'var(--secondary)';
+            
             await loadBalances();
             await loadLiquidityInfo();
             calculateRemoveAmounts();
+            
+            document.getElementById('poolStatus').textContent = 'Atualizado ✓';
+            document.getElementById('poolStatus').style.color = 'var(--success)';
         }
         
         async function loadBalances() {
@@ -707,16 +751,29 @@
         
         async function loadLiquidityInfo() {
             try {
+                // Buscar saldo de tokens LP do usuário
                 const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
                 const totalSupply = await lpContract.methods.totalSupply().call();
                 const reserves = await lpContract.methods.getReserves().call();
+                
+                console.log('LP Balance:', lpBalance);
+                console.log('Total Supply:', totalSupply);
+                console.log('Reserves:', reserves);
+                
+                // Tentar obter decimals do LP token
+                try {
+                    lpDecimals = await lpContract.methods.decimals().call();
+                } catch (e) {
+                    console.log('Usando decimals padrão para LP token: 18');
+                    lpDecimals = 18;
+                }
                 
                 const lpBalanceFormatted = lpBalance / Math.pow(10, lpDecimals);
                 const totalSupplyFormatted = totalSupply / Math.pow(10, lpDecimals);
                 
                 document.getElementById('lpTokens').textContent = lpBalanceFormatted.toFixed(6);
                 
-                if (totalSupply > 0) {
+                if (totalSupply > 0 && lpBalance > 0) {
                     const poolShare = (lpBalance / totalSupply * 100).toFixed(4);
                     document.getElementById('poolShare').textContent = poolShare + '%';
                     
@@ -730,10 +787,30 @@
                     
                     const estimatedValue = (userUsdt + userUsdc).toFixed(2);
                     document.getElementById('estimatedValue').textContent = '$' + estimatedValue;
+                    
+                    console.log('Liquidez encontrada:', {
+                        lpTokens: lpBalanceFormatted,
+                        share: poolShare + '%',
+                        usdt: userUsdt,
+                        usdc: userUsdc,
+                        value: '$' + estimatedValue
+                    });
+                    
+                } else {
+                    document.getElementById('poolShare').textContent = '0%';
+                    document.getElementById('poolUsdt').textContent = '0.0';
+                    document.getElementById('poolUsdc').textContent = '0.0';
+                    document.getElementById('estimatedValue').textContent = '$0';
+                    
+                    if (lpBalance == 0) {
+                        console.log('Usuário não possui liquidez no pool');
+                    }
                 }
                 
             } catch (error) {
                 console.error('Erro ao carregar liquidez:', error);
+                document.getElementById('poolStatus').textContent = 'Erro ao carregar';
+                document.getElementById('poolStatus').style.color = 'var(--error)';
             }
         }
         
@@ -810,7 +887,7 @@
                     deadline
                 ).send({ from: userAccount, gas: 300000 });
                 
-                showStatus('Liquidez adicionada!', 'success');
+                showStatus('Liquidez adicionada! Atualizando dados...', 'success');
                 await loadAllData();
                 
                 document.getElementById('usdtAmount').value = '';
