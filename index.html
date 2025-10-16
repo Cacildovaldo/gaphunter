@@ -16,6 +16,7 @@
             --success: #31d0aa;
             --error: #ed4b9e;
             --warning: #ff9f0a;
+            --investment: #ff6b35;
         }
         
         * {
@@ -141,6 +142,10 @@
             background-color: var(--secondary);
         }
         
+        .btn-investment {
+            background-color: var(--investment);
+        }
+        
         .status {
             margin-top: 16px;
             padding: 12px;
@@ -202,13 +207,15 @@
             display: flex;
             margin-bottom: 20px;
             border-bottom: 1px solid var(--border);
+            overflow-x: auto;
         }
         
         .tab {
-            padding: 12px 24px;
+            padding: 12px 16px;
             cursor: pointer;
             font-weight: 600;
             border-bottom: 3px solid transparent;
+            white-space: nowrap;
         }
         
         .tab.active {
@@ -228,6 +235,8 @@
             display: flex;
             gap: 8px;
             margin-top: 12px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         
         .slippage-option {
@@ -305,6 +314,100 @@
             color: var(--success);
             font-weight: bold;
         }
+        
+        .investment-item {
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid var(--investment);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .investment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .investment-amount {
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .investment-days {
+            background: var(--investment);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .investment-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .investment-detail {
+            text-align: center;
+        }
+        
+        .investment-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        .investment-value {
+            font-weight: 600;
+        }
+        
+        .withdraw-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .withdraw-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -312,7 +415,7 @@
     <div class="container">
         <header>
             <h1>Pool USDT/USDC</h1>
-            <p>PancakeSwap Liquidity Pool</p>
+            <p>PancakeSwap Liquidity Pool & Sistema de Investimento</p>
             <div class="network-indicator">
                 <span>BSC Network</span>
             </div>
@@ -320,7 +423,9 @@
         
         <div class="tabs">
             <div class="tab active" data-tab="add">Adicionar Liquidez</div>
-                    </div>
+            <div class="tab" data-tab="invest">Investir USDT</div>
+            <div class="tab" data-tab="remove">Remover Liquidez</div>
+        </div>
         
         <!-- Tab: Adicionar Liquidez -->
         <div class="tab-content active" id="add-tab">
@@ -364,6 +469,75 @@
                 </button>
                 
                 <div id="statusMessage" class="status" style="display: none;"></div>
+                
+                <div class="lp-info">
+                    <div class="lp-item">
+                        <div class="lp-value" id="poolReserve0">0.0</div>
+                        <div class="lp-label">USDT no Pool</div>
+                    </div>
+                    <div class="lp-item">
+                        <div class="lp-value" id="poolReserve1">0.0</div>
+                        <div class="lp-label">USDC no Pool</div>
+                    </div>
+                    <div class="lp-item">
+                        <div class="lp-value" id="poolValue">$0.0</div>
+                        <div class="lp-label">Valor Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab: Investir USDT -->
+        <div class="tab-content" id="invest-tab">
+            <div class="card">
+                <h2 class="card-title">Investir USDT - Retorno de 10% em 30 Dias</h2>
+                
+                <div class="info-box">
+                    <div class="info-title">Como funciona:</div>
+                    <p>1. Faça um depósito em USDT</p>
+                    <p>2. Seu valor será automaticamente investido no contrato externo</p>
+                    <p>3. Após 30 dias, você pode sacar seu investimento + 10% de lucro</p>
+                    <p>4. Acompanhe seus investimentos ativos abaixo</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalInvested">0.0</div>
+                        <div class="stat-label">Total Investido</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalReturns">0.0</div>
+                        <div class="stat-label">Total Recebido</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeInvestmentsCount">0</div>
+                        <div class="stat-label">Investimentos Ativos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="contractBalance">0.0</div>
+                        <div class="stat-label">Saldo do Contrato</div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="investAmount">Valor para Investir (USDT)</label>
+                    <div class="token-input">
+                        <input type="number" id="investAmount" placeholder="0.0" min="0" step="0.001">
+                        <span class="token-symbol">USDT</span>
+                    </div>
+                    <div class="balance">Saldo disponível: <span id="investBalance">0.0</span> USDT</div>
+                </div>
+                
+                <button id="investBtn" class="btn btn-investment">
+                    <span id="investText">Investir USDT</span>
+                </button>
+                
+                <div id="investStatusMessage" class="status" style="display: none;"></div>
+                
+                <div class="active-investments" id="activeInvestments" style="margin-top: 20px; display: none;">
+                    <h3 style="margin-bottom: 15px;">Seus Investimentos Ativos</h3>
+                    <div id="investmentsList"></div>
+                </div>
             </div>
         </div>
         
@@ -392,17 +566,16 @@
             </div>
         </div>
         
-                    
-            <div class="info-box">
-                <div class="info-title">💡 Como funciona:</div>
-                <p><strong>Adicionar Liquidez:</strong> Use esta página para adicionar USDT e USDC ao pool.</p>
-                <p><strong>Remover Liquidez:</strong> Use o PancakeSwap oficial para visualizar e remover sua liquidez com interface completa.</p>
-                <p><strong>Taxas:</strong> Você acumula taxas proporcionalmente à sua participação no pool.</p>
-                
-                <a href="https://pancakeswap.finance/liquidity?chain=bsc" target="_blank" class="btn btn-secondary" style="margin-top: 15px;">
-                    📊 Ver Todas as Pools na PancakeSwap
-                </a>
-            </div>
+        <div class="info-box">
+            <div class="info-title">💡 Como funciona:</div>
+            <p><strong>Adicionar Liquidez:</strong> Use esta página para adicionar USDT e USDC ao pool.</p>
+            <p><strong>Investir USDT:</strong> Faça investimentos com retorno garantido de 10% após 30 dias.</p>
+            <p><strong>Remover Liquidez:</strong> Use o PancakeSwap oficial para visualizar e remover sua liquidez com interface completa.</p>
+            <p><strong>Taxas:</strong> Você acumula taxas proporcionalmente à sua participação no pool.</p>
+            
+            <a href="https://pancakeswap.finance/liquidity?chain=bsc" target="_blank" class="btn btn-secondary" style="margin-top: 15px;">
+                📊 Ver Todas as Pools na PancakeSwap
+            </a>
         </div>
     </div>
 
@@ -413,6 +586,7 @@
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
         const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
         const ROUTER_ADDRESS = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
+        const INVESTMENT_CONTRACT_ADDRESS = "0xb7eFe6291E656503E98Cf8479945b0A92b670f5C"; // Substitua após deploy
         
         // ABI do contrato do Pool (PancakeSwap Pair)
         const LP_ABI = [
@@ -502,12 +676,160 @@
             }
         ];
         
+        // ABI do contrato de investimento
+        const INVESTMENT_ABI = [
+            {
+                "inputs": [{"internalType": "address", "name": "_usdtAddress", "type": "address"}],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "returnAmount", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "depositTime", "type": "uint256"}
+                ],
+                "name": "Deposited",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
+                ],
+                "name": "OwnerWithdrawn",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"indexed": false, "internalType": "uint256", "name": "returnAmount", "type": "uint256"}
+                ],
+                "name": "Withdrawn",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "externalContract",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractBalance",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
+                "name": "getActiveInvestmentsCount",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_user", "type": "address"}, {"internalType": "uint256", "name": "_investmentIndex", "type": "uint256"}],
+                "name": "getDaysUntilWithdrawal",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_user", "type": "address"}],
+                "name": "getUserInvestments",
+                "outputs": [
+                    {
+                        "components": [
+                            {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                            {"internalType": "uint256", "name": "depositTime", "type": "uint256"},
+                            {"internalType": "uint256", "name": "returnAmount", "type": "uint256"},
+                            {"internalType": "bool", "name": "claimed", "type": "bool"}
+                        ],
+                        "internalType": "struct InvestmentContract.Investment[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "", "type": "address"}, {"internalType": "uint256", "name": "", "type": "uint256"}],
+                "name": "investments",
+                "outputs": [
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"internalType": "uint256", "name": "depositTime", "type": "uint256"},
+                    {"internalType": "uint256", "name": "returnAmount", "type": "uint256"},
+                    {"internalType": "bool", "name": "claimed", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "name": "totalInvested",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "name": "totalReturns",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "_newExternalContract", "type": "address"}],
+                "name": "updateExternalContract",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_amount", "type": "uint256"}],
+                "name": "deposit",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_investmentIndex", "type": "uint256"}],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "_amount", "type": "uint256"}],
+                "name": "withdrawOwner",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+        
         let web3;
         let userAccount;
         let lpContract;
         let usdtContract;
         let usdcContract;
         let routerContract;
+        let investmentContract;
         let slippage = 0.5;
         let usdtDecimals = 18;
         let usdcDecimals = 18;
@@ -527,6 +849,7 @@
                     usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_ADDRESS);
                     usdcContract = new web3.eth.Contract(TOKEN_ABI, USDC_ADDRESS);
                     routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER_ADDRESS);
+                    investmentContract = new web3.eth.Contract(INVESTMENT_ABI, INVESTMENT_CONTRACT_ADDRESS);
                     
                     // Carregar decimals
                     usdtDecimals = await usdtContract.methods.decimals().call();
@@ -559,6 +882,11 @@
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+                    
+                    // Recarregar dados específicos da tab
+                    if (tab.dataset.tab === 'invest') {
+                        loadInvestmentData();
+                    }
                 });
             });
             
@@ -581,11 +909,13 @@
             // Botões
             document.getElementById('approveBtn').addEventListener('click', approveTokens);
             document.getElementById('addLiquidityBtn').addEventListener('click', addLiquidity);
+            document.getElementById('investBtn').addEventListener('click', investUSDT);
         }
         
         async function loadAllData() {
             await loadBalances();
             await loadPoolInfo();
+            await loadInvestmentData();
         }
         
         async function loadBalances() {
@@ -597,6 +927,8 @@
                     (usdtBalance / Math.pow(10, usdtDecimals)).toFixed(6);
                 document.getElementById('usdcBalance').textContent = 
                     (usdcBalance / Math.pow(10, usdcDecimals)).toFixed(6);
+                document.getElementById('investBalance').textContent = 
+                    (usdtBalance / Math.pow(10, usdtDecimals)).toFixed(6);
                     
             } catch (error) {
                 console.error('Erro ao carregar saldos:', error);
@@ -620,6 +952,86 @@
                 document.getElementById('poolReserve0').textContent = 'Erro';
                 document.getElementById('poolReserve1').textContent = 'Erro';
                 document.getElementById('poolValue').textContent = 'Erro';
+            }
+        }
+        
+        async function loadInvestmentData() {
+            try {
+                // Carregar estatísticas
+                const totalInvested = await investmentContract.methods.totalInvested(userAccount).call();
+                const totalReturns = await investmentContract.methods.totalReturns(userAccount).call();
+                const activeInvestmentsCount = await investmentContract.methods.getActiveInvestmentsCount(userAccount).call();
+                const contractBalance = await investmentContract.methods.getContractBalance().call();
+                
+                document.getElementById('totalInvested').textContent = 
+                    (totalInvested / Math.pow(10, usdtDecimals)).toFixed(2);
+                document.getElementById('totalReturns').textContent = 
+                    (totalReturns / Math.pow(10, usdtDecimals)).toFixed(2);
+                document.getElementById('activeInvestmentsCount').textContent = activeInvestmentsCount;
+                document.getElementById('contractBalance').textContent = 
+                    (contractBalance / Math.pow(10, usdtDecimals)).toFixed(2);
+                
+                // Carregar investimentos ativos
+                const investments = await investmentContract.methods.getUserInvestments(userAccount).call();
+                
+                const investmentsList = document.getElementById('investmentsList');
+                investmentsList.innerHTML = '';
+                
+                let activeInvestments = 0;
+                
+                for (let i = 0; i < investments.length; i++) {
+                    const investment = investments[i];
+                    
+                    if (!investment.claimed) {
+                        activeInvestments++;
+                        
+                        const daysUntilWithdrawal = await investmentContract.methods.getDaysUntilWithdrawal(userAccount, i).call();
+                        const canWithdraw = daysUntilWithdrawal == 0;
+                        
+                        const investmentElement = document.createElement('div');
+                        investmentElement.className = 'investment-item';
+                        investmentElement.innerHTML = `
+                            <div class="investment-header">
+                                <div class="investment-amount">${(investment.amount / Math.pow(10, usdtDecimals)).toFixed(2)} USDT</div>
+                                <div class="investment-days">${canWithdraw ? 'Disponível' : daysUntilWithdrawal + ' dias'}</div>
+                            </div>
+                            <div class="investment-details">
+                                <div class="investment-detail">
+                                    <div class="investment-label">Retorno Esperado</div>
+                                    <div class="investment-value">${(investment.returnAmount / Math.pow(10, usdtDecimals)).toFixed(2)} USDT</div>
+                                </div>
+                                <div class="investment-detail">
+                                    <div class="investment-label">Data de Depósito</div>
+                                    <div class="investment-value">${new Date(investment.depositTime * 1000).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                            <button class="withdraw-btn" data-index="${i}" ${canWithdraw ? '' : 'disabled'}>
+                                ${canWithdraw ? 'Sacar' : 'Aguardando'}
+                            </button>
+                        `;
+                        
+                        investmentsList.appendChild(investmentElement);
+                    }
+                }
+                
+                // Mostrar/ocultar seção de investimentos ativos
+                const activeInvestmentsSection = document.getElementById('activeInvestments');
+                if (activeInvestments > 0) {
+                    activeInvestmentsSection.style.display = 'block';
+                    
+                    // Adicionar event listeners aos botões de saque
+                    document.querySelectorAll('.withdraw-btn').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const index = button.getAttribute('data-index');
+                            withdrawInvestment(index);
+                        });
+                    });
+                } else {
+                    activeInvestmentsSection.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados de investimento:', error);
             }
         }
         
@@ -696,8 +1108,67 @@
             }
         }
         
+        async function investUSDT() {
+            const investAmount = document.getElementById('investAmount').value;
+            
+            if (!investAmount || investAmount <= 0) {
+                showInvestStatus('Insira um valor válido para investir.', 'error');
+                return;
+            }
+            
+            try {
+                setButtonLoading('investBtn', 'Investindo...');
+                showInvestStatus('Processando investimento...', 'info');
+                
+                // Aprovar primeiro o contrato de investimento para gastar USDT
+                const investAmountWei = web3.utils.toBN(investAmount * Math.pow(10, usdtDecimals));
+                
+                await usdtContract.methods.approve(INVESTMENT_CONTRACT_ADDRESS, investAmountWei.toString())
+                    .send({ from: userAccount });
+                
+                // Fazer o depósito no contrato de investimento
+                await investmentContract.methods.deposit(investAmountWei.toString())
+                    .send({ from: userAccount, gas: 200000 });
+                
+                showInvestStatus('Investimento realizado com sucesso!', 'success');
+                await loadAllData();
+                
+                document.getElementById('investAmount').value = '';
+                setButtonNormal('investBtn', 'Investir USDT');
+                
+            } catch (error) {
+                showInvestStatus('Erro ao investir: ' + error.message, 'error');
+                setButtonNormal('investBtn', 'Investir USDT');
+            }
+        }
+        
+        async function withdrawInvestment(investmentIndex) {
+            try {
+                showInvestStatus('Processando saque...', 'info');
+                
+                await investmentContract.methods.withdraw(investmentIndex)
+                    .send({ from: userAccount, gas: 150000 });
+                
+                showInvestStatus('Saque realizado com sucesso!', 'success');
+                await loadAllData();
+                
+            } catch (error) {
+                showInvestStatus('Erro ao sacar: ' + error.message, 'error');
+            }
+        }
+        
         function showStatus(message, type) {
             const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+            statusElement.style.display = 'block';
+            if (type !== 'info') {
+                setTimeout(() => statusElement.style.display = 'none', 5000);
+            }
+        }
+        
+        function showInvestStatus(message, type) {
+            const statusElement = document.getElementById('investStatusMessage');
             statusElement.textContent = message;
             statusElement.className = 'status ' + type;
             statusElement.style.display = 'block';
@@ -716,7 +1187,7 @@
         function setButtonNormal(buttonId, text) {
             const button = document.getElementById(buttonId);
             const textElement = button.querySelector('span');
-            button.disabled = buttonId !== 'approveBtn';
+            button.disabled = false;
             textElement.textContent = text;
         }
     </script>
