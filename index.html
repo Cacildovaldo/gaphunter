@@ -106,10 +106,6 @@
             background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
         }
 
-        .button-danger {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-        }
-
         .input-group {
             margin-bottom: 15px;
         }
@@ -168,12 +164,6 @@
             background: #fff3cd;
             border: 2px solid #ffeaa7;
             border-left: 4px solid #f39c12;
-        }
-
-        .rescue-panel {
-            background: #ffebee;
-            border: 2px solid #e74c3c;
-            border-left: 4px solid #c0392b;
         }
 
         .success {
@@ -283,7 +273,7 @@
             <p>Conecte sua MetaMask na rede Binance Smart Chain</p>
             <button class="button big-button" onclick="connectWallet()">Conectar MetaMask</button>
             <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
-                <p>✅ Contrato: 0x93912D03E34F0167323889291c93B19a67aF8BF2</p>
+                <p>✅ Contrato: 0x92b7807bF19b7DDdf89b706143896d05228f3121</p>
                 <p>✅ Pool: USDT/USDC 0.01%</p>
                 <p>✅ Rede: BSC Mainnet</p>
             </div>
@@ -306,7 +296,7 @@
                 </div>
                 <div class="info-row">
                     <span class="info-label">Contrato:</span>
-                    <span class="info-value">0x93912D03E34F0167323889291c93B19a67aF8BF2</span>
+                    <span class="info-value">0x92b7807bF19b7DDdf89b706143896d05228f3121</span>
                 </div>
             </div>
 
@@ -349,35 +339,6 @@
                             <div class="small-text">Receberá +1.5% de lucro</div>
                         </div>
                         <button class="button button-success" onclick="withdraw()" id="withdrawButton">📤 Retirar com Lucro</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Painel de Resgate de Emergência -->
-            <div id="rescuePanel" class="card rescue-panel">
-                <h2>🚨 RESGATE DE EMERGÊNCIA</h2>
-                
-                <div class="info-panel">
-                    <div class="info-row">
-                        <span class="info-label">Seu Depósito no Contrato:</span>
-                        <span class="info-value" id="myDepositDisplay">0.0000 USDT</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Saldo Total do Contrato:</span>
-                        <span class="info-value" id="contractBalanceDisplay">0.0000 USDT</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Status do Resgate:</span>
-                        <span class="info-value" id="rescueStatus">Pronto para resgate</span>
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="button button-danger" onclick="emergencyRescue()" id="rescueButton" style="font-size: 18px; padding: 15px 30px;">
-                        🚨 RESGATAR MEU USDT AGORA
-                    </button>
-                    <div class="small-text" style="margin-top: 10px;">
-                        Recupera TODO seu dinheiro do contrato (funciona mesmo com erro de saldo)
                     </div>
                 </div>
             </div>
@@ -470,7 +431,7 @@
 
     <script>
         // ========== CONFIGURAÇÕES ==========
-        const CONTRACT_ADDRESS = "0x93912D03E34F0167323889291c93B19a67aF8BF2";
+        const CONTRACT_ADDRESS = "0x92b7807bF19b7DDdf89b706143896d05228f3121";
         const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
         const USDT_DECIMALS = 18;
         
@@ -1030,7 +991,6 @@
         async function updateAllData() {
             await updateBalances();
             await updatePoolInfo();
-            await updateRescueInfo();
             if (isOwner) {
                 await updateOwnerInfo();
             }
@@ -1078,21 +1038,6 @@
             }
         }
 
-        async function updateRescueInfo() {
-            if (!web3 || !account) return;
-            
-            try {
-                const userShares = await contract.methods.userShares(account).call();
-                const contractBalance = await contract.methods.getContractBalance().call();
-                
-                document.getElementById('myDepositDisplay').textContent = parseFloat(fromWei(userShares)).toFixed(4) + ' USDT';
-                document.getElementById('contractBalanceDisplay').textContent = parseFloat(fromWei(contractBalance)).toFixed(4) + ' USDT';
-                
-            } catch (error) {
-                console.error("Erro ao atualizar info de resgate:", error);
-            }
-        }
-
         async function updateOwnerInfo() {
             if (!web3 || !isOwner) return;
             
@@ -1114,91 +1059,237 @@
             }
         }
 
-        // ========== FUNÇÃO DE RESGATE DE EMERGÊNCIA ==========
-async function emergencyRescue() {
-    const button = document.querySelector('button[onclick="emergencyRescue()"]');
-    const originalText = button.textContent;
-    
-    try {
-        button.disabled = true;
-        button.textContent = '🔄 Processando...';
-        document.getElementById('rescueStatus').textContent = 'Processando resgate...';
-        document.getElementById('rescueStatus').className = 'info-value warning';
-        
-        showTransactionStatus('Iniciando resgate de emergência...', 'pending');
-        
-        // Verificar saldos antes
-        const userShares = await contract.methods.userShares(account).call();
-        const contractBalance = await contract.methods.getContractBalance().call();
-        
-        document.getElementById('myDepositDisplay').textContent = web3.utils.fromWei(userShares, 'ether') + ' USDT';
-        document.getElementById('contractBalanceDisplay').textContent = web3.utils.fromWei(contractBalance, 'ether') + ' USDT';
-        
-        console.log('📊 Saldo do usuário:', web3.utils.fromWei(userShares, 'ether'), 'USDT');
-        console.log('💰 Saldo do contrato:', web3.utils.fromWei(contractBalance, 'ether'), 'USDT');
-        
-        // MÉTODO 1: Tentar emergencyWithdraw primeiro
-        showTransactionStatus('Executando resgate total...', 'pending');
-        
-        const result = await contract.methods.emergencyWithdraw().send({ 
-            from: account,
-            gas: 150000
-        });
-        
-        // Sucesso!
-        showTransactionStatus('✅ RESGATE CONCLUÍDO! Seu USDT foi recuperado!', 'success');
-        document.getElementById('rescueStatus').textContent = '✅ RESGATE CONCLUÍDO';
-        document.getElementById('rescueStatus').className = 'info-value success';
-        
-        // Atualizar saldos
-        await updateAllData();
-        
-        alert('🎉 SEU USDT FOI RECUPERADO COM SUCESSO!\nVerifique sua carteira MetaMask.');
-        
-    } catch (error) {
-        console.error('❌ Erro no resgate:', error);
-        
-        let errorMsg = 'Erro no resgate';
-        if (error.message.includes('user rejected')) {
-            errorMsg = '❌ Transação cancelada pelo usuário';
-        } else if (error.message.includes('Not owner')) {
-            errorMsg = '❌ Apenas o owner pode resgatar';
-        } else if (error.message.includes('insufficient')) {
-            errorMsg = '❌ Saldo insuficiente no contrato';
+        // ========== FUNÇÕES DE INVESTIMENTO ==========
+        async function deposit() {
+            const amount = document.getElementById('depositAmount').value;
+            if (!amount || parseFloat(amount) < 0.01) {
+                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
+                return;
+            }
+            
+            try {
+                const amountWei = toWei(amount);
+                
+                document.getElementById('depositButton').disabled = true;
+                document.getElementById('depositButton').textContent = 'Processando...';
+                showTransactionStatus('Iniciando depósito...', 'pending');
+                
+                // Verificar aprovação primeiro
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
+                const currentAllowance = await usdtContract.methods.allowance(account, CONTRACT_ADDRESS).call();
+                
+                if (BigInt(currentAllowance) < BigInt(amountWei)) {
+                    showTransactionStatus('Aprovando USDT... (Confirme na MetaMask)', 'pending');
+                    
+                    await usdtContract.methods.approve(CONTRACT_ADDRESS, toWei('1000000')).send({ 
+                        from: account,
+                        gas: 80000
+                    });
+                    
+                    showTransactionStatus('Aprovação confirmada!', 'success');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                // Fazer depósito
+                showTransactionStatus('Depositando... (Confirme na MetaMask)', 'pending');
+                
+                await contract.methods.depositUSDT(amountWei).send({ 
+                    from: account,
+                    gas: 300000
+                });
+                
+                showTransactionStatus('✅ Depósito realizado com sucesso!', 'success');
+                await updateAllData();
+                
+            } catch (error) {
+                console.error("Erro no depósito:", error);
+                let errorMsg = '❌ Erro na transação';
+                if (error.message.includes('user rejected')) {
+                    errorMsg = '❌ Transação cancelada pelo usuário';
+                } else if (error.message.includes('insufficient')) {
+                    errorMsg = '❌ Saldo insuficiente';
+                } else if (error.message.includes('allowance')) {
+                    errorMsg = '❌ Problema na aprovação do USDT';
+                }
+                showTransactionStatus(errorMsg, 'error');
+            } finally {
+                document.getElementById('depositButton').disabled = false;
+                document.getElementById('depositButton').textContent = '📥 Depositar';
+                
+                setTimeout(() => {
+                    hideTransactionStatus();
+                }, 5000);
+            }
         }
-        
-        showTransactionStatus(errorMsg, 'error');
-        document.getElementById('rescueStatus').textContent = '❌ Falha no resgate';
-        document.getElementById('rescueStatus').className = 'info-value danger';
-        
-        alert('❌ Erro no resgate: ' + error.message);
-    } finally {
-        button.disabled = false;
-        button.textContent = originalText;
-        
-        setTimeout(() => {
-            hideTransactionStatus();
-        }, 10000);
-    }
-}
 
-// ========== ATUALIZAR DISPLAY DE RESGATE ==========
-async function updateRescueInfo() {
-    try {
-        const userShares = await contract.methods.userShares(account).call();
-        const contractBalance = await contract.methods.getContractBalance().call();
-        
-        document.getElementById('myDepositDisplay').textContent = parseFloat(web3.utils.fromWei(userShares, 'ether')).toFixed(4) + ' USDT';
-        document.getElementById('contractBalanceDisplay').textContent = parseFloat(web3.utils.fromWei(contractBalance, 'ether')).toFixed(4) + ' USDT';
-        
-    } catch (error) {
-        console.error('Erro ao atualizar info de resgate:', error);
-    }
-}
+        async function withdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            if (!amount || parseFloat(amount) < 0.01) {
+                alert("Por favor digite um valor válido (mínimo 0.01 USDT)");
+                return;
+            }
+            
+            try {
+                const amountWei = toWei(amount);
+                document.getElementById('withdrawButton').disabled = true;
+                document.getElementById('withdrawButton').textContent = 'Processando...';
+                showTransactionStatus('Processando saque...', 'pending');
+                
+                // Verificar se o usuário tem shares suficientes
+                const userShares = await contract.methods.userShares(account).call();
+                if (BigInt(userShares) < BigInt(amountWei)) {
+                    showTransactionStatus('❌ Shares insuficientes para saque', 'error');
+                    return;
+                }
+                
+                await contract.methods.withdraw(amountWei).send({ 
+                    from: account,
+                    gas: 250000
+                });
+                
+                showTransactionStatus('✅ Saque realizado com lucro!', 'success');
+                await updateAllData();
+                
+            } catch (error) {
+                console.error("Erro no saque:", error);
+                let errorMsg = '❌ Erro na transação';
+                if (error.message.includes('user rejected')) {
+                    errorMsg = '❌ Transação cancelada pelo usuário';
+                } else if (error.message.includes('shares')) {
+                    errorMsg = '❌ Shares insuficientes';
+                } else if (error.message.includes('balance')) {
+                    errorMsg = '❌ Saldo insuficiente no contrato';
+                }
+                showTransactionStatus(errorMsg, 'error');
+            } finally {
+                document.getElementById('withdrawButton').disabled = false;
+                document.getElementById('withdrawButton').textContent = '📤 Retirar com Lucro';
+                
+                setTimeout(() => {
+                    hideTransactionStatus();
+                }, 5000);
+            }
+        }
 
-// Modifique a função updateAllData para incluir o resgate
-const originalUpdateAllData = updateAllData;
-updateAllData = async function() {
-    await originalUpdateAllData();
-    await updateRescueInfo();
-};
+        // ========== FUNÇÕES DE CONTROLE DO OWNER ==========
+        async function adjustRangeUp() {
+            const expansion = parseInt(document.getElementById('rangeExpansion').value);
+            
+            try {
+                showTransactionStatus('Expandindo range para cima...', 'pending');
+                await contract.methods.adjustRangeUp(expansion).send({ from: account, gas: 200000 });
+                showTransactionStatus('✅ Range expandido para cima!', 'success');
+                await updateOwnerInfo();
+                await updatePoolInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function adjustRangeDown() {
+            const expansion = parseInt(document.getElementById('rangeExpansion').value);
+            
+            try {
+                showTransactionStatus('Expandindo range para baixo...', 'pending');
+                await contract.methods.adjustRangeDown(expansion).send({ from: account, gas: 200000 });
+                showTransactionStatus('✅ Range expandido para baixo!', 'success');
+                await updateOwnerInfo();
+                await updatePoolInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function rebalanceToCurrentPrice() {
+            try {
+                showTransactionStatus('Rebalanceando para preço atual...', 'pending');
+                await contract.methods.rebalanceToCurrentPrice().send({ from: account, gas: 250000 });
+                showTransactionStatus('✅ Rebalanceamento concluído!', 'success');
+                await updateOwnerInfo();
+                await updatePoolInfo();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro: ' + error.message, 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function addProfits() {
+            const amount = prompt("Quantos USDT deseja adicionar como lucros?", "10");
+            if (!amount || parseFloat(amount) <= 0) return;
+            
+            try {
+                const amountWei = toWei(amount);
+                showTransactionStatus('Adicionando lucros...', 'pending');
+                
+                const usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
+                await usdtContract.methods.approve(CONTRACT_ADDRESS, amountWei).send({ from: account });
+                await contract.methods.addProfits(amountWei).send({ from: account, gas: 200000 });
+                
+                showTransactionStatus('✅ Lucros adicionados com sucesso!', 'success');
+                await updateAllData();
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro ao adicionar lucros', 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        async function approveUSDT() {
+            try {
+                showTransactionStatus('Aprovando USDT...', 'pending');
+                await contract.methods.approveUSDT().send({ from: account, gas: 100000 });
+                showTransactionStatus('✅ USDT aprovado com sucesso!', 'success');
+            } catch (error) {
+                console.error("Erro:", error);
+                showTransactionStatus('❌ Erro na aprovação', 'error');
+            } finally {
+                setTimeout(hideTransactionStatus, 5000);
+            }
+        }
+
+        // ========== FUNÇÕES AUXILIARES ==========
+        function showTransactionStatus(message, type) {
+            const statusEl = document.getElementById('transactionStatus');
+            statusEl.textContent = message;
+            statusEl.className = `transaction-status transaction-${type}`;
+            statusEl.classList.remove('hidden');
+        }
+
+        function hideTransactionStatus() {
+            document.getElementById('transactionStatus').classList.add('hidden');
+        }
+
+        // ========== INICIALIZAÇÃO ==========
+        window.addEventListener('load', function() {
+            if (typeof window.ethereum !== 'undefined') {
+                ethereum.request({ method: 'eth_accounts' })
+                    .then(accounts => {
+                        if (accounts.length > 0) {
+                            connectWallet();
+                        }
+                    });
+            }
+        });
+
+        // Listeners para mudanças
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', function(accounts) {
+                location.reload();
+            });
+
+            window.ethereum.on('chainChanged', function(chainId) {
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
