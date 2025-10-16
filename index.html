@@ -1,231 +1,971 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <title>Pancake V3 USDT/USDC — Demo</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
-  <style>
-    body{font-family:Inter,system-ui; max-width:920px;margin:22px auto;padding:12px;}
-    button{padding:8px 12px;margin:6px;}
-    input{padding:6px;margin:6px}
-    pre{background:#f6f8fa;padding:12px;border-radius:6px;overflow:auto;}
-    .row{display:flex;gap:12px;align-items:center}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool USDT/USDC - PancakeSwap</title>
+    <style>
+        :root {
+            --primary: #1fc7d4;
+            --secondary: #7645d9;
+            --background: #faf9fa;
+            --card: #ffffff;
+            --text: #280d5f;
+            --text-secondary: #7a6eaa;
+            --border: #e7e3eb;
+            --success: #31d0aa;
+            --error: #ed4b9e;
+            --warning: #ff9f0a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Kanit', sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            background-color: var(--card);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .token-input {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0 16px;
+            background-color: var(--background);
+        }
+        
+        .token-input input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 16px 0;
+            font-size: 16px;
+            color: var(--text);
+            outline: none;
+        }
+        
+        .token-symbol {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .balance {
+            text-align: right;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            background-color: var(--border);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+        }
+        
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background-color: rgba(49, 208, 170, 0.1);
+            color: var(--success);
+        }
+        
+        .status.error {
+            background-color: rgba(237, 75, 158, 0.1);
+            color: var(--error);
+        }
+        
+        .status.info {
+            background-color: rgba(118, 69, 217, 0.1);
+            color: var(--secondary);
+        }
+        
+        .lp-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .lp-item {
+            text-align: center;
+        }
+        
+        .lp-value {
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .lp-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .network-indicator {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0b90b;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .slippage-settings {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .slippage-option {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .slippage-option.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .slippage-input {
+            width: 80px;
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .remove-options {
+            margin-top: 16px;
+        }
+        
+        .remove-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        
+        .remove-option input {
+            margin-right: 8px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h2>Pancake V3 — Pool USDT / USDC (0x92b7...3121)</h2>
-  <div id="status">status: desconectado</div>
+    <div class="container">
+        <header>
+            <h1>Pool USDT/USDC</h1>
+            <p>PancakeSwap Liquidity Pool</p>
+            <div class="network-indicator">
+                <span>BSC Network</span>
+            </div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="add">Adicionar Liquidez</div>
+            <div class="tab" data-tab="remove">Remover Liquidez</div>
+        </div>
+        
+        <!-- Tab: Adicionar Liquidez -->
+        <div class="tab-content active" id="add-tab">
+            <div class="card">
+                <h2 class="card-title">Adicionar Liquidez</h2>
+                
+                <div class="input-group">
+                    <label for="usdtAmount">USDT</label>
+                    <div class="token-input">
+                        <input type="number" id="usdtAmount" placeholder="0.0" min="0" step="0.001">
+                        <span class="token-symbol">USDT</span>
+                    </div>
+                    <div class="balance">Saldo: <span id="usdtBalance">0.0</span></div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="usdcAmount">USDC</label>
+                    <div class="token-input">
+                        <input type="number" id="usdcAmount" placeholder="0.0" min="0" step="0.001">
+                        <span class="token-symbol">USDC</span>
+                    </div>
+                    <div class="balance">Saldo: <span id="usdcBalance">0.0</span></div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Tolerância de Slippage</label>
+                    <div class="slippage-settings">
+                        <div class="slippage-option active" data-slippage="0.5">0.5%</div>
+                        <div class="slippage-option" data-slippage="1">1%</div>
+                        <div class="slippage-option" data-slippage="2">2%</div>
+                        <input type="number" class="slippage-input" id="customSlippage" placeholder="0.5" min="0.1" max="100" step="0.1">
+                        <span>%</span>
+                    </div>
+                </div>
+                
+                <button id="approveBtn" class="btn">
+                    <span id="approveText">Aprovar Tokens</span>
+                </button>
+                <button id="addLiquidityBtn" class="btn" disabled>
+                    <span id="addLiquidityText">Adicionar Liquidez</span>
+                </button>
+                
+                <div id="statusMessage" class="status" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Tab: Remover Liquidez -->
+        <div class="tab-content" id="remove-tab">
+            <div class="card">
+                <h2 class="card-title">Remover Liquidez</h2>
+                
+                <div class="input-group">
+                    <label for="lpAmount">Tokens LP para Remover</label>
+                    <div class="token-input">
+                        <input type="number" id="lpAmount" placeholder="0.0" min="0" step="0.001">
+                        <span class="token-symbol">Cake-LP</span>
+                    </div>
+                    <div class="balance">Disponível: <span id="lpBalance">0.0</span></div>
+                </div>
+                
+                <div class="remove-options">
+                    <div class="remove-option">
+                        <input type="radio" id="remove25" name="removeOption" value="25">
+                        <label for="remove25">25%</label>
+                    </div>
+                    <div class="remove-option">
+                        <input type="radio" id="remove50" name="removeOption" value="50">
+                        <label for="remove50">50%</label>
+                    </div>
+                    <div class="remove-option">
+                        <input type="radio" id="remove75" name="removeOption" value="75">
+                        <label for="remove75">75%</label>
+                    </div>
+                    <div class="remove-option">
+                        <input type="radio" id="remove100" name="removeOption" value="100">
+                        <label for="remove100">100%</label>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Tolerância de Slippage</label>
+                    <div class="slippage-settings">
+                        <div class="slippage-option active" data-slippage-remove="0.5">0.5%</div>
+                        <div class="slippage-option" data-slippage-remove="1">1%</div>
+                        <div class="slippage-option" data-slippage-remove="2">2%</div>
+                        <input type="number" class="slippage-input" id="customSlippageRemove" placeholder="0.5" min="0.1" max="100" step="0.1">
+                        <span>%</span>
+                    </div>
+                </div>
+                
+                <button id="approveLpBtn" class="btn">
+                    <span id="approveLpText">Aprovar Tokens LP</span>
+                </button>
+                <button id="removeLiquidityBtn" class="btn btn-warning" disabled>
+                    <span id="removeLiquidityText">Remover Liquidez</span>
+                </button>
+                
+                <div id="removeStatusMessage" class="status" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">Minha Liquidez</h2>
+            
+            <div class="lp-info">
+                <div class="lp-item">
+                    <div class="lp-value" id="lpTokens">0</div>
+                    <div class="lp-label">Tokens LP</div>
+                </div>
+                <div class="lp-item">
+                    <div class="lp-value" id="poolShare">0%</div>
+                    <div class="lp-label">Participação</div>
+                </div>
+                <div class="lp-item">
+                    <div class="lp-value" id="estimatedValue">$0</div>
+                    <div class="lp-label">Valor Estimado</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <div class="row">
-    <button id="connectBtn">Conectar MetaMask (BSC)</button>
-    <button id="refreshBtn">Atualizar info da pool</button>
-  </div>
-
-  <h3>Pool info</h3>
-  <div id="poolInfo"><em>clique em atualizar</em></div>
-
-  <h3>Ações</h3>
-  <div>
-    <label>Quantidade USDT (ex: 100): <input id="usdtAmount" value="10"/></label>
-    <button id="approveUSDT">Aprovar USDT (router)</button>
-    <button id="swapHalf">Swap metade USDT → USDC (exemplo)</button>
-  </div>
-
-  <h4>Coletar taxas (collect)</h4>
-  <div>
-    <label>tickLower: <input id="tickLower" value="0"/></label>
-    <label>tickUpper: <input id="tickUpper" value="0"/></label>
-    <button id="fetchPosition">Buscar posição (tokensOwed)</button>
-    <button id="collectFees">Coletar tudo (collect)</button>
-  </div>
-
-  <h4>Logs / output</h4>
-  <pre id="log"></pre>
-
-<script>
-(async()=>{
-
-  // -------- CONFIGURAÇÕES --------
-  const POOL_ADDRESS = "0x92b7807bF19b7DDdf89b706143896d05228f3121";
-  // PancakeSwap Router / Smart Router na BSC (use Smart Router ou Router V2 conforme preferir)
-  const SMART_ROUTER = "0x13f4EA83D0bd40E75C8222255bc855a974568Dd4"; // Pancake v3 smart router (developer page)
-  const ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // PancakeV2 router (comum na BSC)
-  const CHAIN_ID = 56; // BSC mainnet
-
-  // Minimal ABI (apenas funções usadas)
-  const POOL_ABI = [
-    "function token0() view returns (address)",
-    "function token1() view returns (address)",
-    "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint32 feeProtocol, bool unlocked)",
-    "function tickSpacing() view returns (int24)",
-    "function fee() view returns (uint24)",
-    "function mint(address recipient,int24 tickLower,int24 tickUpper,uint128 amount,bytes calldata data) returns (uint256 amount0,uint256 amount1)",
-    "function collect(address recipient,uint128 amount0Requested,uint128 amount1Requested) returns (uint128 amount0,uint128 amount1)",
-    "function positions(bytes32) view returns (uint128 liquidity,uint256 feeGrowthInside0LastX128,uint256 feeGrowthInside1LastX128,uint128 tokensOwed0,uint128 tokensOwed1)",
-    "function observe(uint32[] calldata secondsAgos) view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)"
-  ];
-
-  const ERC20_ABI = [
-    "function symbol() view returns (string)",
-    "function decimals() view returns (uint8)",
-    "function balanceOf(address) view returns (uint256)",
-    "function approve(address spender,uint256 amount) returns (bool)",
-    "function allowance(address owner,address spender) view returns (uint256)"
-  ];
-
-  // -------- UI elements ----------
-  const connectBtn = document.getElementById("connectBtn");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const poolInfoDiv = document.getElementById("poolInfo");
-  const logEl = document.getElementById("log");
-  const approveUSDTBtn = document.getElementById("approveUSDT");
-  const swapHalfBtn = document.getElementById("swapHalf");
-  const fetchPositionBtn = document.getElementById("fetchPosition");
-  const collectFeesBtn = document.getElementById("collectFees");
-
-  let provider, signer, userAddress;
-  let poolContract, token0Addr, token1Addr, token0, token1;
-
-  function log(...args){ logEl.textContent = new Date().toLocaleTimeString()+" | "+args.join(" ") + "\n" + logEl.textContent; }
-
-  // connect to MetaMask
-  connectBtn.onclick = async()=>{
-    try{
-      if(!window.ethereum) throw new Error("MetaMask não detectado");
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      provider = new ethers.BrowserProvider(window.ethereum, "any");
-      const network = await provider.getNetwork();
-      if(network.chainId !== CHAIN_ID) {
-        log("Por favor, troque a rede para BSC (chainId 56) na MetaMask.");
-      }
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
-      document.getElementById("status").innerText = "Conectado: " + userAddress;
-      poolContract = new ethers.Contract(POOL_ADDRESS, POOL_ABI, provider);
-      log("Conectado. Endereço pool:", POOL_ADDRESS);
-    }catch(e){ log("Erro connect:", e.message); }
-  };
-
-  // refresh pool info
-  refreshBtn.onclick = async()=>{
-    try{
-      if(!poolContract) throw new Error("Conecte a wallet primeiro");
-      token0Addr = await poolContract.token0();
-      token1Addr = await poolContract.token1();
-      token0 = new ethers.Contract(token0Addr, ERC20_ABI, provider);
-      token1 = new ethers.Contract(token1Addr, ERC20_ABI, provider);
-      const [sym0, sym1, decimals0, decimals1, slot0, tickSpacing, fee] = await Promise.all([
-        token0.symbol(), token1.symbol(), token0.decimals(), token1.decimals(),
-        poolContract.slot0(), poolContract.tickSpacing(), poolContract.fee()
-      ]);
-      poolInfoDiv.innerHTML = `
-        <b>Pool:</b> ${POOL_ADDRESS} <br/>
-        <b>Token0:</b> ${sym0} — ${token0Addr} (dec ${decimals0}) <br/>
-        <b>Token1:</b> ${sym1} — ${token1Addr} (dec ${decimals1}) <br/>
-        <b>tick (slot0):</b> ${slot0.tick} <br/>
-        <b>tickSpacing:</b> ${tickSpacing} <br/>
-        <b>fee (bps?):</b> ${fee} <br/>
-        <small>Observação: esta pool é Pancake V3 CLMM (funções mint/collect/swaps).</small>
-      `;
-      log("Pool info atualizado.");
-    }catch(e){ log("Erro refresh:", e.message); }
-  };
-
-  // approval: approve router to spend USDT
-  approveUSDTBtn.onclick = async()=>{
-    try{
-      if(!signer) throw new Error("Conecte-se primeiro");
-      if(!token0Addr) await refreshBtn.onclick();
-      // determine which token is USDT (heurística: symbol contains 'USDT')
-      const t0sym = await token0.symbol(); const t1sym = await token1.symbol();
-      let usdtAddr = (t0sym && t0sym.toUpperCase().includes("USDT")) ? token0Addr : ((t1sym&&t1sym.toUpperCase().includes("USDT"))?token1Addr:null);
-      if(!usdtAddr) { log("Não detectei USDT em token0/token1 da pool. Insira manualmente."); return; }
-      const erc = new ethers.Contract(usdtAddr, ERC20_ABI, signer);
-      const amount = ethers.parseUnits(document.getElementById("usdtAmount").value || "0", await erc.decimals());
-      const tx = await erc.approve(ROUTER_V2, amount);
-      log("Aprovação enviada. hash:", tx.hash);
-      await tx.wait();
-      log("Aprovação confirmada.");
-    }catch(e){ log("Erro approve:", e.message); }
-  };
-
-  // swap metade USDT via Router V2 (exemplo simples)
-  swapHalfBtn.onclick = async()=>{
-    try{
-      if(!signer) throw new Error("Conecte-se primeiro");
-      // detect USDT address
-      const t0sym = await token0.symbol(); const t1sym = await token1.symbol();
-      let usdtAddr = (t0sym && t0sym.toUpperCase().includes("USDT")) ? token0Addr : ((t1sym&&t1sym.toUpperCase().includes("USDT"))?token1Addr:null);
-      let otherAddr = (usdtAddr===token0Addr)?token1Addr:token0Addr;
-      if(!usdtAddr){ log("USDT não detectado na pool."); return; }
-
-      const amountInHuman = document.getElementById("usdtAmount").value || "0";
-      const decimals = await (new ethers.Contract(usdtAddr, ERC20_ABI, provider)).decimals();
-      const amountIn = ethers.parseUnits(amountInHuman, decimals);
-      const amountHalf = amountIn / 2n;
-
-      // Router v2 ABI minimal: swapExactTokensForTokens
-      const ROUTER_V2_ABI = ["function swapExactTokensForTokens(uint256 amountIn,uint256 amountOutMin,address[] calldata path,address to,uint256 deadline) returns (uint256[] memory amounts)"];
-      const router = new ethers.Contract(ROUTER_V2, ROUTER_V2_ABI, signer);
-
-      // build path [USDT -> USDC] (order doesn't matter if pair exists)
-      const path = [usdtAddr, otherAddr];
-      const deadline = Math.floor(Date.now()/1000) + 60*300; // 5h
-
-      // estimate amountOutMin = 0 for demo (DANGER: slippage) — em produção calcule via quoter
-      const tx = await router.swapExactTokensForTokens(amountHalf, 0, path, userAddress, deadline, { gasLimit: 800000 });
-      log("Swap enviado:", tx.hash);
-      await tx.wait();
-      log("Swap confirmado.");
-    }catch(e){ log("Erro swap:", e.message); }
-  };
-
-  // helper: compute positions key = keccak256(owner,tickLower,tickUpper) to read positions mapping
-  function makePositionKey(owner, tickLower, tickUpper){
-    // per pool implementation positions mapping key is keccak256(abi.encodePacked(owner,tickLower,tickUpper))
-    // ethers.js: keccak256(pack(...))
-    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-    const packed = ethers.concat([owner, ethers.hexZeroPad(ethers.hexlify(tickLower), 32), ethers.hexZeroPad(ethers.hexlify(tickUpper), 32)]);
-    // simpler: use solidityKeccak256 via ethers 6 util
-    const hash = ethers.keccak256(ethers.concat([owner, ethers.hexZeroPad(ethers.hexlify(tickLower), 32), ethers.hexZeroPad(ethers.hexlify(tickUpper), 32)]));
-    return hash;
-  }
-
-  fetchPositionBtn.onclick = async()=>{
-    try{
-      if(!signer) throw new Error("conecte-se");
-      const owner = userAddress;
-      const tickLower = parseInt(document.getElementById("tickLower").value || "0");
-      const tickUpper = parseInt(document.getElementById("tickUpper").value || "0");
-      const key = makePositionKey(owner, tickLower, tickUpper);
-      const pos = await poolContract.positions(key);
-      log(`Position liquidity=${pos.liquidity} tokensOwed0=${pos.tokensOwed0} tokensOwed1=${pos.tokensOwed1}`);
-      alert(`tokensOwed0: ${pos.tokensOwed0}\ntokensOwed1: ${pos.tokensOwed1}`);
-    }catch(e){ log("Erro fetchPosition:", e.message); }
-  };
-
-  collectFeesBtn.onclick = async()=>{
-    try{
-      if(!signer) throw new Error("conecte-se");
-      const recipient = userAddress;
-      // amountRequested: set big values to collect all (uint128 max). We'll use max = 2**128-1
-      const maxUint128 = (BigInt(1) << BigInt(128)) - BigInt(1);
-      const poolWithSigner = poolContract.connect(signer);
-      const tx = await poolWithSigner.collect(recipient, maxUint128, maxUint128, { gasLimit: 500000 });
-      log("collect tx sent:", tx.hash);
-      await tx.wait();
-      log("collect confirmed.");
-    }catch(e){ log("Erro collect:", e.message); }
-  };
-
-  // small helper para atualizar endereço quando account muda
-  if(window.ethereum){
-    window.ethereum.on && window.ethereum.on('accountsChanged', (accounts)=>{ if(accounts.length) { document.getElementById("status").innerText = "Conectado: "+accounts[0]; } });
-  }
-
-  // finally expose some vars to dev console
-  window._demo = { POOL_ADDRESS, POOL_ABI, ROUTER_V2, SMART_ROUTER };
-})();
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        // Endereços dos contratos na BSC
+        const LP_POOL_ADDRESS = "0x92b7807bF19b7DDdf89b706143896d05228f3121";
+        const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+        const USDC_ADDRESS = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+        const ROUTER_ADDRESS = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // PancakeSwap Router
+        
+        // ABI do contrato do Pool (LP Token)
+        const LP_ABI = [
+            {
+                "inputs": [],
+                "name": "token0",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "token1",
+                "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getReserves",
+                "outputs": [
+                    {"internalType": "uint112", "name": "_reserve0", "type": "uint112"},
+                    {"internalType": "uint112", "name": "_reserve1", "type": "uint112"},
+                    {"internalType": "uint32", "name": "_blockTimestampLast", "type": "uint32"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        // ABI do contrato dos tokens (USDT e USDC)
+        const TOKEN_ABI = [
+            {
+                "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "spender", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "owner", "type": "address"},
+                    {"internalType": "address", "name": "spender", "type": "address"}
+                ],
+                "name": "allowance",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        // ABI do Router da PancakeSwap
+        const ROUTER_ABI = [
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "tokenA", "type": "address"},
+                    {"internalType": "address", "name": "tokenB", "type": "address"},
+                    {"internalType": "uint256", "name": "amountADesired", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountBDesired", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountAMin", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountBMin", "type": "uint256"},
+                    {"internalType": "address", "name": "to", "type": "address"},
+                    {"internalType": "uint256", "name": "deadline", "type": "uint256"}
+                ],
+                "name": "addLiquidity",
+                "outputs": [
+                    {"internalType": "uint256", "name": "amountA", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountB", "type": "uint256"},
+                    {"internalType": "uint256", "name": "liquidity", "type": "uint256"}
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "tokenA", "type": "address"},
+                    {"internalType": "address", "name": "tokenB", "type": "address"},
+                    {"internalType": "uint256", "name": "liquidity", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountAMin", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountBMin", "type": "uint256"},
+                    {"internalType": "address", "name": "to", "type": "address"},
+                    {"internalType": "uint256", "name": "deadline", "type": "uint256"}
+                ],
+                "name": "removeLiquidity",
+                "outputs": [
+                    {"internalType": "uint256", "name": "amountA", "type": "uint256"},
+                    {"internalType": "uint256", "name": "amountB", "type": "uint256"}
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+        
+        let web3;
+        let userAccount;
+        let lpContract;
+        let usdtContract;
+        let usdcContract;
+        let routerContract;
+        let slippage = 0.5; // Slippage padrão 0.5%
+        let slippageRemove = 0.5; // Slippage padrão para remoção
+        
+        // Inicialização
+        window.addEventListener('load', async () => {
+            // Verificar se MetaMask está instalado
+            if (typeof window.ethereum !== 'undefined') {
+                web3 = new Web3(window.ethereum);
+                
+                try {
+                    // Solicitar acesso à conta
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    
+                    // Obter a conta do usuário
+                    const accounts = await web3.eth.getAccounts();
+                    userAccount = accounts[0];
+                    
+                    // Inicializar contratos
+                    lpContract = new web3.eth.Contract(LP_ABI, LP_POOL_ADDRESS);
+                    usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_ADDRESS);
+                    usdcContract = new web3.eth.Contract(TOKEN_ABI, USDC_ADDRESS);
+                    routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER_ADDRESS);
+                    
+                    // Configurar eventos
+                    setupEventListeners();
+                    
+                    // Carregar dados iniciais
+                    await loadBalances();
+                    await loadLiquidityInfo();
+                    
+                    // Configurar listeners para mudanças de conta
+                    window.ethereum.on('accountsChanged', (accounts) => {
+                        userAccount = accounts[0];
+                        loadBalances();
+                        loadLiquidityInfo();
+                    });
+                    
+                } catch (error) {
+                    showStatus('Erro ao conectar à MetaMask: ' + error.message, 'error');
+                }
+            } else {
+                showStatus('MetaMask não encontrado. Por favor, instale a MetaMask.', 'error');
+            }
+        });
+        
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+            
+            // Slippage settings - Adicionar
+            document.querySelectorAll('[data-slippage]').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('[data-slippage]').forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    slippage = parseFloat(option.dataset.slippage);
+                    document.getElementById('customSlippage').value = '';
+                });
+            });
+            
+            document.getElementById('customSlippage').addEventListener('input', (e) => {
+                if (e.target.value) {
+                    document.querySelectorAll('[data-slippage]').forEach(o => o.classList.remove('active'));
+                    slippage = parseFloat(e.target.value);
+                }
+            });
+            
+            // Slippage settings - Remover
+            document.querySelectorAll('[data-slippage-remove]').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('[data-slippage-remove]').forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    slippageRemove = parseFloat(option.dataset.slippageRemove);
+                    document.getElementById('customSlippageRemove').value = '';
+                });
+            });
+            
+            document.getElementById('customSlippageRemove').addEventListener('input', (e) => {
+                if (e.target.value) {
+                    document.querySelectorAll('[data-slippage-remove]').forEach(o => o.classList.remove('active'));
+                    slippageRemove = parseFloat(e.target.value);
+                }
+            });
+            
+            // Opções de remoção de liquidez
+            document.querySelectorAll('input[name="removeOption"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        const percentage = parseInt(e.target.value) / 100;
+                        const lpBalance = parseFloat(document.getElementById('lpBalance').textContent);
+                        document.getElementById('lpAmount').value = (lpBalance * percentage).toFixed(6);
+                    }
+                });
+            });
+            
+            // Input de quantidade LP
+            document.getElementById('lpAmount').addEventListener('input', (e) => {
+                document.querySelectorAll('input[name="removeOption"]').forEach(radio => {
+                    radio.checked = false;
+                });
+            });
+            
+            // Botão aprovar tokens
+            document.getElementById('approveBtn').addEventListener('click', approveTokens);
+            
+            // Botão adicionar liquidez
+            document.getElementById('addLiquidityBtn').addEventListener('click', addLiquidity);
+            
+            // Botão aprovar tokens LP
+            document.getElementById('approveLpBtn').addEventListener('click', approveLpTokens);
+            
+            // Botão remover liquidez
+            document.getElementById('removeLiquidityBtn').addEventListener('click', removeLiquidity);
+        }
+        
+        // Carregar saldos dos tokens
+        async function loadBalances() {
+            try {
+                const usdtBalance = await usdtContract.methods.balanceOf(userAccount).call();
+                const usdcBalance = await usdcContract.methods.balanceOf(userAccount).call();
+                const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
+                
+                const usdtDecimals = await usdtContract.methods.decimals().call();
+                const usdcDecimals = await usdcContract.methods.decimals().call();
+                const lpDecimals = await lpContract.methods.decimals().call();
+                
+                document.getElementById('usdtBalance').textContent = 
+                    (usdtBalance / Math.pow(10, usdtDecimals)).toFixed(6);
+                document.getElementById('usdcBalance').textContent = 
+                    (usdcBalance / Math.pow(10, usdcDecimals)).toFixed(6);
+                document.getElementById('lpBalance').textContent = 
+                    (lpBalance / Math.pow(10, lpDecimals)).toFixed(6);
+                    
+            } catch (error) {
+                console.error('Erro ao carregar saldos:', error);
+            }
+        }
+        
+        // Carregar informações de liquidez
+        async function loadLiquidityInfo() {
+            try {
+                const lpBalance = await lpContract.methods.balanceOf(userAccount).call();
+                const totalSupply = await lpContract.methods.totalSupply().call();
+                const reserves = await lpContract.methods.getReserves().call();
+                
+                const lpDecimals = await lpContract.methods.decimals().call();
+                const usdtDecimals = await usdtContract.methods.decimals().call();
+                const usdcDecimals = await usdcContract.methods.decimals().call();
+                
+                const lpBalanceFormatted = lpBalance / Math.pow(10, lpDecimals);
+                const totalSupplyFormatted = totalSupply / Math.pow(10, lpDecimals);
+                
+                document.getElementById('lpTokens').textContent = lpBalanceFormatted.toFixed(6);
+                
+                if (totalSupply > 0) {
+                    const poolShare = (lpBalance / totalSupply * 100).toFixed(4);
+                    document.getElementById('poolShare').textContent = poolShare + '%';
+                    
+                    // Calcular valor estimado (simplificado)
+                    const reserve0 = reserves._reserve0 / Math.pow(10, usdtDecimals);
+                    const reserve1 = reserves._reserve1 / Math.pow(10, usdcDecimals);
+                    const share = lpBalanceFormatted / totalSupplyFormatted;
+                    const estimatedValue = (reserve0 * share * 2).toFixed(2); // Assumindo 1:1
+                    document.getElementById('estimatedValue').textContent = '$' + estimatedValue;
+                } else {
+                    document.getElementById('poolShare').textContent = '0%';
+                    document.getElementById('estimatedValue').textContent = '$0';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar informações de liquidez:', error);
+            }
+        }
+        
+        // Aprovar tokens para o router (para adicionar liquidez)
+        async function approveTokens() {
+            const usdtAmount = document.getElementById('usdtAmount').value;
+            const usdcAmount = document.getElementById('usdcAmount').value;
+            
+            if (!usdtAmount || !usdcAmount || usdtAmount <= 0 || usdcAmount <= 0) {
+                showStatus('Por favor, insira valores válidos para ambos os tokens.', 'error');
+                return;
+            }
+            
+            try {
+                setButtonLoading('approveBtn', 'Aprovando...');
+                showStatus('Aprovando tokens...', 'info');
+                
+                const usdtDecimals = await usdtContract.methods.decimals().call();
+                const usdcDecimals = await usdcContract.methods.decimals().call();
+                
+                // Converter valores para a unidade correta
+                const usdtAmountWei = BigInt(usdtAmount * Math.pow(10, usdtDecimals));
+                const usdcAmountWei = BigInt(usdcAmount * Math.pow(10, usdcDecimals));
+                
+                // Aprovar USDT
+                await usdtContract.methods.approve(ROUTER_ADDRESS, usdtAmountWei.toString())
+                    .send({ from: userAccount });
+                
+                // Aprovar USDC
+                await usdcContract.methods.approve(ROUTER_ADDRESS, usdcAmountWei.toString())
+                    .send({ from: userAccount });
+                
+                showStatus('Tokens aprovados com sucesso!', 'success');
+                document.getElementById('addLiquidityBtn').disabled = false;
+                setButtonNormal('approveBtn', 'Tokens Aprovados');
+                
+            } catch (error) {
+                showStatus('Erro ao aprovar tokens: ' + error.message, 'error');
+                setButtonNormal('approveBtn', 'Aprovar Tokens');
+            }
+        }
+        
+        // Adicionar liquidez
+        async function addLiquidity() {
+            const usdtAmount = document.getElementById('usdtAmount').value;
+            const usdcAmount = document.getElementById('usdcAmount').value;
+            
+            try {
+                setButtonLoading('addLiquidityBtn', 'Adicionando...');
+                showStatus('Adicionando liquidez...', 'info');
+                
+                const usdtDecimals = await usdtContract.methods.decimals().call();
+                const usdcDecimals = await usdcContract.methods.decimals().call();
+                
+                // Converter valores para a unidade correta
+                const usdtAmountWei = BigInt(usdtAmount * Math.pow(10, usdtDecimals));
+                const usdcAmountWei = BigInt(usdcAmount * Math.pow(10, usdcDecimals));
+                
+                // Calcular valores mínimos com slippage
+                const usdtMin = usdtAmountWei * BigInt(10000 - slippage * 100) / 10000n;
+                const usdcMin = usdcAmountWei * BigInt(10000 - slippage * 100) / 10000n;
+                
+                // Definir deadline (30 minutos a partir de agora)
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 30;
+                
+                // Adicionar liquidez
+                await routerContract.methods.addLiquidity(
+                    USDT_ADDRESS,
+                    USDC_ADDRESS,
+                    usdtAmountWei.toString(),
+                    usdcAmountWei.toString(),
+                    usdtMin.toString(),
+                    usdcMin.toString(),
+                    userAccount,
+                    deadline
+                ).send({ from: userAccount });
+                
+                showStatus('Liquidez adicionada com sucesso!', 'success');
+                
+                // Atualizar dados
+                await loadBalances();
+                await loadLiquidityInfo();
+                
+                // Resetar formulário
+                document.getElementById('usdtAmount').value = '';
+                document.getElementById('usdcAmount').value = '';
+                document.getElementById('addLiquidityBtn').disabled = true;
+                setButtonNormal('addLiquidityBtn', 'Adicionar Liquidez');
+                setButtonNormal('approveBtn', 'Aprovar Tokens');
+                
+            } catch (error) {
+                showStatus('Erro ao adicionar liquidez: ' + error.message, 'error');
+                setButtonNormal('addLiquidityBtn', 'Adicionar Liquidez');
+            }
+        }
+        
+        // Aprovar tokens LP para o router (para remover liquidez)
+        async function approveLpTokens() {
+            const lpAmount = document.getElementById('lpAmount').value;
+            
+            if (!lpAmount || lpAmount <= 0) {
+                showRemoveStatus('Por favor, insira uma quantidade válida de tokens LP.', 'error');
+                return;
+            }
+            
+            try {
+                setButtonLoading('approveLpBtn', 'Aprovando...');
+                showRemoveStatus('Aprovando tokens LP...', 'info');
+                
+                const lpDecimals = await lpContract.methods.decimals().call();
+                const lpAmountWei = BigInt(lpAmount * Math.pow(10, lpDecimals));
+                
+                // Aprovar tokens LP
+                await lpContract.methods.approve(ROUTER_ADDRESS, lpAmountWei.toString())
+                    .send({ from: userAccount });
+                
+                showRemoveStatus('Tokens LP aprovados com sucesso!', 'success');
+                document.getElementById('removeLiquidityBtn').disabled = false;
+                setButtonNormal('approveLpBtn', 'Tokens LP Aprovados');
+                
+            } catch (error) {
+                showRemoveStatus('Erro ao aprovar tokens LP: ' + error.message, 'error');
+                setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
+            }
+        }
+        
+        // Remover liquidez
+        async function removeLiquidity() {
+            const lpAmount = document.getElementById('lpAmount').value;
+            
+            try {
+                setButtonLoading('removeLiquidityBtn', 'Removendo...');
+                showRemoveStatus('Removendo liquidez...', 'info');
+                
+                const lpDecimals = await lpContract.methods.decimals().call();
+                const usdtDecimals = await usdtContract.methods.decimals().call();
+                const usdcDecimals = await usdcContract.methods.decimals().call();
+                
+                // Obter reserves para calcular valores mínimos
+                const reserves = await lpContract.methods.getReserves().call();
+                const totalSupply = await lpContract.methods.totalSupply().call();
+                
+                const lpAmountWei = BigInt(lpAmount * Math.pow(10, lpDecimals));
+                
+                // Calcular valores esperados
+                const share = Number(lpAmountWei) / Number(totalSupply);
+                const expectedUsdt = reserves._reserve0 * share;
+                const expectedUsdc = reserves._reserve1 * share;
+                
+                // Calcular valores mínimos com slippage
+                const usdtMin = BigInt(expectedUsdt) * BigInt(10000 - slippageRemove * 100) / 10000n;
+                const usdcMin = BigInt(expectedUsdc) * BigInt(10000 - slippageRemove * 100) / 10000n;
+                
+                // Definir deadline (30 minutos a partir de agora)
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 30;
+                
+                // Remover liquidez
+                await routerContract.methods.removeLiquidity(
+                    USDT_ADDRESS,
+                    USDC_ADDRESS,
+                    lpAmountWei.toString(),
+                    usdtMin.toString(),
+                    usdcMin.toString(),
+                    userAccount,
+                    deadline
+                ).send({ from: userAccount });
+                
+                showRemoveStatus('Liquidez removida com sucesso!', 'success');
+                
+                // Atualizar dados
+                await loadBalances();
+                await loadLiquidityInfo();
+                
+                // Resetar formulário
+                document.getElementById('lpAmount').value = '';
+                document.querySelectorAll('input[name="removeOption"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                document.getElementById('removeLiquidityBtn').disabled = true;
+                setButtonNormal('removeLiquidityBtn', 'Remover Liquidez');
+                setButtonNormal('approveLpBtn', 'Aprovar Tokens LP');
+                
+            } catch (error) {
+                showRemoveStatus('Erro ao remover liquidez: ' + error.message, 'error');
+                setButtonNormal('removeLiquidityBtn', 'Remover Liquidez');
+            }
+        }
+        
+        // Funções auxiliares para mostrar mensagens de status
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+            statusElement.style.display = 'block';
+            
+            // Ocultar mensagem após 5 segundos (exceto para mensagens de info)
+            if (type !== 'info') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function showRemoveStatus(message, type) {
+            const statusElement = document.getElementById('removeStatusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+            statusElement.style.display = 'block';
+            
+            // Ocultar mensagem após 5 segundos (exceto para mensagens de info)
+            if (type !== 'info') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Funções auxiliares para estados dos botões
+        function setButtonLoading(buttonId, text) {
+            const button = document.getElementById(buttonId);
+            const textElement = button.querySelector('span');
+            button.disabled = true;
+            textElement.innerHTML = '<span class="loading"></span>' + text;
+        }
+        
+        function setButtonNormal(buttonId, text) {
+            const button = document.getElementById(buttonId);
+            const textElement = button.querySelector('span');
+            button.disabled = buttonId !== 'approveBtn' && buttonId !== 'approveLpBtn';
+            textElement.textContent = text;
+        }
+    </script>
 </body>
 </html>
