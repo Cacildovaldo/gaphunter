@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Arbitragem Linear BIN/USDT</title>
+    <title>Flash Swap Arbitrage BIN/USDT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
-
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,10 +27,8 @@
         }
         h2 { text-align: center; color: #f0b90b; margin-top: 0; font-size: 1.5rem; }
         .logo-area { text-align: center; margin-bottom: 20px; color: #f0b90b; font-size: 2rem; }
-        
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #848e9c; font-weight: 600; }
-        
         input {
             width: 100%;
             padding: 14px;
@@ -41,10 +38,8 @@
             color: white;
             box-sizing: border-box;
             font-size: 1rem;
-            transition: border 0.3s;
         }
         input:focus { border-color: #f0b90b; outline: none; }
-
         button {
             width: 100%;
             padding: 16px;
@@ -55,13 +50,11 @@
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(240, 185, 11, 0.3); }
-        button:disabled { background: #333; color: #777; cursor: not-allowed; transform: none; }
-
+        button:disabled { background: #333; color: #777; cursor: not-allowed; }
         .status-box {
             margin-top: 20px;
             padding: 15px;
@@ -75,21 +68,18 @@
             border: 1px solid #333;
         }
         .log-error { color: #f6465d; }
-        .log-warn { color: #f0b90b; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="logo-area">
-        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+        <i class="fa-solid fa-bolt"></i>
     </div>
-    <h2>Arbitragem Linear BIN</h2>
+    <h2>Flash Swap Arbitrage</h2>
     
     <div class="form-group">
-        <button id="btnConnect" onclick="connectWallet()">
-            <i class="fa-solid fa-wallet"></i> Conectar Carteira
-        </button>
+        <button id="btnConnect" onclick="connectWallet()">Conectar Carteira</button>
     </div>
 
     <div class="form-group">
@@ -103,14 +93,12 @@
     </div>
 
     <div class="form-group">
-        <button id="btnExecute" onclick="executeArbitrage()" disabled>
-            <i class="fa-solid fa-bolt"></i> Executar Operação
-        </button>
+        <button id="btnExecute" onclick="executeArbitrage()" disabled>EXECUTAR OPERAÇÃO</button>
     </div>
 
     <div class="status-box" id="logBox">
         <div>> Sistema pronto.</div>
-        <div>> Estratégia: USDT -> BIN -> USDT</div>
+        <div>> Modo: PancakeSwap Flash Swap (Nativo).</div>
     </div>
 </div>
 
@@ -119,7 +107,7 @@
         {
             "inputs": [
                 {"internalType": "address", "name": "_routerAddress", "type": "address"},
-                {"internalType": "address", "name": "_poolAddress", "type": "address"}
+                {"internalType": "address", "name": "_pairAddress", "type": "address"}
             ],
             "stateMutability": "nonpayable",
             "type": "constructor"
@@ -146,6 +134,18 @@
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
+        },
+        {
+            "inputs": [
+                {"internalType": "address", "name": "sender", "type": "address"},
+                {"internalType": "uint256", "name": "amount0", "type": "uint256"},
+                {"internalType": "uint256", "name": "amount1", "type": "uint256"},
+                {"internalType": "bytes", "name": "data", "type": "bytes"}
+            ],
+            "name": "pancakeCall",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
         }
     ];
 
@@ -157,7 +157,6 @@
         const box = document.getElementById('logBox');
         const entry = document.createElement('div');
         if (type === 'error') entry.className = 'log-error';
-        if (type === 'warn') entry.className = 'log-warn';
         entry.textContent = `> ${msg}`;
         box.appendChild(entry);
         box.scrollTop = box.scrollHeight;
@@ -173,7 +172,6 @@
                 document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
                 document.getElementById('btnConnect').disabled = true;
                 document.getElementById('btnConnect').style.background = "#0ecb81";
-                document.getElementById('btnConnect').style.color = "white";
                 document.getElementById('btnExecute').disabled = false;
                 
                 log("Carteira conectada.", 'info');
@@ -190,14 +188,14 @@
         const amount = document.getElementById('loanAmount').value;
 
         if (!contractAddress || !amount) {
-            alert("Preencha o endereço do contrato e o valor.");
+            alert("Preencha o endereço e o valor.");
             return;
         }
 
         contractInstance = new web3.eth.Contract(contractABI, contractAddress);
-        const amountWei = web3.utils.toWei(amount, 'ether'); // USDT 18 decimais
+        const amountWei = web3.utils.toWei(amount, 'ether');
 
-        log("Iniciando Flash Loan (USDT -> BIN)...", 'info');
+        log("Iniciando Flash Swap...", 'info');
         document.getElementById('btnExecute').disabled = true;
 
         try {
@@ -209,16 +207,11 @@
             });
 
             log(`SUCESSO! TX: ${result.transactionHash}`, 'info');
-            log("Verifique o saldo do contrato para lucros.", 'warn');
+            log("Verifique o saldo do contrato.", 'info');
 
         } catch (error) {
             console.error(error);
-            log("FALHA NA OPERAÇÃO:", 'error');
-            let errorMsg = "Erro desconhecido.";
-            if (error.message.includes("revert")) {
-                errorMsg = "Sem lucro: O preço não se moveu o suficiente ou taxas do BIN comeram o lucro.";
-            }
-            log(errorMsg, 'error');
+            log("FALHA: " + error.message, 'error');
         } finally {
             document.getElementById('btnExecute').disabled = false;
         }
