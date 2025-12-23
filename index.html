@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Arbitragem BIN/ROX</title>
-    <!-- Ícones -->
+    <title>Painel de Arbitragem BIN/ROX - Versão USDT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Web3.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
 
     <style>
@@ -102,17 +100,23 @@
         </button>
     </div>
 
+    <!-- Campo para inserir o NOVO endereço -->
+    <div class="form-group">
+        <label>Endereço do Contrato:</label>
+        <input type="text" id="contractAddress" placeholder="0x3796Ac070725445230C7aDb5ECAd3509823520ba" value="">
+    </div>
+
     <div class="form-group">
         <label>Token Alvo:</label>
         <select id="targetChoice">
-            <option value="0">Rota A: WBNB -> BIN -> ROX -> WBNB</option>
-            <option value="1">Rota B: WBNB -> ROX -> BIN -> WBNB</option>
+            <option value="0">Rota A: USDT -> BIN -> ROX -> USDT</option>
+            <option value="1">Rota B: USDT -> ROX -> BIN -> USDT</option>
         </select>
     </div>
 
     <div class="form-group">
-        <label>Valor do Flash Loan (BNB):</label>
-        <input type="number" id="loanAmount" placeholder="Ex: 10" step="0.1">
+        <label>Valor do Flash Loan (USDT):</label>
+        <input type="number" id="loanAmount" placeholder="Ex: 10000" step="1">
     </div>
 
     <div class="form-group">
@@ -123,19 +127,11 @@
 
     <div class="status-box" id="logBox">
         <div>> Sistema pronto.</div>
-        <div>> Aguardando conexão...</div>
-    </div>
-    
-    <div class="contract-tag">
-        Contrato: 0xa13A446b...753Dc
+        <div>> Versão USDT (Tokens pareados em USDT).</div>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO ---
-    const CONTRACT_ADDRESS = "0xa13A446bb72b45D758D364788Ae6fF94F0c753Dc";
-
-    // ABI do Contrato
     const contractABI = [
         {
             "inputs": [
@@ -192,21 +188,12 @@
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAccount = (await web3.eth.getAccounts())[0];
                 
-                // Atualiza UI
-                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...${userAccount.substring(38)}`;
+                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
                 document.getElementById('btnConnect').disabled = true;
                 document.getElementById('btnConnect').style.background = "#0ecb81";
-                document.getElementById('btnConnect').style.color = "white";
                 document.getElementById('btnExecute').disabled = false;
                 
-                // Verificar Rede
-                const chainId = await web3.eth.getChainId();
-                if(chainId !== 56) {
-                    log(`Atenção: Você está na Chain ID ${chainId}. Mude para BSC Mainnet (56).`, 'warn');
-                } else {
-                    log("Carteira conectada à BSC Mainnet.", 'info');
-                }
-
+                log("Carteira conectada.", 'info');
             } catch (error) {
                 log("Erro ao conectar: " + error.message, 'error');
             }
@@ -216,62 +203,42 @@
     }
 
     async function executeArbitrage() {
+        const contractAddress = document.getElementById('contractAddress').value;
         const amount = document.getElementById('loanAmount').value;
         const target = document.getElementById('targetChoice').value;
 
-        if (!amount) {
-            alert("Por favor, insira o valor do Flash Loan.");
+        if (!contractAddress || !amount) {
+            alert("Preencha o endereço do novo contrato e o valor.");
             return;
         }
 
-        contractInstance = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
-        const amountWei = web3.utils.toWei(amount, 'ether');
+        contractInstance = new web3.eth.Contract(contractABI, contractAddress);
+        const amountWei = web3.utils.toWei(amount, 'ether'); // USDT tem 18 decimais na BSC
         const targetInt = parseInt(target);
 
-        log("Iniciando operação de Flash Loan...", 'info');
+        log("Iniciando operação (USDT)...", 'info');
         document.getElementById('btnExecute').disabled = true;
-        document.getElementById('btnExecute').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processando...`;
 
         try {
-            // Estimar Gas
             const gas = await contractInstance.methods.executeArbitrage(amountWei, targetInt).estimateGas({ from: userAccount });
-            log(`Gas estimado: ${gas} unidades`, 'info');
-
-            // Enviar Transação
+            
             const result = await contractInstance.methods.executeArbitrage(amountWei, targetInt).send({
                 from: userAccount,
-                gas: Math.floor(gas * 1.2) // 20% de margem
+                gas: Math.floor(gas * 1.2)
             });
 
-            log(`SUCESSO! Transação: ${result.transactionHash}`, 'info');
-            log("Verifique seus lucros no saldo do contrato (Withdraw).", 'warn');
+            log(`SUCESSO! TX: ${result.transactionHash}`, 'info');
 
         } catch (error) {
             console.error(error);
             log("FALHA NA OPERAÇÃO:", 'error');
-            
-            // Tentativa de traduzir o erro
-            let errorMsg = "Erro desconhecido. Verifique o console.";
-            
-            // Verificações comuns de reverter
+            let errorMsg = "Erro desconhecido.";
             if (error.message.includes("revert")) {
-                if (error.data) {
-                    // Em produção real, decodificariamos o erro do contrato
-                    errorMsg = "Transação revertida. Possíveis causas:";
-                    errorMsg += "\n1. Sem lucro suficiente (Market ineficiente).";
-                    errorMsg += "\n2. Taxas dos tokens (BIN/ROX) muito altas.";
-                    errorMsg += "\n3. Slippage (Mudança de preço durante o swap).";
-                } else {
-                    errorMsg = "Revertido por 'require(false)' (Geralmente falta de lucro).";
-                }
-            } else {
-                errorMsg = error.message;
+                errorMsg = "Sem lucro ou Liquidez insuficiente no par USDT.";
             }
-            
             log(errorMsg, 'error');
         } finally {
             document.getElementById('btnExecute').disabled = false;
-            document.getElementById('btnExecute').innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Operação`;
         }
     }
 </script>
