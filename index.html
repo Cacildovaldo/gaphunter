@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Arbitragem BIN/ROX - Versão USDT</title>
+    <title>Bot Arbitragem Linear BIN/USDT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
 
@@ -32,7 +32,7 @@
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #848e9c; font-weight: 600; }
         
-        input, select {
+        input {
             width: 100%;
             padding: 14px;
             background-color: #0f1218;
@@ -43,7 +43,7 @@
             font-size: 1rem;
             transition: border 0.3s;
         }
-        input:focus, select:focus { border-color: #f0b90b; outline: none; }
+        input:focus { border-color: #f0b90b; outline: none; }
 
         button {
             width: 100%;
@@ -76,23 +76,15 @@
         }
         .log-error { color: #f6465d; }
         .log-warn { color: #f0b90b; }
-        
-        .contract-tag {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #555;
-            margin-top: 5px;
-            word-break: break-all;
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="logo-area">
-        <i class="fa-solid fa-layer-group"></i>
+        <i class="fa-solid fa-arrow-right-arrow-left"></i>
     </div>
-    <h2>Arbitragem Flash Loan</h2>
+    <h2>Arbitragem Linear BIN</h2>
     
     <div class="form-group">
         <button id="btnConnect" onclick="connectWallet()">
@@ -100,18 +92,9 @@
         </button>
     </div>
 
-    <!-- Campo para inserir o NOVO endereço -->
     <div class="form-group">
         <label>Endereço do Contrato:</label>
-        <input type="text" id="contractAddress" placeholder="0x3796Ac070725445230C7aDb5ECAd3509823520ba" value="">
-    </div>
-
-    <div class="form-group">
-        <label>Token Alvo:</label>
-        <select id="targetChoice">
-            <option value="0">Rota A: USDT -> BIN -> ROX -> USDT</option>
-            <option value="1">Rota B: USDT -> ROX -> BIN -> USDT</option>
-        </select>
+        <input type="text" id="contractAddress" placeholder="Cole o endereço do contrato..." value="">
     </div>
 
     <div class="form-group">
@@ -127,7 +110,7 @@
 
     <div class="status-box" id="logBox">
         <div>> Sistema pronto.</div>
-        <div>> Versão USDT (Tokens pareados em USDT).</div>
+        <div>> Estratégia: USDT -> BIN -> USDT</div>
     </div>
 </div>
 
@@ -150,8 +133,7 @@
         },
         {
             "inputs": [
-                {"internalType": "uint256", "name": "_amount", "type": "uint256"},
-                {"internalType": "uint8", "name": "_targetChoice", "type": "uint8"}
+                {"internalType": "uint256", "name": "_amount", "type": "uint256"}
             ],
             "name": "executeArbitrage",
             "outputs": [],
@@ -191,6 +173,7 @@
                 document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
                 document.getElementById('btnConnect').disabled = true;
                 document.getElementById('btnConnect').style.background = "#0ecb81";
+                document.getElementById('btnConnect').style.color = "white";
                 document.getElementById('btnExecute').disabled = false;
                 
                 log("Carteira conectada.", 'info');
@@ -205,36 +188,35 @@
     async function executeArbitrage() {
         const contractAddress = document.getElementById('contractAddress').value;
         const amount = document.getElementById('loanAmount').value;
-        const target = document.getElementById('targetChoice').value;
 
         if (!contractAddress || !amount) {
-            alert("Preencha o endereço do novo contrato e o valor.");
+            alert("Preencha o endereço do contrato e o valor.");
             return;
         }
 
         contractInstance = new web3.eth.Contract(contractABI, contractAddress);
-        const amountWei = web3.utils.toWei(amount, 'ether'); // USDT tem 18 decimais na BSC
-        const targetInt = parseInt(target);
+        const amountWei = web3.utils.toWei(amount, 'ether'); // USDT 18 decimais
 
-        log("Iniciando operação (USDT)...", 'info');
+        log("Iniciando Flash Loan (USDT -> BIN)...", 'info');
         document.getElementById('btnExecute').disabled = true;
 
         try {
-            const gas = await contractInstance.methods.executeArbitrage(amountWei, targetInt).estimateGas({ from: userAccount });
+            const gas = await contractInstance.methods.executeArbitrage(amountWei).estimateGas({ from: userAccount });
             
-            const result = await contractInstance.methods.executeArbitrage(amountWei, targetInt).send({
+            const result = await contractInstance.methods.executeArbitrage(amountWei).send({
                 from: userAccount,
                 gas: Math.floor(gas * 1.2)
             });
 
             log(`SUCESSO! TX: ${result.transactionHash}`, 'info');
+            log("Verifique o saldo do contrato para lucros.", 'warn');
 
         } catch (error) {
             console.error(error);
             log("FALHA NA OPERAÇÃO:", 'error');
             let errorMsg = "Erro desconhecido.";
             if (error.message.includes("revert")) {
-                errorMsg = "Sem lucro ou Liquidez insuficiente no par USDT.";
+                errorMsg = "Sem lucro: O preço não se moveu o suficiente ou taxas do BIN comeram o lucro.";
             }
             log(errorMsg, 'error');
         } finally {
