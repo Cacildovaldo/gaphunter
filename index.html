@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flash Swap Arbitrage BIN/USDT</title>
+    <title>Painel Gestão Arbitragem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
+
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f1218;
+            background-color: #121212;
             color: #e0e0e0;
             display: flex;
             justify-content: center;
@@ -17,101 +18,130 @@
             margin: 0;
         }
         .container {
-            background-color: #1b1f26;
+            background-color: #1e1e1e;
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            border: 1px solid #2b3139;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #333;
         }
-        h2 { text-align: center; color: #f0b90b; margin-top: 0; font-size: 1.5rem; }
-        .logo-area { text-align: center; margin-bottom: 20px; color: #f0b90b; font-size: 2rem; }
+        h2 { text-align: center; color: #8247e5; margin-top: 0; margin-bottom: 20px; font-size: 1.4rem; }
+        .logo-area { text-align: center; margin-bottom: 25px; color: #8247e5; font-size: 2.5rem; }
+        
+        .card {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #3a3a3a;
+        }
+
         .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #848e9c; font-weight: 600; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #aaa; font-weight: 600; }
+        
         input {
             width: 100%;
             padding: 14px;
-            background-color: #0f1218;
-            border: 1px solid #2b3139;
-            border-radius: 8px;
+            background-color: #121212;
+            border: 1px solid #444;
+            border-radius: 6px;
             color: white;
             box-sizing: border-box;
             font-size: 1rem;
+            transition: border-color 0.2s;
         }
-        input:focus { border-color: #f0b90b; outline: none; }
+        input:focus { border-color: #8247e5; outline: none; }
+
         button {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, #f0b90b 0%, #d0a009 100%);
+            background: linear-gradient(90deg, #8247e5, #6c2bd9);
             border: none;
-            border-radius: 8px;
-            color: #000;
+            border-radius: 6px;
+            color: white;
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
         }
-        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(240, 185, 11, 0.3); }
-        button:disabled { background: #333; color: #777; cursor: not-allowed; }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(130, 71, 229, 0.4); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+        
         .status-box {
-            margin-top: 20px;
-            padding: 15px;
             background-color: #000;
-            border-radius: 8px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.85rem;
-            color: #0ecb81;
-            height: 150px;
+            color: #00ff00;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 6px;
+            height: 120px;
             overflow-y: auto;
             border: 1px solid #333;
+            font-size: 0.85rem;
         }
-        .log-error { color: #f6465d; }
+        .log-error { color: #ff4d4d; }
+        .log-info { color: #aaa; }
+        .contract-info {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 20px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="logo-area">
-        <i class="fa-solid fa-bolt"></i>
-    </div>
-    <h2>Flash Swap Arbitrage</h2>
+    <div class="logo-area"><i class="fa-solid fa-robot"></i></div>
+    <h2>Painel de Saque</h2>
     
-    <div class="form-group">
-        <button id="btnConnect" onclick="connectWallet()">Conectar Carteira</button>
+    <div class="card">
+        <label>Carteira Conectada</label>
+        <button id="btnConnect" onclick="connectWallet()">
+            <i class="fa-solid fa-wallet"></i> Conectar Carteira (Dono)
+        </button>
     </div>
 
-    <div class="form-group">
-        <label>Endereço do Contrato:</label>
-        <input type="text" id="contractAddress" placeholder="Cole o endereço do contrato..." value="">
+    <div class="card">
+        <label>1. Depositar POL (Para pagar taxas futuras)</label>
+        <div style="font-size: 0.8rem; margin-bottom: 10px; color: #888;">
+            Envia POL nativo diretamente para o contrato.
+        </div>
+        <input type="number" id="depositAmount" placeholder="Ex: 1" step="0.1">
+        <button id="btnDeposit" onclick="depositPOL()" disabled>
+            <i class="fa-solid fa-paper-plane"></i> Depositar POL
+        </button>
     </div>
 
-    <div class="form-group">
-        <label>Valor do Flash Loan (USDT):</label>
-        <input type="number" id="loanAmount" placeholder="Ex: 10000" step="1">
-    </div>
-
-    <div class="form-group">
-        <button id="btnExecute" onclick="executeArbitrage()" disabled>EXECUTAR OPERAÇÃO</button>
+    <div class="card">
+        <label>2. Sacar Lucros (USDT)</label>
+        <div style="font-size: 0.8rem; margin-bottom: 10px; color: #888;">
+            Transfere todo o saldo de USDT do contrato para esta carteira.
+        </div>
+        <button id="btnWithdraw" onclick="withdrawUSDT()" disabled>
+            <i class="fa-solid fa-money-bill-wave"></i> Sacar USDT
+        </button>
     </div>
 
     <div class="status-box" id="logBox">
-        <div>> Sistema pronto.</div>
-        <div>> Modo: PancakeSwap Flash Swap (Nativo).</div>
+        <div class="log-info">> Sistema pronto.</div>
+        <div class="log-info">> Conecte a carteira que criou o contrato.</div>
+    </div>
+
+    <div class="contract-info">
+        Contrato: 0xC2bbC0Bf9ac4c2c1Fbf807A03252e6235860eD0d
     </div>
 </div>
 
 <script>
+    // --- CONFIGURAÇÃO ---
+    const CONTRACT_ADDRESS = "0xC2bbC0Bf9ac4c2c1Fbf807A03252e6235860eD0d";
+    const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
+
+    // ABI Simplificada (Só o necessário para sacar)
     const contractABI = [
-        {
-            "inputs": [
-                {"internalType": "address", "name": "_routerAddress", "type": "address"},
-                {"internalType": "address", "name": "_pairAddress", "type": "address"}
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
         {
             "inputs": [],
             "name": "owner",
@@ -120,31 +150,21 @@
             "type": "function"
         },
         {
-            "inputs": [
-                {"internalType": "uint256", "name": "_amount", "type": "uint256"}
-            ],
-            "name": "executeArbitrage",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
             "inputs": [{"internalType": "address", "name": "_token", "type": "address"}],
             "name": "withdraw",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
-        },
+        }
+    ];
+
+    // ABI do USDT para checar saldo
+    const erc20ABI = [
         {
-            "inputs": [
-                {"internalType": "address", "name": "sender", "type": "address"},
-                {"internalType": "uint256", "name": "amount0", "type": "uint256"},
-                {"internalType": "uint256", "name": "amount1", "type": "uint256"},
-                {"internalType": "bytes", "name": "data", "type": "bytes"}
-            ],
-            "name": "pancakeCall",
-            "outputs": [],
-            "stateMutability": "nonpayable",
+            "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+            "name": "balanceOf",
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+            "stateMutability": "view",
             "type": "function"
         }
     ];
@@ -152,11 +172,13 @@
     let web3;
     let userAccount;
     let contractInstance;
+    let usdtInstance;
 
     function log(msg, type = 'info') {
         const box = document.getElementById('logBox');
         const entry = document.createElement('div');
         if (type === 'error') entry.className = 'log-error';
+        if (type === 'info') entry.className = 'log-info';
         entry.textContent = `> ${msg}`;
         box.appendChild(entry);
         box.scrollTop = box.scrollHeight;
@@ -169,52 +191,111 @@
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAccount = (await web3.eth.getAccounts())[0];
                 
-                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
+                // Atualiza UI
+                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...${userAccount.substring(38)}`;
                 document.getElementById('btnConnect').disabled = true;
-                document.getElementById('btnConnect').style.background = "#0ecb81";
-                document.getElementById('btnExecute').disabled = false;
+                document.getElementById('btnConnect').style.background = "#2a2a2a";
                 
-                log("Carteira conectada.", 'info');
+                // Verifica rede
+                const chainId = await web3.eth.getChainId();
+                if(chainId !== 137) {
+                    log("ERRO: Você não está na Polygon Mainnet.", 'error');
+                    alert("Mude sua MetaMask para a rede Polygon Mainnet.");
+                    return;
+                }
+
+                // Inicializa contratos
+                contractInstance = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
+                usdtInstance = new web3.eth.Contract(erc20ABI, USDT_ADDRESS);
+
+                // Verifica se a carteira é o DONO
+                const owner = await contractInstance.methods.owner().call();
+                if (userAccount.toLowerCase() !== owner.toLowerCase()) {
+                    log("ALERTA: Esta carteira NÃO é o dono do contrato.", 'error');
+                    log(`Dono: ${owner}`);
+                    log(`Você: ${userAccount}`);
+                    document.getElementById('btnWithdraw').disabled = true;
+                } else {
+                    log("Sucesso! Carteira Dono conectada.");
+                    document.getElementById('btnDeposit').disabled = false;
+                    document.getElementById('btnWithdraw').disabled = false;
+                    await checkBalances();
+                }
+
             } catch (error) {
                 log("Erro ao conectar: " + error.message, 'error');
             }
         } else {
-            log("MetaMask/Rabby não encontrada.", 'error');
+            log("MetaMask não encontrada.", 'error');
         }
     }
 
-    async function executeArbitrage() {
-        const contractAddress = document.getElementById('contractAddress').value;
-        const amount = document.getElementById('loanAmount').value;
-
-        if (!contractAddress || !amount) {
-            alert("Preencha o endereço e o valor.");
+    async function depositPOL() {
+        const amount = document.getElementById('depositAmount').value;
+        if (!amount || amount <= 0) {
+            alert("Insira um valor válido de POL.");
             return;
         }
 
-        contractInstance = new web3.eth.Contract(contractABI, contractAddress);
         const amountWei = web3.utils.toWei(amount, 'ether');
 
-        log("Iniciando Flash Swap...", 'info');
-        document.getElementById('btnExecute').disabled = true;
-
         try {
-            const gas = await contractInstance.methods.executeArbitrage(amountWei).estimateGas({ from: userAccount });
+            log("Enviando POL para o contrato...");
             
-            const result = await contractInstance.methods.executeArbitrage(amountWei).send({
+            // Envia POL nativo para o contrato
+            const result = await web3.eth.sendTransaction({
                 from: userAccount,
-                gas: Math.floor(gas * 1.2)
+                to: CONTRACT_ADDRESS,
+                value: amountWei 
             });
 
-            log(`SUCESSO! TX: ${result.transactionHash}`, 'info');
-            log("Verifique o saldo do contrato.", 'info');
+            log(`Depósito enviado! Hash: ${result}`);
+            log("Aguardando confirmação...");
+            
+            // Espera 6 segundos para o bloco
+            setTimeout(async () => {
+                const newBal = await web3.eth.getBalance(CONTRACT_ADDRESS);
+                log(`Saldo de POL no contrato atualizado.`);
+            }, 6000);
 
         } catch (error) {
-            console.error(error);
-            log("FALHA: " + error.message, 'error');
-        } finally {
-            document.getElementById('btnExecute').disabled = false;
+            log("Erro no depósito: " + error.message, 'error');
         }
+    }
+
+    async function withdrawUSDT() {
+        if (!contractInstance) {
+            alert("Conecte a carteira primeiro.");
+            return;
+        }
+
+        try {
+            log("Iniciando saque de USDT...");
+            
+            // Usa a função 'withdraw' padrão (saca para quem chama, ou seja, a carteira dono)
+            const gas = await contractInstance.methods.withdraw(USDT_ADDRESS).estimateGas({ from: userAccount });
+            
+            const result = await contractInstance.methods.withdraw(USDT_ADDRESS).send({
+                from: userAccount,
+                gas: Math.floor(gas * 1.2) // 20% a mais de gas para garantir
+            });
+
+            log(`Saque realizado! Hash: ${result.transactionHash}`);
+            setTimeout(checkBalances, 5000);
+
+        } catch (error) {
+            log("Erro no saque: " + error.message, 'error');
+        }
+    }
+
+    async function checkBalances() {
+        if (!usdtInstance) return;
+
+        const balContract = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
+        const balUser = await usdtInstance.methods.balanceOf(userAccount).call();
+        
+        log(`Saldo USDT Contrato: ${web3.utils.fromWei(balContract, 'mether')}`);
+        log(`Saldo USDT Carteira:  ${web3.utils.fromWei(balUser, 'mether')}`);
     }
 </script>
 
