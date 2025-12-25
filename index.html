@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Gestão Arbitragem</title>
+    <title>Painel Gestão Contrato Real</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
 
@@ -43,7 +43,7 @@
         input {
             width: 100%;
             padding: 14px;
-            background-color: #121212;
+            background-color: #1a1a1a;
             border: 1px solid #444;
             border-radius: 6px;
             color: white;
@@ -64,7 +64,7 @@
             font-size: 1rem;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
+            margin-top: 5px;
         }
         button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(130, 71, 229, 0.4); }
         button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -79,8 +79,10 @@
             overflow-y: auto;
             border: 1px solid #333;
             font-size: 0.85rem;
+            margin-top: 20px;
         }
         .log-error { color: #ff4d4d; }
+        .log-warn { color: #eab308; }
         .log-info { color: #aaa; }
         .contract-info {
             text-align: center;
@@ -88,6 +90,15 @@
             color: #555;
             margin-top: 20px;
             word-break: break-all;
+        }
+        .wallet-status {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(130, 71, 229, 0.1);
+            border-radius: 6px;
+            color: #ccc;
         }
     </style>
 </head>
@@ -97,17 +108,20 @@
     <div class="logo-area"><i class="fa-solid fa-robot"></i></div>
     <h2>Painel de Saque</h2>
     
+    <div class="wallet-status" id="walletStatus">
+        Aguardando conexão...
+    </div>
+
     <div class="card">
-        <label>Carteira Conectada</label>
         <button id="btnConnect" onclick="connectWallet()">
             <i class="fa-solid fa-wallet"></i> Conectar Carteira (Dono)
         </button>
     </div>
 
     <div class="card">
-        <label>1. Depositar POL (Para pagar taxas futuras)</label>
+        <label>1. Depositar POL (Para Taxas)</label>
         <div style="font-size: 0.8rem; margin-bottom: 10px; color: #888;">
-            Envia POL nativo diretamente para o contrato.
+            O contrato precisa de POL nativo para pagar gás nas operações do bot.
         </div>
         <input type="number" id="depositAmount" placeholder="Ex: 1" step="0.1">
         <button id="btnDeposit" onclick="depositPOL()" disabled>
@@ -118,7 +132,7 @@
     <div class="card">
         <label>2. Sacar Lucros (USDT)</label>
         <div style="font-size: 0.8rem; margin-bottom: 10px; color: #888;">
-            Transfere todo o saldo de USDT do contrato para esta carteira.
+            Transfere todo o saldo USDT do contrato para esta carteira.
         </div>
         <button id="btnWithdraw" onclick="withdrawUSDT()" disabled>
             <i class="fa-solid fa-money-bill-wave"></i> Sacar USDT
@@ -127,7 +141,7 @@
 
     <div class="status-box" id="logBox">
         <div class="log-info">> Sistema pronto.</div>
-        <div class="log-info">> Conecte a carteira que criou o contrato.</div>
+        <div class="log-info">> Aguardando conexão...</div>
     </div>
 
     <div class="contract-info">
@@ -138,10 +152,19 @@
 <script>
     // --- CONFIGURAÇÃO ---
     const CONTRACT_ADDRESS = "0x353a3834047B769F4c38365F22257e7E32D38710";
+    
     const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 
-    // ABI Simplificada (Só o necessário para sacar)
+    // ABI Completa do Novo Contrato (Inclui flashLoan)
     const contractABI = [
+        {
+            "inputs": [
+                {"internalType": "address", "name": "_routerAddress", "type": "address"},
+                {"internalType": "address", "name": "_aavePoolAddress", "type": "address"}
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
         {
             "inputs": [],
             "name": "owner",
@@ -150,8 +173,25 @@
             "type": "function"
         },
         {
+            "inputs": [{"internalType": "uint256", "name": "_amount", "type": "uint256"}],
+            "name": "executeArbitrage",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
             "inputs": [{"internalType": "address", "name": "_token", "type": "address"}],
             "name": "withdraw",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {"internalType": "address", "name": "_token", "type": "address"},
+                {"internalType": "address", "name": "_to", "type": "address"}
+            ],
+            "name": "withdrawTo",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
@@ -178,6 +218,7 @@
         const box = document.getElementById('logBox');
         const entry = document.createElement('div');
         if (type === 'error') entry.className = 'log-error';
+        if (type === 'warn') entry.className = 'log-warn';
         if (type === 'info') entry.className = 'log-info';
         entry.textContent = `> ${msg}`;
         box.appendChild(entry);
@@ -188,35 +229,35 @@
         if (typeof window.ethereum !== 'undefined') {
             try {
                 web3 = new Web3(window.ethereum);
+                
+                // Solicita contas
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
-                userAccount = (await web3.eth.getAccounts())[0];
+                const accounts = await web3.eth.getAccounts();
+                userAccount = accounts[0];
                 
                 // Atualiza UI
                 document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...${userAccount.substring(38)}`;
                 document.getElementById('btnConnect').disabled = true;
-                document.getElementById('btnConnect').style.background = "#2a2a2a";
-                
-                // Verifica rede
-                const chainId = await web3.eth.getChainId();
-                if(chainId !== 137) {
-                    log("ERRO: Você não está na Polygon Mainnet.", 'error');
-                    alert("Mude sua MetaMask para a rede Polygon Mainnet.");
-                    return;
-                }
+                document.getElementById('walletStatus').textContent = `Conectado como: ${userAccount}`;
 
-                // Inicializa contratos
+                // Inicializa Contratos
                 contractInstance = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
                 usdtInstance = new web3.eth.Contract(erc20ABI, USDT_ADDRESS);
 
-                // Verifica se a carteira é o DONO
+                // VERIFICAÇÃO DE DONO (A parte importante)
                 const owner = await contractInstance.methods.owner().call();
+                
+                // Compara endereços em minúsculo para evitar erro de caixa alta/baixa
                 if (userAccount.toLowerCase() !== owner.toLowerCase()) {
-                    log("ALERTA: Esta carteira NÃO é o dono do contrato.", 'error');
-                    log(`Dono: ${owner}`);
-                    log(`Você: ${userAccount}`);
+                    log(`ERRO DE SEGURANÇA: Esta carteira não é o dono.`, 'error');
+                    log(`Dono: ${owner}`, 'error');
+                    log(`Você: ${userAccount}`, 'error');
+                    alert("Essa carteira NÃO criou o contrato. Use a carteira dono.");
+                    // Desabilita botões de saque
+                    document.getElementById('btnDeposit').disabled = false; // Permite depositar gas se quiser
                     document.getElementById('btnWithdraw').disabled = true;
                 } else {
-                    log("Sucesso! Carteira Dono conectada.");
+                    log("Sucesso! Carteira Dono verificada.");
                     document.getElementById('btnDeposit').disabled = false;
                     document.getElementById('btnWithdraw').disabled = false;
                     await checkBalances();
@@ -226,7 +267,7 @@
                 log("Erro ao conectar: " + error.message, 'error');
             }
         } else {
-            log("MetaMask não encontrada.", 'error');
+            log("Carteira (Rabby/MetaMask) não encontrada.", 'error');
         }
     }
 
@@ -242,22 +283,16 @@
         try {
             log("Enviando POL para o contrato...");
             
-            // Envia POL nativo para o contrato
             const result = await web3.eth.sendTransaction({
                 from: userAccount,
                 to: CONTRACT_ADDRESS,
                 value: amountWei 
             });
 
-            log(`Depósito enviado! Hash: ${result}`);
+            log(`Depósito enviado! TX: ${result}`);
             log("Aguardando confirmação...");
             
-            // Espera 6 segundos para o bloco
-            setTimeout(async () => {
-                const newBal = await web3.eth.getBalance(CONTRACT_ADDRESS);
-                log(`Saldo de POL no contrato atualizado.`);
-            }, 6000);
-
+            setTimeout(checkBalances, 5000);
         } catch (error) {
             log("Erro no depósito: " + error.message, 'error');
         }
@@ -272,17 +307,22 @@
         try {
             log("Iniciando saque de USDT...");
             
-            // Usa a função 'withdraw' padrão (saca para quem chama, ou seja, a carteira dono)
+            // Verifica saldo antes de sacar
+            const currentBal = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
+            const currentBalHuman = web3.utils.fromWei(currentBal, 'mether');
+            
+            log(`Saldo encontrado: ${currentBalHuman} USDT`);
+
+            // Usa withdraw padrão (envia para o owner, que é a carteira conectada)
             const gas = await contractInstance.methods.withdraw(USDT_ADDRESS).estimateGas({ from: userAccount });
             
             const result = await contractInstance.methods.withdraw(USDT_ADDRESS).send({
                 from: userAccount,
-                gas: Math.floor(gas * 1.2) // 20% a mais de gas para garantir
+                gas: Math.floor(gas * 1.2)
             });
 
-            log(`Saque realizado! Hash: ${result.transactionHash}`);
+            log(`Saque realizado! TX: ${result.transactionHash}`);
             setTimeout(checkBalances, 5000);
-
         } catch (error) {
             log("Erro no saque: " + error.message, 'error');
         }
