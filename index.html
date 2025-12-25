@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Arbitragem Polygon</title>
+    <title>Painel Arbitragem Polygon (Fixo)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
+    <!-- Usando a versão mais nova da biblioteca que suporta MetaMask nova -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.0.3/web3.min.js"></script>
 
     <style>
         body {
@@ -81,16 +82,12 @@
             margin-top: 20px;
         }
         .log-error { color: #ff4d4d; font-weight: bold; }
-        .log-warn { color: #eab308; }
-        
-        .wallet-status {
+        .log-info { color: #aaa; }
+        .contract-info {
             text-align: center;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: rgba(130, 71, 229, 0.1);
-            border-radius: 6px;
-            color: #ccc;
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 20px;
             word-break: break-all;
         }
     </style>
@@ -101,13 +98,9 @@
     <div class="logo-area"><i class="fa-solid fa-robot"></i></div>
     <h2>Painel de Gestão</h2>
     
-    <div class="wallet-status" id="walletStatus">
-        Aguardando conexão...
-    </div>
-
     <div class="card">
         <button id="btnConnect" onclick="connectWallet()">
-            <i class="fa-solid fa-wallet"></i> Conectar Carteira Rabby
+            <i class="fa-solid fa-wallet"></i> Conectar Carteira (MetaMask/Rabby)
         </button>
     </div>
 
@@ -130,22 +123,22 @@
     </div>
 
     <div class="status-box" id="logBox">
-        <div>> Sistema iniciado...</div>
+        <div class="log-info"> Sistema iniciado...</div>
+        <div class="log-info"> Aguardando conexão...</div>
+    </div>
+
+    <div class="contract-info">
+        Contrato: 0x353a3834047B769F4c38365F22257e7E32D38710
     </div>
 </div>
 
 <script>
     // --- CONFIGURAÇÃO ---
+    // Endereço correto do contrato que verificamos (Mainnet)
     const CONTRACT_ADDRESS = "0x353a3834047B769F4c38365F22257e7E32D38710";
     const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 
-    let web3;
-    let userAccount;
-    let contractInstance;
-    let usdtInstance;
-
-    // ABI GENÉRICO (Serve para qualquer contrato ERC20 ou similar)
-    // Usaremos isso para ler o contrato e descobrir as funções reais
+    // ABI Genérica e Robusta (Resolve erro "Returned values aren't valid")
     const GENERIC_ABI = [
         {
             "inputs": [],
@@ -166,73 +159,95 @@
             "name": "balanceOf",
             "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
-            "type": "function"
-        }
+            "type": "function"}
     ];
+
+    let web3;
+    let userAccount;
+    let contractInstance;
+    let usdtInstance;
 
     function log(msg, type = 'normal') {
         const box = document.getElementById('logBox');
         const entry = document.createElement('div');
         if (type === 'error') entry.className = 'log-error';
-        if (type === 'warn') entry.className = 'log-warn';
+        if (type === 'info') entry.className = 'log-info';
         entry.textContent = `> ${msg}`;
         box.appendChild(entry);
         box.scrollTop = box.scrollHeight;
     }
 
+    // --- CONEXÃO NOVA E COMPATÍVEL (WEB3 4.0 + EIP-1193) ---
+
     async function connectWallet() {
         if (typeof window.ethereum !== 'undefined') {
             try {
+                // Web3 4.0 instanciado com o provider da janela
                 web3 = new Web3(window.ethereum);
                 
-                // 1. Força a conexão
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                // Método EIP-1193 (Solicita todas as carteiras)
+                // Isso força a MetaMask nova a abrir a janela de conexão/permissoes
+                // Se a janela não abrir, clique no ícone da MetaMask e desbloqueie a página.
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
                 
-                // 2. Pega contas
-                const accounts = await web3.eth.getAccounts();
                 userAccount = accounts[0];
 
-                if (!userAccount) {
-                    log("Erro: Nenhuma conta encontrada.", 'error');
-                    return;
-                }
-
-                document.getElementById('walletStatus').textContent = `Conectado: ${userAccount}`;
-                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
+                // Atualiza UI
+                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...${userAccount.substring(38)}`;
                 document.getElementById('btnConnect').disabled = true;
-
-                // 3. Inicializa Contrato
-                // O web3.js tentará ler o contrato. Se falhar (ABI incompatível), o erro será capturado aqui.
-                try {
+                document.getElementById('btnConnect').style.background = "#2a2a2a";
+                
+                // Verificação de Rede (Chain ID 137 = Polygon Mainnet)
+                const chainId = await web3.eth.getChainId();
+                const chainIdInt = parseInt(chainId, 16); // Converte hex para int
+                
+                if (chainIdInt !== 137) {
+                    log("ATENÇÃO: Você não está na Polygon Mainnet (Chain ID 137).", 'error');
+                    alert("Por favor, mude sua MetaMask para a rede POLYGON (Chain ID 137).");
+                    // Tenta trocar para a Polygon automaticamente (pode falhar se a rede não estiver adicionada)
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x89' }], // Hex de 137
+                        });
+                    } catch (switchError) {
+                        log("Erro ao trocar rede automaticamente.", 'info');
+                    }
+                } else {
+                    log("Conectado à Polygon Mainnet com sucesso!", 'normal');
+                    
+                    // Inicializa Contratos
                     contractInstance = new web3.eth.Contract(GENERIC_ABI, CONTRACT_ADDRESS);
                     usdtInstance = new web3.eth.Contract(GENERIC_ABI, USDT_ADDRESS);
                     
-                    // 4. Verifica Dono
-                    const owner = await contractInstance.methods.owner().call();
-                    
-                    log(`Carteira: ${userAccount}`);
-                    log(`Dono do Contrato: ${owner}`);
-
-                    if (userAccount.toLowerCase() !== owner.toLowerCase()) {
-                        log("ERRO: Esta carteira NÃO é o dono do contrato.", 'error');
-                        alert("Erro: Você está conectado com uma carteira que não implantou este contrato.");
-                        document.getElementById('btnWithdraw').disabled = true;
-                    } else {
-                        log("Sucesso! Acesso confirmado.", 'normal');
-                        document.getElementById('btnDeposit').disabled = false;
-                        document.getElementById('btnWithdraw').disabled = false;
-                        await checkBalances();
+                    // Verifica Dono
+                    try {
+                        const owner = await contractInstance.methods.owner().call();
+                        if (userAccount.toLowerCase() !== owner.toLowerCase()) {
+                            log(`ERRO: Esta carteira não é o dono do contrato.`, 'error');
+                            log(`Dono: ${owner}`);
+                            log(`Você: ${userAccount}`);
+                            alert("Erro: A carteira conectada NÃO é a que implantou este contrato.");
+                        } else {
+                            log("Carteira Dono verificada. Botões liberados.", 'normal');
+                            document.getElementById('btnDeposit').disabled = false;
+                            document.getElementById('btnWithdraw').disabled = false;
+                            await checkBalances();
+                        }
+                    } catch (e) {
+                        log("Erro ao ler contrato: " + e.message, 'error');
                     }
-                } catch (e) {
-                    log("Erro crítico: Não consegui ler o contrato. " + e.message, 'error');
-                    alert("Erro: A página não consegue entender este contrato. O endereço está correto?");
                 }
 
             } catch (error) {
                 log("Erro na conexão: " + error.message, 'error');
+                console.error(error);
             }
         } else {
-            log("Carteira não encontrada.", 'error');
+            log("MetaMask/Rabby não encontrada.", 'error');
+            alert("Por favor, instale a extensão MetaMask ou Rabby Wallet.");
         }
     }
 
@@ -246,49 +261,53 @@
         const amountWei = web3.utils.toWei(amount, 'ether');
 
         try {
-            log("Enviando POL...", 'warn');
+            log("Enviando POL para o contrato...", 'info');
             
-            // FORÇA GAS MANUAL (Correção do erro Out of Gas)
-            // Isso obriga a Rabby a mostrar o valor exato ao invés de estimar errado
+            // Constrói transação com Gas Manual (Evita erro de estimativa da MetaMask nova)
             const transactionParameters = {
                 from: userAccount,
                 to: CONTRACT_ADDRESS,
                 value: amountWei,
-                gas: '100000', // Gas fixo para transferência simples
-                gasPrice: web3.utils.toWei('30', 'gwei') // Preço baixo padrão da Polygon
+                gas: '100000', // Gas fixo para transferência nativa
+                gasPrice: web3.utils.toWei('30', 'gwei') // Preço baixo padrão
             };
 
+            // Envia via EIP-1193 (Solicita Assinatura)
             const txHash = await window.ethereum.request({
                 method: 'eth_sendTransaction',
                 params: [transactionParameters],
             });
 
-            log(`Enviado: ${txHash}`, 'normal');
+            log(`Depósito enviado! Hash: ${txHash}`, 'info');
             
             // Aguarda confirmação
             const receipt = await web3.eth.waitForTransactionReceipt(txHash);
             if (receipt.status) {
-                log("Depósito confirmado!", 'normal');
-                await checkBalances();
+                log("SUCESSO! Depósito confirmado.", 'info');
+                // Atualiza saldos após 6 segundos (tempo de bloco)
+                setTimeout(checkBalances, 6000);
             } else {
-                log("Falha na transação.", 'error');
+                log("FALHA. A transação foi revertida.", 'error');
             }
 
         } catch (error) {
-            log("Erro: " + error.message, 'error');
+            log("Erro no depósito: " + error.message, 'error');
         }
     }
 
     async function withdrawUSDT() {
-        if (!contractInstance) return;
+        if (!contractInstance) {
+            alert("Conecte a carteira primeiro.");
+            return;
+        }
 
         try {
-            log("Iniciando saque...", 'warn');
+            log("Iniciando saque de USDT...", 'info');
             
-            // Estima Gas
+            // 1. Estima Gas
             const gas = await contractInstance.methods.withdraw(USDT_ADDRESS).estimateGas({ from: userAccount });
 
-            // ENVIA COM GAS MANUAL (Para evitar o erro Returned values aren't valid)
+            // 2. Constrói Transação com Gas Manual (Correção para MetaMask nova)
             const transactionParameters = {
                 from: userAccount,
                 to: CONTRACT_ADDRESS,
@@ -296,26 +315,27 @@
                 gas: Math.floor(gas * 1.2) // 20% de margem
             };
 
+            // 3. Envia (EIP-1193)
             const txHash = await window.ethereum.request({
                 method: 'eth_sendTransaction',
                 params: [transactionParameters],
             });
 
-            log(`Saque enviado: ${txHash}`, 'normal');
+            log(`Saque enviado! Hash: ${txHash}`, 'info');
             
             // Aguarda
             const receipt = await web3.eth.waitForTransactionReceipt(txHash);
             if (receipt.status) {
-                log("Saque realizado com sucesso!", 'normal');
-                await checkBalances();
+                log("SUCESSO! Saque realizado.", 'info');
+                setTimeout(checkBalances, 6000);
             } else {
-                log("Transação falhou (Revertida).", 'error');
+                log("FALHA. Transação revertida.", 'error');
             }
 
         } catch (error) {
             log("Erro no saque: " + error.message, 'error');
             if(error.message.includes("insufficient funds")) {
-                alert("Sem saldo no contrato para sacar.");
+                alert("Erro: Sem saldo no contrato para sacar.");
             }
         }
     }
@@ -323,11 +343,15 @@
     async function checkBalances() {
         if (!usdtInstance) return;
 
-        const balContract = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
-        const balUser = await usdtInstance.methods.balanceOf(userAccount).call();
-        
-        log(`Saldo Contrato: ${web3.utils.fromWei(balContract, 'mether')} USDT`);
-        log(`Saldo Carteira:  ${web3.utils.fromWei(balUser, 'mether')} USDT`);
+        try {
+            const balContract = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
+            const balUser = await usdtInstance.methods.balanceOf(userAccount).call();
+            
+            log(`Saldo USDT Contrato: ${web3.utils.fromWei(balContract, 'mether')}`, 'info');
+            log(`Saldo USDT Carteira:  ${web3.utils.fromWei(balUser, 'mether')}`, 'info');
+        } catch (e) {
+            log("Erro ao ler saldos: " + e.message, 'error');
+        }
     }
 </script>
 
