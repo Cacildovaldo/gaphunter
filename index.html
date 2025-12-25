@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Gestão Contrato Real</title>
+    <title>Painel Arbitragem Polygon</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.9.0/web3.min.js"></script>
 
@@ -20,7 +20,7 @@
         .container {
             background-color: #1e1e1e;
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -49,7 +49,6 @@
             color: white;
             box-sizing: border-box;
             font-size: 1rem;
-            transition: border-color 0.2s;
         }
         input:focus { border-color: #8247e5; outline: none; }
 
@@ -63,11 +62,11 @@
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
             margin-top: 5px;
         }
-        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(130, 71, 229, 0.4); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+        button:hover:not(:disabled) { transform: translateY(-2px); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
         
         .status-box {
             background-color: #000;
@@ -81,16 +80,9 @@
             font-size: 0.85rem;
             margin-top: 20px;
         }
-        .log-error { color: #ff4d4d; }
+        .log-error { color: #ff4d4d; font-weight: bold; }
         .log-warn { color: #eab308; }
-        .log-info { color: #aaa; }
-        .contract-info {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #555;
-            margin-top: 20px;
-            word-break: break-all;
-        }
+        
         .wallet-status {
             text-align: center;
             font-size: 0.9rem;
@@ -99,6 +91,7 @@
             background: rgba(130, 71, 229, 0.1);
             border-radius: 6px;
             color: #ccc;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -106,7 +99,7 @@
 
 <div class="container">
     <div class="logo-area"><i class="fa-solid fa-robot"></i></div>
-    <h2>Painel de Saque</h2>
+    <h2>Painel de Gestão</h2>
     
     <div class="wallet-status" id="walletStatus">
         Aguardando conexão...
@@ -114,15 +107,12 @@
 
     <div class="card">
         <button id="btnConnect" onclick="connectWallet()">
-            <i class="fa-solid fa-wallet"></i> Conectar Carteira (Dono)
+            <i class="fa-solid fa-wallet"></i> Conectar Carteira Rabby
         </button>
     </div>
 
     <div class="card">
-        <label>1. Depositar POL (Para Taxas)</label>
-        <div style="font-size: 0.8rem; margin-bottom: 10px; color: #888;">
-            O contrato precisa de POL nativo para pagar gás nas operações do bot.
-        </div>
+        <label>1. Depositar POL (Gas)</label>
         <input type="number" id="depositAmount" placeholder="Ex: 1" step="0.1">
         <button id="btnDeposit" onclick="depositPOL()" disabled>
             <i class="fa-solid fa-paper-plane"></i> Depositar POL
@@ -140,43 +130,28 @@
     </div>
 
     <div class="status-box" id="logBox">
-        <div class="log-info">> Sistema pronto.</div>
-        <div class="log-info">> Aguardando conexão...</div>
-    </div>
-
-    <div class="contract-info">
-        Contrato: 0x353a3834047B769F4c38365F22257e7E32D38710
+        <div>> Sistema iniciado...</div>
     </div>
 </div>
 
 <script>
     // --- CONFIGURAÇÃO ---
     const CONTRACT_ADDRESS = "0x353a3834047B769F4c38365F22257e7E32D38710";
-    
     const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
 
-    // ABI Completa do Novo Contrato (Inclui flashLoan)
-    const contractABI = [
-        {
-            "inputs": [
-                {"internalType": "address", "name": "_routerAddress", "type": "address"},
-                {"internalType": "address", "name": "_aavePoolAddress", "type": "address"}
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
+    let web3;
+    let userAccount;
+    let contractInstance;
+    let usdtInstance;
+
+    // ABI GENÉRICO (Serve para qualquer contrato ERC20 ou similar)
+    // Usaremos isso para ler o contrato e descobrir as funções reais
+    const GENERIC_ABI = [
         {
             "inputs": [],
             "name": "owner",
             "outputs": [{"internalType": "address", "name": "", "type": "address"}],
             "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [{"internalType": "uint256", "name": "_amount", "type": "uint256"}],
-            "name": "executeArbitrage",
-            "outputs": [],
-            "stateMutability": "nonpayable",
             "type": "function"
         },
         {
@@ -187,20 +162,6 @@
             "type": "function"
         },
         {
-            "inputs": [
-                {"internalType": "address", "name": "_token", "type": "address"},
-                {"internalType": "address", "name": "_to", "type": "address"}
-            ],
-            "name": "withdrawTo",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ];
-
-    // ABI do USDT para checar saldo
-    const erc20ABI = [
-        {
             "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
             "name": "balanceOf",
             "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
@@ -209,17 +170,11 @@
         }
     ];
 
-    let web3;
-    let userAccount;
-    let contractInstance;
-    let usdtInstance;
-
-    function log(msg, type = 'info') {
+    function log(msg, type = 'normal') {
         const box = document.getElementById('logBox');
         const entry = document.createElement('div');
         if (type === 'error') entry.className = 'log-error';
         if (type === 'warn') entry.className = 'log-warn';
-        if (type === 'info') entry.className = 'log-info';
         entry.textContent = `> ${msg}`;
         box.appendChild(entry);
         box.scrollTop = box.scrollHeight;
@@ -230,44 +185,54 @@
             try {
                 web3 = new Web3(window.ethereum);
                 
-                // Solicita contas
+                // 1. Força a conexão
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                // 2. Pega contas
                 const accounts = await web3.eth.getAccounts();
                 userAccount = accounts[0];
-                
-                // Atualiza UI
-                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...${userAccount.substring(38)}`;
+
+                if (!userAccount) {
+                    log("Erro: Nenhuma conta encontrada.", 'error');
+                    return;
+                }
+
+                document.getElementById('walletStatus').textContent = `Conectado: ${userAccount}`;
+                document.getElementById('btnConnect').innerHTML = `Conectado: ${userAccount.substring(0,6)}...`;
                 document.getElementById('btnConnect').disabled = true;
-                document.getElementById('walletStatus').textContent = `Conectado como: ${userAccount}`;
 
-                // Inicializa Contratos
-                contractInstance = new web3.eth.Contract(contractABI, CONTRACT_ADDRESS);
-                usdtInstance = new web3.eth.Contract(erc20ABI, USDT_ADDRESS);
+                // 3. Inicializa Contrato
+                // O web3.js tentará ler o contrato. Se falhar (ABI incompatível), o erro será capturado aqui.
+                try {
+                    contractInstance = new web3.eth.Contract(GENERIC_ABI, CONTRACT_ADDRESS);
+                    usdtInstance = new web3.eth.Contract(GENERIC_ABI, USDT_ADDRESS);
+                    
+                    // 4. Verifica Dono
+                    const owner = await contractInstance.methods.owner().call();
+                    
+                    log(`Carteira: ${userAccount}`);
+                    log(`Dono do Contrato: ${owner}`);
 
-                // VERIFICAÇÃO DE DONO (A parte importante)
-                const owner = await contractInstance.methods.owner().call();
-                
-                // Compara endereços em minúsculo para evitar erro de caixa alta/baixa
-                if (userAccount.toLowerCase() !== owner.toLowerCase()) {
-                    log(`ERRO DE SEGURANÇA: Esta carteira não é o dono.`, 'error');
-                    log(`Dono: ${owner}`, 'error');
-                    log(`Você: ${userAccount}`, 'error');
-                    alert("Essa carteira NÃO criou o contrato. Use a carteira dono.");
-                    // Desabilita botões de saque
-                    document.getElementById('btnDeposit').disabled = false; // Permite depositar gas se quiser
-                    document.getElementById('btnWithdraw').disabled = true;
-                } else {
-                    log("Sucesso! Carteira Dono verificada.");
-                    document.getElementById('btnDeposit').disabled = false;
-                    document.getElementById('btnWithdraw').disabled = false;
-                    await checkBalances();
+                    if (userAccount.toLowerCase() !== owner.toLowerCase()) {
+                        log("ERRO: Esta carteira NÃO é o dono do contrato.", 'error');
+                        alert("Erro: Você está conectado com uma carteira que não implantou este contrato.");
+                        document.getElementById('btnWithdraw').disabled = true;
+                    } else {
+                        log("Sucesso! Acesso confirmado.", 'normal');
+                        document.getElementById('btnDeposit').disabled = false;
+                        document.getElementById('btnWithdraw').disabled = false;
+                        await checkBalances();
+                    }
+                } catch (e) {
+                    log("Erro crítico: Não consegui ler o contrato. " + e.message, 'error');
+                    alert("Erro: A página não consegue entender este contrato. O endereço está correto?");
                 }
 
             } catch (error) {
-                log("Erro ao conectar: " + error.message, 'error');
+                log("Erro na conexão: " + error.message, 'error');
             }
         } else {
-            log("Carteira (Rabby/MetaMask) não encontrada.", 'error');
+            log("Carteira não encontrada.", 'error');
         }
     }
 
@@ -281,50 +246,77 @@
         const amountWei = web3.utils.toWei(amount, 'ether');
 
         try {
-            log("Enviando POL para o contrato...");
+            log("Enviando POL...", 'warn');
             
-            const result = await web3.eth.sendTransaction({
+            // FORÇA GAS MANUAL (Correção do erro Out of Gas)
+            // Isso obriga a Rabby a mostrar o valor exato ao invés de estimar errado
+            const transactionParameters = {
                 from: userAccount,
                 to: CONTRACT_ADDRESS,
-                value: amountWei 
+                value: amountWei,
+                gas: '100000', // Gas fixo para transferência simples
+                gasPrice: web3.utils.toWei('30', 'gwei') // Preço baixo padrão da Polygon
+            };
+
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [transactionParameters],
             });
 
-            log(`Depósito enviado! TX: ${result}`);
-            log("Aguardando confirmação...");
+            log(`Enviado: ${txHash}`, 'normal');
             
-            setTimeout(checkBalances, 5000);
+            // Aguarda confirmação
+            const receipt = await web3.eth.waitForTransactionReceipt(txHash);
+            if (receipt.status) {
+                log("Depósito confirmado!", 'normal');
+                await checkBalances();
+            } else {
+                log("Falha na transação.", 'error');
+            }
+
         } catch (error) {
-            log("Erro no depósito: " + error.message, 'error');
+            log("Erro: " + error.message, 'error');
         }
     }
 
     async function withdrawUSDT() {
-        if (!contractInstance) {
-            alert("Conecte a carteira primeiro.");
-            return;
-        }
+        if (!contractInstance) return;
 
         try {
-            log("Iniciando saque de USDT...");
+            log("Iniciando saque...", 'warn');
             
-            // Verifica saldo antes de sacar
-            const currentBal = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
-            const currentBalHuman = web3.utils.fromWei(currentBal, 'mether');
-            
-            log(`Saldo encontrado: ${currentBalHuman} USDT`);
-
-            // Usa withdraw padrão (envia para o owner, que é a carteira conectada)
+            // Estima Gas
             const gas = await contractInstance.methods.withdraw(USDT_ADDRESS).estimateGas({ from: userAccount });
-            
-            const result = await contractInstance.methods.withdraw(USDT_ADDRESS).send({
+
+            // ENVIA COM GAS MANUAL (Para evitar o erro Returned values aren't valid)
+            const transactionParameters = {
                 from: userAccount,
-                gas: Math.floor(gas * 1.2)
+                to: CONTRACT_ADDRESS,
+                data: contractInstance.methods.withdraw(USDT_ADDRESS).encodeABI(),
+                gas: Math.floor(gas * 1.2) // 20% de margem
+            };
+
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [transactionParameters],
             });
 
-            log(`Saque realizado! TX: ${result.transactionHash}`);
-            setTimeout(checkBalances, 5000);
+            log(`Saque enviado: ${txHash}`, 'normal');
+            
+            // Aguarda
+            const receipt = await web3.eth.waitForTransactionReceipt(txHash);
+            if (receipt.status) {
+                log("Saque realizado com sucesso!", 'normal');
+                await checkBalances();
+            } else {
+                log("Transação falhou (Revertida).", 'error');
+            }
+
         } catch (error) {
             log("Erro no saque: " + error.message, 'error');
+            if(error.message.includes("insufficient funds")) {
+                alert("Sem saldo no contrato para sacar.");
+            }
         }
     }
 
@@ -334,8 +326,8 @@
         const balContract = await usdtInstance.methods.balanceOf(CONTRACT_ADDRESS).call();
         const balUser = await usdtInstance.methods.balanceOf(userAccount).call();
         
-        log(`Saldo USDT Contrato: ${web3.utils.fromWei(balContract, 'mether')}`);
-        log(`Saldo USDT Carteira:  ${web3.utils.fromWei(balUser, 'mether')}`);
+        log(`Saldo Contrato: ${web3.utils.fromWei(balContract, 'mether')} USDT`);
+        log(`Saldo Carteira:  ${web3.utils.fromWei(balUser, 'mether')} USDT`);
     }
 </script>
 
